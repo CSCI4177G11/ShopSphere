@@ -176,3 +176,23 @@ This service manages user profile data for both consumers and vendors (authentic
 **Common Errors**
 - 400 Bad Request: Invalid or missing input data
 - 404 Not Found: Resource does not exist
+
+---
+
+## ✅ Scope Coverage Summary
+
+✔ User Profile Management:
+- Consumers manage phone numbers and multiple addresses
+- Vendors manage store profile and business information
+- Admins can be identified and elevated by userId
+
+✔ Vendor Approval System:
+- Vendors require admin approval via isApproved field
+
+✔ Payment Integration Support:
+- Stores stripeCustomerId for consumer payment linkage
+
+✔ Fields Supported:
+- consumerId, address, phoneNumber, stripeCustomerId
+- vendorId, isApproved, storeName, location, storeDescription, logoUrl, storeBannerUrl, rating, socialLinks
+- adminId
