@@ -142,4 +142,20 @@ sequenceDiagram
 - `/me` & `/validate`:
   - `401 Unauthorized`: Missing/invalid/expired token
 
+---
 
+## ✅ Scope Coverage Summary
+
+✔ Role-Based Access and Permissions:
+- Supports distinct user roles: Consumer, Vendor, Admin
+- Provides JWT tokens for secure session management
+
+✔ Secure Authentication:
+- Handles user registration and login
+- Passwords are stored securely (hashed)
+
+✔ User Identity Management:
+- Stores core identity info (username, fullName, email)
+
+✔ Fields Supported:
+- userId, username, fullName, role, email, password
