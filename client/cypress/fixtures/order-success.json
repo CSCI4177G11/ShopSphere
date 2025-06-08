@@ -1,0 +1,25 @@
+{
+  "id": "order-123",
+  "orderNumber": "OM-2023-001234",
+  "status": "confirmed",
+  "total": 199.99,
+  "items": [
+    {
+      "id": "1",
+      "name": "Wireless Bluetooth Headphones",
+      "price": 199.99,
+      "quantity": 1,
+      "image": "/images/headphones.jpg"
+    }
+  ],
+  "shippingAddress": {
+    "fullName": "John Doe",
+    "address": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10001",
+    "phone": "555-123-4567"
+  },
+  "estimatedDelivery": "2023-12-15",
+  "createdAt": "2023-12-01T10:00:00Z"
+}

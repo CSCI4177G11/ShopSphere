@@ -1,0 +1,11 @@
+{
+  "user": {
+    "id": "1",
+    "name": "Test User",
+    "email": "test@example.com",
+    "role": "consumer",
+    "image": "/avatars/test-user.jpg"
+  },
+  "accessToken": "mock-jwt-token",
+  "refreshToken": "mock-refresh-token"
+}

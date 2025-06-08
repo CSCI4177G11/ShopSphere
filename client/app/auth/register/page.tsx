@@ -1,0 +1,237 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Icons } from "@/components/ui/icons"
+import { toast } from "sonner"
+import { useMockAuth } from "@/components/mock-auth-provider"
+// import { authService } from "@/lib/api/auth-service"
+
+const registerSchema = z
+  .object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
+type RegisterForm = z.infer<typeof registerSchema>
+
+export default function RegisterPage() {
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+  const { signIn } = useMockAuth()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  })
+
+  const onSubmit = async (data: RegisterForm) => {
+    setIsLoading(true)
+
+    try {
+      // Mock registration - simulate API call
+      setTimeout(async () => {
+        // Auto sign in the new user (mock)
+        await signIn(data.email, data.password)
+        toast.success("Account created successfully!")
+        setIsLoading(false)
+        router.push("/")
+      }, 1000)
+
+      /* Original API call (commented out for mock)
+      await authService.register({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        role: "consumer",
+      })
+
+      toast.success("Account created successfully!")
+      router.push("/auth/login")
+      */
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong")
+      setIsLoading(false)
+    }
+  }
+
+  const handleOAuthSignIn = async (provider: "google" | "github") => {
+    setIsLoading(true)
+    try {
+      // Mock OAuth sign in
+      setTimeout(async () => {
+        await signIn("", "")
+        toast.success(`Signed in with ${provider}!`)
+        setIsLoading(false)
+        router.push("/")
+      }, 1000)
+
+      /* Original OAuth call (commented out for mock)
+      await authService.oauthSignIn(provider)
+      */
+    } catch (error) {
+      toast.error("Something went wrong")
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6 shadow-lg">
+            <span className="text-primary-foreground font-bold text-xl">SS</span>
+          </div>
+          <h1 className="text-3xl font-bold mb-2">Create account</h1>
+          <p className="text-muted-foreground">Join ShopSphere and start shopping</p>
+        </div>
+
+        <Card className="border-0 shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+          <CardContent className="p-8 space-y-6">
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => handleOAuthSignIn("google")} 
+                disabled={isLoading}
+                className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+              >
+                <Icons.google className="mr-2 h-4 w-4" />
+                Google
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => handleOAuthSignIn("github")} 
+                disabled={isLoading}
+                className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+              >
+                <Icons.gitHub className="mr-2 h-4 w-4" />
+                GitHub
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-3 text-muted-foreground font-medium">Or create with email</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium">Full name</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter your full name"
+                  {...register("name")}
+                  disabled={isLoading}
+                  data-testid="name-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  {...register("email")}
+                  disabled={isLoading}
+                  data-testid="email-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Create a password"
+                  {...register("password")}
+                  disabled={isLoading}
+                  data-testid="password-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  {...register("confirmPassword")}
+                  disabled={isLoading}
+                  data-testid="confirm-password-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 font-medium transition-all duration-200 shadow-lg hover:shadow-xl" 
+                disabled={isLoading} 
+                data-testid="signup-button"
+              >
+                {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="mt-8 space-y-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Sign in
+            </Link>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Want to sell on ShopSphere?{" "}
+            <Link href="/auth/seller-register" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Become a seller
+            </Link>
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  )
+}

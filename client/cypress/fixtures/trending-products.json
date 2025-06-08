@@ -1,0 +1,50 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "name": "Wireless Bluetooth Headphones",
+      "description": "High-quality wireless headphones with noise cancellation",
+      "price": 199.99,
+      "originalPrice": 249.99,
+      "discount": 20,
+      "images": [
+        {
+          "id": "1",
+          "url": "/images/headphones.jpg",
+          "alt": "Wireless Bluetooth Headphones",
+          "order": 0
+        }
+      ],
+      "category": {
+        "id": "1",
+        "name": "Electronics",
+        "slug": "electronics"
+      },
+      "vendor": {
+        "id": "1",
+        "name": "TechStore",
+        "slug": "techstore",
+        "rating": 4.8,
+        "reviewCount": 1250,
+        "verified": true,
+        "joinedAt": "2022-01-15"
+      },
+      "rating": 4.5,
+      "reviewCount": 324,
+      "stock": 50,
+      "sku": "WBH-001",
+      "tags": ["wireless", "bluetooth", "headphones"],
+      "specifications": {
+        "Battery Life": "30 hours",
+        "Connectivity": "Bluetooth 5.0",
+        "Weight": "250g"
+      },
+      "createdAt": "2023-01-01",
+      "updatedAt": "2023-12-01"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "limit": 20,
+  "hasMore": false
+}
