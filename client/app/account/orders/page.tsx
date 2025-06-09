@@ -7,10 +7,11 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { format } from "date-fns"
-import { Search, Filter, ChevronRight } from "lucide-react"
+import { Search, Filter, ChevronRight, Star, PenTool, ArrowLeft, Package, Truck, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { OrderStatusBadge } from "@/components/orders/order-status-badge"
@@ -19,109 +20,34 @@ import { TableSkeleton } from "@/components/ui/skeletons"
 // import { orderService } from "@/lib/api/order-service"
 import { formatPrice } from "@/lib/utils"
 import type { Order } from "@/types/order"
+import { toast } from "sonner"
 
 // Mock orders data for testing
 const mockOrders: Order[] = [
   {
-    id: "order-1",
-    orderNumber: "SP-2024-001",
-    status: "shipped",
-    total: 179.98,
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-16T08:00:00Z",
-    estimatedDelivery: "2024-01-20T00:00:00Z",
-    shippingAddress: {
-      street: "123 Main St",
-      city: "San Francisco",
-      state: "CA",
-      zipCode: "94105",
-      country: "US"
-    },
-    paymentMethod: {
-      id: "pm-1",
-      brand: "visa",
-      last4: "4242"
-    },
-    items: [
-      {
-        id: "item-1",
-        name: "Wireless Bluetooth Headphones",
-        price: 149.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=80&h=80&fit=crop"
-      },
-      {
-        id: "item-2", 
-        name: "USB-C Cable",
-        price: 29.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1592659762303-90081d34b277?w=80&h=80&fit=crop"
-      }
-    ]
+    id: "ORD-2024-001",
+    date: "Dec 10, 2024",
+    status: "In Transit",
+    total: 129.97,
+    items: 2
   },
   {
-    id: "order-2",
-    orderNumber: "SP-2024-002",
-    status: "delivered",
-    total: 299.99,
-    createdAt: "2024-01-10T14:20:00Z",
-    updatedAt: "2024-01-14T16:30:00Z",
-    estimatedDelivery: "2024-01-15T00:00:00Z",
-    shippingAddress: {
-      street: "123 Main St",
-      city: "San Francisco", 
-      state: "CA",
-      zipCode: "94105",
-      country: "US"
-    },
-    paymentMethod: {
-      id: "pm-1",
-      brand: "visa",
-      last4: "4242"
-    },
-    items: [
-      {
-        id: "item-3",
-        name: "Smart Fitness Watch",
-        price: 299.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=80&h=80&fit=crop"
-      }
-    ]
+    id: "ORD-2024-002", 
+    date: "Dec 5, 2024",
+    status: "Delivered",
+    total: 149.99,
+    items: 1
   },
   {
-    id: "order-3",
-    orderNumber: "SP-2024-003", 
-    status: "processing",
-    total: 89.99,
-    createdAt: "2024-01-18T09:15:00Z",
-    updatedAt: "2024-01-18T09:15:00Z",
-    estimatedDelivery: "2024-01-25T00:00:00Z",
-    shippingAddress: {
-      street: "123 Main St",
-      city: "San Francisco",
-      state: "CA", 
-      zipCode: "94105",
-      country: "US"
-    },
-    paymentMethod: {
-      id: "pm-1",
-      brand: "visa",
-      last4: "4242"
-    },
-    items: [
-      {
-        id: "item-4",
-        name: "Premium Bluetooth Speaker",
-        price: 89.99,
-        quantity: 1,
-        image: "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=80&h=80&fit=crop"
-      }
-    ]
+    id: "ORD-2024-003",
+    date: "Nov 28, 2024",
+    status: "Delivered", 
+    total: 89.50,
+    items: 3
   }
 ]
 
-export default function AccountOrdersPage() {
+export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")
@@ -192,126 +118,158 @@ export default function AccountOrdersPage() {
     return (
       <div className="space-y-8">
         {orderList.map((order) => (
-          <Link href={`/account/orders/${order.id}`} key={order.id}>
-            <Card className="hover:shadow-lg transition-all duration-200 border border-border/50 hover:border-primary/20">
-              <CardContent className="p-8">
-                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
-                  <div className="space-y-4 flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                      <h3 className="font-bold text-xl">Order #{order.orderNumber}</h3>
-                      <OrderStatusBadge status={order.status} />
+          <motion.div
+            key={order.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Package className="h-6 w-6 text-blue-600" />
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-muted-foreground">
-                        Placed on {format(new Date(order.createdAt), "MMMM d, yyyy")}
-                      </p>
-                      <p className="text-lg font-semibold">
-                        {order.items.length} {order.items.length === 1 ? "item" : "items"} • {formatPrice(order.total)}
-                      </p>
+                    <div>
+                      <h3 className="font-semibold">{order.id}</h3>
+                      <p className="text-sm text-muted-foreground">{order.date}</p>
                     </div>
                   </div>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 xl:flex-col xl:items-end">
-                    <Badge variant="outline" className="whitespace-nowrap px-4 py-2 text-sm">
-                      {order.estimatedDelivery
-                        ? `Delivery by ${format(new Date(order.estimatedDelivery), "MMM d")}`
-                        : "Processing"}
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-semibold">${order.total}</p>
+                      <p className="text-sm text-muted-foreground">{order.items} items</p>
+                    </div>
+                    
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
                     </Badge>
-                    <ChevronRight className="h-6 w-6 text-muted-foreground hidden sm:block" />
+                    
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/track-order?order=${order.id}`}>
+                          <Truck className="h-4 w-4 mr-2" />
+                          Track
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </Link>
+          </motion.div>
         ))}
       </div>
     )
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'in transit': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'processing': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-      <div className="space-y-8">
-        {/* Header Section */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>
-          <p className="text-muted-foreground text-lg">View and track all your orders</p>
-        </div>
-
-        {/* Search and Filters Section */}
-        <div className="bg-muted/30 rounded-lg p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search orders by number or product name..."
-                className="pl-10 h-11"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] h-11">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="shipped">Shipped</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={dateFilter} onValueChange={setDateFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] h-11">
-                  <SelectValue placeholder="Filter by date" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="last30days">Last 30 Days</SelectItem>
-                  <SelectItem value="last6months">Last 6 Months</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Orders Content */}
-        <div className="space-y-6">
-          {isLoading ? (
-            <TableSkeleton rows={3} cols={4} />
-          ) : (
-            <Tabs defaultValue="active" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-12">
-                <TabsTrigger value="active" className="text-base">
-                  Active Orders
-                  {activeOrders.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {activeOrders.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="completed" className="text-base">
-                  Completed Orders
-                  {completedOrders.length > 0 && (
-                    <Badge variant="secondary" className="ml-2">
-                      {completedOrders.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="active" className="pt-8">
-                {renderOrderList(activeOrders)}
-              </TabsContent>
-              <TabsContent value="completed" className="pt-8">
-                {renderOrderList(completedOrders)}
-              </TabsContent>
-            </Tabs>
-          )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href="/account">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Order History</h1>
+          <p className="text-muted-foreground">View and track your orders</p>
         </div>
       </div>
-    </motion.div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">{mockOrders.length}</div>
+            <div className="text-sm text-muted-foreground">Total Orders</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {mockOrders.filter(o => o.status === 'In Transit').length}
+            </div>
+            <div className="text-sm text-muted-foreground">In Transit</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              ${mockOrders.reduce((sum, order) => sum + order.total, 0).toFixed(2)}
+            </div>
+            <div className="text-sm text-muted-foreground">Total Spent</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Orders List */}
+      <div className="space-y-4">
+        {mockOrders.map((order, index) => (
+          <motion.div
+            key={order.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Package className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold">{order.id}</h3>
+                      <p className="text-sm text-muted-foreground">{order.date}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="font-semibold">${order.total}</p>
+                      <p className="text-sm text-muted-foreground">{order.items} items</p>
+                    </div>
+                    
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
+                    </Badge>
+                    
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/track-order?order=${order.id}`}>
+                          <Truck className="h-4 w-4 mr-2" />
+                          Track
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
   )
 }

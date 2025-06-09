@@ -1,100 +1,87 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 
 interface MockUser {
   id: string
   name: string
   email: string
-  avatar?: string
+  role: "consumer" | "vendor" | "admin"
   image?: string
-  role?: string
 }
 
 interface MockAuthContextType {
-  isAuthenticated: boolean
   user: MockUser | null
+  isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signOut: () => void
-  toggleAuthMode: () => void // For easy testing
-  updateUser: (updatedUser: MockUser) => void
+  signOut: () => Promise<void>
+  switchRole: (role: "consumer" | "vendor" | "admin") => void
 }
 
 const MockAuthContext = createContext<MockAuthContextType | undefined>(undefined)
 
-// Mock user data for testing
-const mockUser: MockUser = {
-  id: "mock-user-1",
-  name: "John Doe",
-  email: "john.doe@example.com",
-  avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-  image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-  role: "user"
+const mockUsers: Record<string, MockUser> = {
+  consumer: {
+    id: "user_1",
+    name: "John Doe",
+    email: "john@example.com",
+    role: "consumer",
+  },
+  vendor: {
+    id: "vendor_1", 
+    name: "John Smith",
+    email: "john@techstore.com",
+    role: "vendor",
+  },
+  admin: {
+    id: "admin_1",
+    name: "Admin User", 
+    email: "admin@shopsphere.com",
+    role: "admin",
+  }
 }
 
 interface MockAuthProviderProps {
-  children: ReactNode
-  enableMockMode?: boolean // Set to true for testing
+  children: React.ReactNode
+  enableMockMode?: boolean
 }
 
-export function MockAuthProvider({ children, enableMockMode = true }: MockAuthProviderProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+export function MockAuthProvider({ children, enableMockMode = false }: MockAuthProviderProps) {
   const [user, setUser] = useState<MockUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Load auth state from localStorage on mount
   useEffect(() => {
     if (enableMockMode) {
-      const savedAuthState = localStorage.getItem("mock-auth-state")
-      if (savedAuthState === "authenticated") {
-        setIsAuthenticated(true)
-        
-        // Load updated user data if available
-        const savedUserData = localStorage.getItem("mock-user-data")
-        const userData = savedUserData ? JSON.parse(savedUserData) : mockUser
-        setUser(userData)
+      // Auto-login as consumer for development
+      const savedUser = localStorage.getItem("mock-auth-user")
+      if (savedUser) {
+        setUser(JSON.parse(savedUser))
+      } else {
+        setUser(mockUsers.consumer)
+        localStorage.setItem("mock-auth-user", JSON.stringify(mockUsers.consumer))
       }
     }
+    setIsLoading(false)
   }, [enableMockMode])
 
   const signIn = async (email: string, password: string) => {
-    // Mock sign in - always succeeds for testing
-    setIsAuthenticated(true)
-    setUser(mockUser)
-    if (enableMockMode) {
-      localStorage.setItem("mock-auth-state", "authenticated")
-    }
+    setIsLoading(true)
+    // Mock sign in - find user by email or default to consumer
+    const user = Object.values(mockUsers).find(u => u.email === email) || mockUsers.consumer
+    setUser(user)
+    localStorage.setItem("mock-auth-user", JSON.stringify(user))
+    setIsLoading(false)
   }
 
-  const signOut = () => {
-    setIsAuthenticated(false)
+  const signOut = async () => {
     setUser(null)
-    if (enableMockMode) {
-      localStorage.removeItem("mock-auth-state")
-    }
+    localStorage.removeItem("mock-auth-user")
   }
 
-  const toggleAuthMode = () => {
-    if (isAuthenticated) {
-      signOut()
-    } else {
-      signIn("", "") // Auto sign in for testing
-    }
-  }
-
-  const updateUser = (updatedUser: MockUser) => {
-    setUser(updatedUser)
-    if (enableMockMode) {
-      localStorage.setItem("mock-user-data", JSON.stringify(updatedUser))
-    }
-  }
-
-  const value = {
-    isAuthenticated,
-    user,
-    signIn,
-    signOut,
-    toggleAuthMode,
-    updateUser
+  const switchRole = (role: "consumer" | "vendor" | "admin") => {
+    const newUser = mockUsers[role]
+    setUser(newUser)
+    localStorage.setItem("mock-auth-user", JSON.stringify(newUser))
   }
 
   if (!enableMockMode) {
@@ -102,7 +89,7 @@ export function MockAuthProvider({ children, enableMockMode = true }: MockAuthPr
   }
 
   return (
-    <MockAuthContext.Provider value={value}>
+    <MockAuthContext.Provider value={{ user, isLoading, signIn, signOut, switchRole }}>
       {children}
     </MockAuthContext.Provider>
   )
@@ -116,25 +103,13 @@ export function useMockAuth() {
   return context
 }
 
-// Hook that combines NextAuth session with mock auth for testing
 export function useAuthSession() {
-  const mockAuth = useContext(MockAuthContext)
-  
-  // If mock mode is enabled, return mock session
-  if (mockAuth) {
-    return {
-      data: mockAuth.isAuthenticated ? {
-        user: mockAuth.user,
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
-      } : null,
-      status: "authenticated" as const
-    }
-  }
-
-  // Fallback to NextAuth - you would import and use useSession here
-  // For now, return null to indicate no session
+  const mockAuth = useMockAuth()
   return {
-    data: null,
-    status: "unauthenticated" as const
+    data: mockAuth.user ? {
+      user: mockAuth.user,
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    } : null,
+    status: mockAuth.isLoading ? "loading" : mockAuth.user ? "authenticated" : "unauthenticated"
   }
 } 

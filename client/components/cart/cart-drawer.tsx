@@ -81,48 +81,48 @@ export function CartDrawer() {
                     </Button>
                   </div>
 
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeItem(item.id)}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </motion.div>
-              ))
-            ) : (
-              <motion.div
-                key="empty-cart"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center h-full space-y-4"
-              >
-                <ShoppingBag className="h-16 w-16 text-muted-foreground" />
-                <p className="text-muted-foreground">Your cart is empty</p>
-                <Button asChild onClick={() => setIsOpen(false)}>
-                  <Link href="/shop">Start Shopping</Link>
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeItem(item.id)}>
+                <X className="h-3 w-3" />
+              </Button>
+            </motion.div>
+          ))
+        ) : (
+          <motion.div
+            key="empty-cart"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center h-full space-y-4"
+          >
+            <ShoppingBag className="h-16 w-16 text-muted-foreground" />
+            <p className="text-muted-foreground">Your cart is empty</p>
+            <Button asChild onClick={() => setIsOpen(false)}>
+              <Link href="/search">Start Shopping</Link>
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+
+    {items.length > 0 && (
+      <div className="space-y-4 pt-4 border-t">
+        <div className="flex items-center justify-between text-lg font-semibold">
+          <span>Total</span>
+          <span>{formatPrice(total)}</span>
         </div>
 
-        {items.length > 0 && (
-          <div className="space-y-4 pt-4 border-t">
-            <div className="flex items-center justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>{formatPrice(total)}</span>
-            </div>
+        <div className="space-y-2">
+          <Button className="w-full" size="lg" asChild>
+            <Link href="/checkout" onClick={() => setIsOpen(false)}>
+              Proceed to Checkout
+            </Link>
+          </Button>
 
-            <div className="space-y-2">
-              <Button className="w-full" size="lg" asChild>
-                <Link href="/checkout" onClick={() => setIsOpen(false)}>
-                  Checkout
-                </Link>
-              </Button>
-
-              <Button variant="outline" className="w-full" asChild>
-                <Link href="/cart" onClick={() => setIsOpen(false)}>
-                  View Cart
-                </Link>
-              </Button>
-            </div>
+          <Button variant="outline" className="w-full" asChild>
+            <Link href="/search" onClick={() => setIsOpen(false)}>
+              Continue Shopping
+            </Link>
+          </Button>
+        </div>
           </div>
         )}
       </SheetContent>

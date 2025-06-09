@@ -193,8 +193,8 @@ export default function CategoriesPage() {
                     />
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
                     <div className="absolute top-4 left-4">
-                      <div className="p-2 rounded-full bg-white/90 backdrop-blur-sm">
-                        <IconComponent className="h-5 w-5 text-primary" />
+                      <div className="p-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm">
+                        <IconComponent className="h-5 w-5 text-primary dark:text-white" />
                       </div>
                     </div>
                   </div>

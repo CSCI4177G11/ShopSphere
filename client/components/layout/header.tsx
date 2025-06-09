@@ -30,6 +30,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SearchModal } from "@/components/search/search-modal";
+import { UserNotificationPanel } from "@/components/notifications/user-notification-panel";
 import { useCart } from "@/hooks/use-cart";
 import { useMounted } from "@/hooks/use-mounted";
 import { cn } from "@/lib/utils";
@@ -170,6 +171,17 @@ export function Header() {
 
                 {/* Enhanced Action Buttons */}
                 <div className="flex items-center gap-1">
+                  {/* User Notifications - Only for regular users */}
+                  {session && session.user?.role === "consumer" && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5, delay: 0.45 }}
+                    >
+                      <UserNotificationPanel />
+                    </motion.div>
+                  )}
+
                   {/* Enhanced Cart Button */}
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}

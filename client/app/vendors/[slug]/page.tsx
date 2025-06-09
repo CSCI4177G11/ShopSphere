@@ -2,298 +2,169 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { motion } from "framer-motion"
-import { Star, MapPin, Package, Users, Filter, Grid, List } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Star, 
+  MapPin, 
+  Store, 
+  Package, 
+  Heart, 
+  Share2, 
+  MessageCircle,
+  Shield,
+  Phone,
+  Mail,
+  ExternalLink,
+  Clock,
+  Calendar,
+  Truck,
+  RotateCcw,
+  Search,
+  Filter,
+  Grid,
+  List,
+  ChevronRight,
+  TrendingUp,
+  Award,
+  Users,
+  Zap
+} from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
 import { ProductCard } from "@/components/product/product-card"
-import Image from "next/image"
-import { formatPrice } from "@/lib/utils"
-import type { Product } from "@/types/product"
+import { toast } from "sonner"
 
-// Mock vendor data
-const mockVendors: { [key: string]: any } = {
+interface Product {
+  id: string
+  name: string
+  price: number
+  originalPrice?: number
+  images: { url: string }[]
+  rating: number
+  reviewCount: number
+  category: string
+  vendor: {
+    id: string
+    name: string
+    slug: string
+    verified: boolean
+  }
+  description: string
+  discount?: number
+  createdAt: string
+}
+
+const mockVendors: Record<string, any> = {
   "techhub-electronics": {
-    id: "1",
+    id: "techhub-electronics",
     name: "TechHub Electronics",
     slug: "techhub-electronics",
-    description: "Your one-stop destination for the latest electronics and gadgets. Authorized dealer for major brands with over 10 years of experience in the tech industry.",
-    logo: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=100&h=100&fit=crop",
+    logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200&h=200&fit=crop&crop=center",
     banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
-    rating: 4.9,
-    reviewCount: 2847,
-    productCount: 1234,
+    category: "Electronics",
+    description: "Leading provider of cutting-edge electronics and innovative tech solutions for modern consumers.",
+    about: "TechHub Electronics has been at the forefront of technological innovation for over a decade. We specialize in bringing the latest and greatest electronic devices to tech enthusiasts worldwide. Our commitment to quality, innovation, and customer satisfaction has made us a trusted name in the industry. From smartphones and laptops to smart home devices and gaming equipment, we offer a comprehensive range of products that cater to every tech need.",
+    rating: 4.8,
+    reviewCount: 12847,
+    productCount: 2847,
     location: "San Francisco, CA",
+    founded: "2012",
     verified: true,
-    category: "Electronics",
-    founded: "2014",
+    email: "contact@techhub-electronics.com",
+    phone: "+1 (555) 123-4567",
+    website: "https://techhub-electronics.com",
     responseTime: "Within 2 hours",
     shippingPolicy: "Free shipping on orders over $50",
-    returnPolicy: "30-day hassle-free returns"
-  },
-  "fashion-forward": {
-    id: "2",
-    name: "Fashion Forward",
-    slug: "fashion-forward",
-    description: "Trendy and affordable fashion for all ages. Sustainable clothing from ethical manufacturers.",
-    logo: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1200&h=400&fit=crop",
-    rating: 4.7,
-    reviewCount: 1892,
-    productCount: 856,
-    location: "New York, NY",
-    verified: true,
-    category: "Fashion",
-    founded: "2015",
-    responseTime: "Within 4 hours",
-    shippingPolicy: "Free shipping on orders over $75",
-    returnPolicy: "45-day return policy"
-  },
-  "home-living-co": {
-    id: "3",
-    name: "Home & Living Co",
-    slug: "home-living-co",
-    description: "Transform your space with our curated collection of home decor and furniture.",
-    logo: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&h=400&fit=crop",
-    rating: 4.8,
-    reviewCount: 1456,
-    productCount: 967,
-    location: "Austin, TX",
-    verified: true,
-    category: "Home & Garden",
-    founded: "2016",
-    responseTime: "Within 6 hours",
-    shippingPolicy: "Free shipping on orders over $100",
-    returnPolicy: "30-day return policy"
-  },
-  "techstore": {
-    id: "4",
-    name: "TechStore",
-    slug: "techstore",
-    description: "Premium electronics and gadgets from the latest brands. Specializing in high-quality tech products with warranty.",
-    logo: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop",
-    rating: 4.8,
-    reviewCount: 124,
-    productCount: 89,
-    location: "San Francisco, CA",
-    verified: true,
-    category: "Electronics",
-    founded: "2023",
-    responseTime: "Within 2 hours",
-    shippingPolicy: "Free shipping on orders over $50",
-    returnPolicy: "30-day return policy"
-  },
-  "fittech": {
-    id: "5",
-    name: "FitTech",
-    slug: "fittech",
-    description: "Your fitness technology partner. From smartwatches to fitness trackers, we help you stay healthy and connected.",
-    logo: "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=1200&h=400&fit=crop",
-    rating: 4.6,
-    reviewCount: 89,
-    productCount: 45,
-    location: "Austin, TX",
-    verified: true,
-    category: "Fitness",
-    founded: "2023",
-    responseTime: "Within 4 hours",
-    shippingPolicy: "Free shipping on orders over $50",
-    returnPolicy: "30-day return policy"
-  },
-  "coffeeroasters": {
-    id: "6",
-    name: "CoffeeRoasters",
-    slug: "coffeeroasters",
-    description: "Artisan coffee roasted to perfection. Sourced directly from sustainable farms around the world.",
-    logo: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=1200&h=400&fit=crop",
-    rating: 4.9,
-    reviewCount: 156,
-    productCount: 23,
-    location: "Seattle, WA",
-    verified: true,
-    category: "Coffee",
-    founded: "2023",
-    responseTime: "Within 8 hours",
-    shippingPolicy: "Free shipping on orders over $30",
-    returnPolicy: "14-day return policy"
-  },
-  "naturalbeauty": {
-    id: "7",
-    name: "NaturalBeauty",
-    slug: "naturalbeauty",
-    description: "Clean, natural beauty products that are good for you and the environment. Cruelty-free and organic ingredients.",
-    logo: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=1200&h=400&fit=crop",
-    rating: 4.7,
-    reviewCount: 67,
-    productCount: 78,
-    location: "Los Angeles, CA",
-    verified: true,
-    category: "Beauty",
-    founded: "2023",
-    responseTime: "Within 6 hours",
-    shippingPolicy: "Free shipping on orders over $40",
-    returnPolicy: "30-day return policy"
-  },
-  "gamegear": {
-    id: "8",
-    name: "GameGear",
-    slug: "gamegear",
-    description: "Professional gaming equipment for serious players. Keyboards, mice, headsets, and accessories for competitive gaming.",
-    logo: "https://images.unsplash.com/photo-1606229365485-93a3b8ee0385?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1606229365485-93a3b8ee0385?w=1200&h=400&fit=crop",
-    rating: 4.5,
-    reviewCount: 203,
-    productCount: 156,
-    location: "New York, NY",
-    verified: true,
-    category: "Gaming",
-    founded: "2023",
-    responseTime: "Within 2 hours",
-    shippingPolicy: "Free shipping on orders over $60",
-    returnPolicy: "30-day return policy"
-  },
-  "zenlife": {
-    id: "9",
-    name: "ZenLife",
-    slug: "zenlife",
-    description: "Wellness and mindfulness products for a balanced lifestyle. Yoga mats, meditation accessories, and wellness tools.",
-    logo: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200&h=400&fit=crop",
-    rating: 4.6,
-    reviewCount: 98,
-    productCount: 34,
-    location: "Portland, OR",
-    verified: true,
-    category: "Wellness",
-    founded: "2023",
-    responseTime: "Within 8 hours",
-    shippingPolicy: "Free shipping on orders over $50",
-    returnPolicy: "30-day return policy"
-  },
-  "kitchenpro": {
-    id: "10",
-    name: "KitchenPro",
-    slug: "kitchenpro",
-    description: "Professional kitchen tools and equipment for home chefs. High-quality knives, cookware, and kitchen essentials.",
-    logo: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&h=400&fit=crop",
-    rating: 4.8,
-    reviewCount: 145,
-    productCount: 67,
-    location: "Chicago, IL",
-    verified: true,
-    category: "Kitchen",
-    founded: "2023",
-    responseTime: "Within 4 hours",
-    shippingPolicy: "Free shipping on orders over $75",
-    returnPolicy: "30-day return policy"
-  },
-  "chargetech": {
-    id: "11",
-    name: "ChargeTech",
-    slug: "chargetech",
-    description: "Charging solutions for all your devices. Wireless chargers, power banks, and charging accessories.",
-    logo: "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=100&h=100&fit=crop",
-    banner: "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=1200&h=400&fit=crop",
-    rating: 4.4,
-    reviewCount: 87,
-    productCount: 29,
-    location: "Miami, FL",
-    verified: true,
-    category: "Electronics",
-    founded: "2023",
-    responseTime: "Within 6 hours",
-    shippingPolicy: "Free shipping on orders over $35",
-    returnPolicy: "30-day return policy"
+    returnPolicy: "30-day hassle-free returns",
+    achievements: [
+      {
+        icon: Award,
+        title: "Best Tech Retailer 2023",
+        description: "Awarded by Tech Industry Awards"
+      },
+      {
+        icon: Users,
+        title: "1M+ Happy Customers",
+        description: "Serving customers worldwide"
+      },
+      {
+        icon: Zap,
+        title: "Lightning Fast Shipping",
+        description: "Same-day delivery available"
+      }
+    ],
+    stats: {
+      ordersShipped: "250K+",
+      customerSatisfaction: "98.5%",
+      responseTime: "< 2h",
+      returnRate: "< 1%"
+    }
   }
 }
 
-// Mock products for the shop
 const mockShopProducts: Product[] = [
   {
     id: "1",
-    name: "Wireless Bluetooth Headphones",
-    description: "Premium noise-cancelling headphones with 30-hour battery life",
-    price: 149.99,
-    originalPrice: 199.99,
-    images: [{ id: "1", url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop", alt: "Headphones", order: 0 }],
-    category: { id: "1", name: "Electronics", slug: "electronics" },
-    vendor: { id: "vendor-1", name: "TechHub Electronics", slug: "techhub-electronics", rating: 4.9, reviewCount: 2847, verified: true, joinedAt: "2024-01-01" },
-    rating: 4.8,
-    reviewCount: 245,
-    stock: 50,
-    sku: "WBH-001",
-    tags: ["wireless", "bluetooth", "headphones"],
-    specifications: { "Brand": "TechHub", "Battery": "30 hours" },
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-01",
-    discount: 25,
+    name: "iPhone 15 Pro Max",
+    price: 1199,
+    originalPrice: 1299,
+    images: [{ url: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&h=400&fit=crop" }],
+    rating: 4.9,
+    reviewCount: 2847,
+    category: "Smartphones",
+    vendor: {
+      id: "techhub-electronics",
+      name: "TechHub Electronics",
+      slug: "techhub-electronics",
+      verified: true
+    },
+    description: "The latest iPhone with titanium design and advanced camera system.",
+    discount: 8,
+    createdAt: "2024-01-15T00:00:00Z"
   },
   {
     id: "2",
-    name: "Smart Fitness Watch",
-    description: "Track your health and fitness with this advanced smartwatch",
-    price: 299.99,
-    originalPrice: 399.99,
-    images: [{ id: "2", url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop", alt: "Smart Watch", order: 0 }],
-    category: { id: "1", name: "Electronics", slug: "electronics" },
-    vendor: { id: "vendor-1", name: "TechHub Electronics", slug: "techhub-electronics", rating: 4.9, reviewCount: 2847, verified: true, joinedAt: "2024-01-01" },
-    rating: 4.7,
-    reviewCount: 189,
-    stock: 30,
-    sku: "SFW-001",
-    tags: ["smartwatch", "fitness", "health"],
-    specifications: { "Brand": "TechHub", "Display": "AMOLED" },
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-01",
-    discount: 25,
+    name: "MacBook Pro 16-inch",
+    price: 2499,
+    originalPrice: 2699,
+    images: [{ url: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=400&fit=crop" }],
+    rating: 4.8,
+    reviewCount: 1923,
+    category: "Laptops",
+    vendor: {
+      id: "techhub-electronics",
+      name: "TechHub Electronics",
+      slug: "techhub-electronics",
+      verified: true
+    },
+    description: "Powerful laptop with M3 Max chip for professional workflows.",
+    discount: 7,
+    createdAt: "2024-01-10T00:00:00Z"
   },
   {
     id: "3",
-    name: "USB-C Fast Charger",
-    description: "65W fast charging adapter with multiple ports",
-    price: 39.99,
-    originalPrice: 59.99,
-    images: [{ id: "3", url: "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=400&fit=crop", alt: "USB-C Charger", order: 0 }],
-    category: { id: "1", name: "Electronics", slug: "electronics" },
-    vendor: { id: "vendor-1", name: "TechHub Electronics", slug: "techhub-electronics", rating: 4.9, reviewCount: 2847, verified: true, joinedAt: "2024-01-01" },
-    rating: 4.9,
-    reviewCount: 412,
-    stock: 100,
-    sku: "UCC-001",
-    tags: ["charger", "usb-c", "fast-charging"],
-    specifications: { "Brand": "TechHub", "Power": "65W" },
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-01",
-    discount: 33,
-  },
-  {
-    id: "4",
-    name: "Wireless Phone Stand",
-    description: "Adjustable wireless charging stand for smartphones",
-    price: 49.99,
-    originalPrice: 69.99,
-    images: [{ id: "4", url: "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400&h=400&fit=crop", alt: "Phone Stand", order: 0 }],
-    category: { id: "1", name: "Electronics", slug: "electronics" },
-    vendor: { id: "vendor-1", name: "TechHub Electronics", slug: "techhub-electronics", rating: 4.9, reviewCount: 2847, verified: true, joinedAt: "2024-01-01" },
-    rating: 4.6,
-    reviewCount: 156,
-    stock: 75,
-    sku: "WPS-001",
-    tags: ["wireless", "charging", "stand"],
-    specifications: { "Brand": "TechHub", "Compatibility": "Universal" },
-    createdAt: "2024-01-01",
-    updatedAt: "2024-01-01",
-    discount: 29,
+    name: "Sony WH-1000XM5",
+    price: 399,
+    originalPrice: 449,
+    images: [{ url: "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400&h=400&fit=crop" }],
+    rating: 4.7,
+    reviewCount: 5672,
+    category: "Audio",
+    vendor: {
+      id: "techhub-electronics",
+      name: "TechHub Electronics",
+      slug: "techhub-electronics",
+      verified: true
+    },
+    description: "Industry-leading noise canceling wireless headphones.",
+    discount: 11,
+    createdAt: "2024-01-08T00:00:00Z"
   }
 ]
 
@@ -307,11 +178,11 @@ export default function VendorDetailPage() {
   const [sortBy, setSortBy] = useState("popular")
   const [priceRange, setPriceRange] = useState("all")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [isFollowing, setIsFollowing] = useState(false)
 
   const slug = params.slug as string
 
   useEffect(() => {
-    // Mock API call
     setTimeout(() => {
       const foundVendor = mockVendors[slug]
       setVendor(foundVendor || null)
@@ -324,7 +195,6 @@ export default function VendorDetailPage() {
   useEffect(() => {
     let filtered = [...products]
 
-    // Search filter
     if (searchQuery) {
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -332,7 +202,6 @@ export default function VendorDetailPage() {
       )
     }
 
-    // Price filter
     if (priceRange !== "all") {
       const [min, max] = priceRange.split("-").map(Number)
       filtered = filtered.filter(product => {
@@ -344,7 +213,6 @@ export default function VendorDetailPage() {
       })
     }
 
-    // Sort
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => a.price - b.price)
@@ -358,229 +226,546 @@ export default function VendorDetailPage() {
       case "newest":
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         break
-      default: // popular
+      default:
         filtered.sort((a, b) => b.reviewCount - a.reviewCount)
     }
 
     setFilteredProducts(filtered)
   }, [products, searchQuery, sortBy, priceRange])
 
+  const handleFollow = () => {
+    setIsFollowing(!isFollowing)
+    toast.success(isFollowing ? "Unfollowed shop" : "Following shop", {
+      description: isFollowing ? "You will no longer receive updates" : "You'll get notified about new products"
+    })
+  }
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href)
+    toast.success("Link copied to clipboard")
+  }
+
+  const handleContact = () => {
+    toast.info("Contact feature coming soon!")
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-64 bg-muted rounded-lg"></div>
-          <div className="h-32 bg-muted rounded-lg"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-80 bg-muted rounded-lg"></div>
-            ))}
+        <motion.div 
+          className="animate-pulse space-y-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="h-80 bg-muted rounded-2xl"></div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="h-48 bg-muted rounded-xl"></div>
+              <div className="h-32 bg-muted rounded-xl"></div>
+            </div>
+            <div className="space-y-6">
+              <div className="h-64 bg-muted rounded-xl"></div>
+              <div className="h-48 bg-muted rounded-xl"></div>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
 
   if (!vendor) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
+      <div className="container mx-auto px-4 py-16">
+        <motion.div 
+          className="text-center max-w-md mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Store className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
           <h1 className="text-2xl font-bold mb-4">Shop Not Found</h1>
-          <p className="text-muted-foreground">The shop you're looking for doesn't exist.</p>
-        </div>
+          <p className="text-muted-foreground mb-6">The shop you are looking for does not exist or has been moved.</p>
+          <Button asChild>
+            <Link href="/vendors">Browse All Shops</Link>
+          </Button>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Shop Banner */}
-      <div className="relative h-64 md:h-80 overflow-hidden">
-        <Image
-          src={vendor.banner}
-          alt={`${vendor.name} banner`}
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        {/* Shop Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-end gap-6">
-              {/* Shop Logo */}
-              <div className="relative h-20 w-20 md:h-24 md:w-24 rounded-xl overflow-hidden border-4 border-white shadow-lg bg-white flex-shrink-0">
-                <Image
-                  src={vendor.logo}
-                  alt={`${vendor.name} logo`}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              
-              {/* Shop Details */}
-              <div className="text-white space-y-2 flex-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl md:text-4xl font-bold">{vendor.name}</h1>
-                  {vendor.verified && (
-                    <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-0">
-                      ✓ Verified
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-4 text-sm md:text-base">
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{vendor.rating}</span>
-                    <span className="opacity-80">({vendor.reviewCount.toLocaleString()} reviews)</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-80">
-                    <MapPin className="h-4 w-4" />
-                    <span>{vendor.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-80">
-                    <Package className="h-4 w-4" />
-                    <span>{vendor.productCount} products</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+      <div className="relative h-80 md:h-96 overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src={vendor.banner}
+            alt={`${vendor.name} banner`}
+            fill
+            className="object-cover"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-black/30" />
         </div>
+        
+        <motion.div 
+          className="absolute bottom-8 left-8 right-8"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="max-w-7xl mx-auto">
+            <Card className="bg-background/95 backdrop-blur-xl border-border/50 shadow-2xl">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                  <div className="flex items-center gap-6">
+                    <motion.div 
+                      className="relative h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden bg-white shadow-xl flex-shrink-0 border-4 border-white"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Image
+                        src={vendor.logo}
+                        alt={`${vendor.name} logo`}
+                        fill
+                        className="object-cover"
+                      />
+                    </motion.div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h1 className="text-2xl md:text-3xl font-bold">{vendor.name}</h1>
+                        {vendor.verified && (
+                          <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 shadow-lg">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Verified
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="bg-background/50">
+                          {vendor.category}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="font-semibold">{vendor.rating}</span>
+                          <span className="text-muted-foreground">({vendor.reviewCount.toLocaleString()} reviews)</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-4 w-4" />
+                          <span>{vendor.location}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Package className="h-4 w-4" />
+                          <span>{vendor.productCount} products</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>Since {vendor.founded}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 lg:ml-auto">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={handleContact}
+                        variant="outline"
+                        className="h-11 px-6 rounded-xl border-border/50"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Contact
+                      </Button>
+                    </motion.div>
+                    
+                    <Button
+                      onClick={handleShare}
+                      variant="ghost"
+                      size="icon"
+                      className="h-11 w-11 rounded-xl"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
       </div>
 
-      {/* Shop Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Shop Description & Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <Card>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold mb-4">About {vendor.name}</h2>
-                  <p className="text-muted-foreground leading-relaxed">{vendor.description}</p>
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <motion.div 
+            className="grid grid-cols-1 lg:grid-cols-3 gap-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <div className="lg:col-span-2 space-y-8">
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                      <Store className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">About {vendor.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground">Learn more about our story</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <p className="text-muted-foreground leading-relaxed text-base">
+                    {vendor.about || vendor.description}
+                  </p>
+                  
+                  {vendor.achievements && (
+                    <div className="space-y-4">
+                      <h4 className="font-semibold text-lg">Achievements & Recognition</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {vendor.achievements.map((achievement: any, index: number) => {
+                          const Icon = achievement.icon
+                          return (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ duration: 0.3, delay: index * 0.1 }}
+                            >
+                              <Card className="border-border/50 bg-gradient-to-br from-primary/5 to-accent/5 hover:from-primary/10 hover:to-accent/10 transition-all duration-300">
+                                <CardContent className="p-4 text-center">
+                                  <Icon className="h-8 w-8 mx-auto text-primary mb-2" />
+                                  <h5 className="font-semibold text-sm mb-1">{achievement.title}</h5>
+                                  <p className="text-xs text-muted-foreground">{achievement.description}</p>
+                                </CardContent>
+                              </Card>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {vendor.stats && (
+                <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">Performance Stats</CardTitle>
+                        <p className="text-sm text-muted-foreground">Our track record speaks for itself</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      {Object.entries(vendor.stats).map(([key, value]) => (
+                        <div key={key} className="text-center space-y-2">
+                          <div className="text-2xl font-bold text-primary">{value}</div>
+                          <div className="text-sm text-muted-foreground capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
             
-            <div className="space-y-4">
-              <Card>
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold">Shop Information</h3>
-                  <div className="space-y-3 text-sm">
-                    {vendor.founded && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Founded:</span>
-                        <span>{vendor.founded}</span>
+            <div className="space-y-6">
+              <Card className="border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Shop Information</CardTitle>
+                      <p className="text-sm text-muted-foreground">Policies & contact details</p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    {[
+                      { icon: Calendar, label: "Founded", value: vendor.founded },
+                      { icon: Clock, label: "Response time", value: vendor.responseTime },
+                      { icon: Truck, label: "Shipping", value: vendor.shippingPolicy },
+                      { icon: RotateCcw, label: "Returns", value: vendor.returnPolicy }
+                    ].map((item, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/50 transition-colors duration-200"
+                      >
+                        <item.icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-muted-foreground">{item.label}</div>
+                          <div className="font-semibold text-sm mt-1">{item.value}</div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm">Contact Options</h4>
+                    <div className="space-y-2">
+                      {vendor.email && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start h-auto p-3 text-left hover:bg-accent/50"
+                          asChild
+                        >
+                          <a href={`mailto:${vendor.email}`}>
+                            <Mail className="h-4 w-4 mr-3 text-primary" />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium">Email</div>
+                              <div className="text-xs text-muted-foreground">{vendor.email}</div>
+                            </div>
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </a>
+                        </Button>
+                      )}
+                      
+                      {vendor.phone && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start h-auto p-3 text-left hover:bg-accent/50"
+                          asChild
+                        >
+                          <a href={`tel:${vendor.phone}`}>
+                            <Phone className="h-4 w-4 mr-3 text-primary" />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium">Phone</div>
+                              <div className="text-xs text-muted-foreground">{vendor.phone}</div>
+                            </div>
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </a>
+                        </Button>
+                      )}
+                      
+                      {vendor.website && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start h-auto p-3 text-left hover:bg-accent/50"
+                          asChild
+                        >
+                          <a href={vendor.website} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-3 text-primary" />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium">Website</div>
+                              <div className="text-xs text-muted-foreground">Visit our official site</div>
+                            </div>
+                            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50 bg-gradient-to-br from-emerald-50 to-blue-50 dark:from-emerald-950/20 dark:to-blue-950/20">
+                <CardContent className="p-6 text-center">
+                  <div className="space-y-4">
+                    <div className="h-12 w-12 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                      <Shield className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-emerald-800 dark:text-emerald-200">Trusted Seller</h4>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-300 mt-1">
+                        Verified by ShopSphere with excellent track record
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <div className="font-semibold">99.8%</div>
+                        <div className="text-muted-foreground">Positive feedback</div>
                       </div>
-                    )}
-                    {vendor.responseTime && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Response time:</span>
-                        <span>{vendor.responseTime}</span>
+                      <div>
+                        <div className="font-semibold">&lt; 1%</div>
+                        <div className="text-muted-foreground">Return rate</div>
                       </div>
-                    )}
-                    {vendor.shippingPolicy && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Shipping:</span>
-                        <span className="text-right">{vendor.shippingPolicy}</span>
-                      </div>
-                    )}
-                    {vendor.returnPolicy && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Returns:</span>
-                        <span className="text-right">{vendor.returnPolicy}</span>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Products Section */}
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h2 className="text-2xl font-bold">Products ({filteredProducts.length})</h2>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="sm:col-span-2"
-              />
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="popular">Most Popular</SelectItem>
-                  <SelectItem value="newest">Newest</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={priceRange} onValueChange={setPriceRange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Price range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Prices</SelectItem>
-                  <SelectItem value="0-50">Under $50</SelectItem>
-                  <SelectItem value="50-100">$50 - $100</SelectItem>
-                  <SelectItem value="100-200">$100 - $200</SelectItem>
-                  <SelectItem value="200">$200+</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Products Grid */}
-            <div className={
-              viewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                : "space-y-4"
-            }>
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} viewMode={viewMode} />
-              ))}
-            </div>
-
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-12">
-                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No products found</h3>
+          <motion.div 
+            className="space-y-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold flex items-center gap-3">
+                  <Package className="h-8 w-8 text-primary" />
+                  Products ({filteredProducts.length})
+                </h2>
                 <p className="text-muted-foreground">
-                  Try adjusting your search or filter criteria.
+                  Discover our carefully curated collection of premium products
                 </p>
               </div>
-            )}
-          </div>
+              
+              <div className="flex items-center gap-2">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setViewMode("grid")}
+                    className="h-11 w-11 rounded-xl"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant={viewMode === "list" ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => setViewMode("list")}
+                    className="h-11 w-11 rounded-xl"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
+
+            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-5">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 h-11 rounded-xl border-border/50 focus:border-primary/50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="md:col-span-3">
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="h-11 rounded-xl border-border/50">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="popular">Most Popular</SelectItem>
+                        <SelectItem value="newest">Newest</SelectItem>
+                        <SelectItem value="price-low">Price: Low to High</SelectItem>
+                        <SelectItem value="price-high">Price: High to Low</SelectItem>
+                        <SelectItem value="rating">Highest Rated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <Select value={priceRange} onValueChange={setPriceRange}>
+                      <SelectTrigger className="h-11 rounded-xl border-border/50">
+                        <SelectValue placeholder="Price range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Prices</SelectItem>
+                        <SelectItem value="0-50">Under $50</SelectItem>
+                        <SelectItem value="50-100">$50 - $100</SelectItem>
+                        <SelectItem value="100-200">$100 - $200</SelectItem>
+                        <SelectItem value="200">$200+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="md:col-span-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-11 w-11 rounded-xl border-border/50"
+                      onClick={() => {
+                        setSearchQuery("")
+                        setSortBy("popular")
+                        setPriceRange("all")
+                      }}
+                    >
+                      <Filter className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <AnimatePresence mode="wait">
+              {filteredProducts.length > 0 ? (
+                <motion.div
+                  key="products"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={
+                    viewMode === "grid"
+                      ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      : "space-y-4"
+                  }
+                >
+                  {filteredProducts.map((product, index) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <ProductCard product={product} viewMode={viewMode} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="no-products"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+                    <CardContent className="py-16 text-center">
+                      <Package className="h-16 w-16 mx-auto text-muted-foreground mb-6" />
+                      <h3 className="text-xl font-semibold mb-2">No products found</h3>
+                      <p className="text-muted-foreground mb-6">
+                        Try adjusting your search or filter criteria to find what you are looking for.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setSearchQuery("")
+                          setSortBy("popular")
+                          setPriceRange("all")
+                        }}
+                        className="rounded-xl"
+                      >
+                        Clear Filters
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </div>
       </div>
     </div>
   )
-} 
+}

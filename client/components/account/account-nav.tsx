@@ -2,19 +2,29 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { User, Package, MapPin, CreditCard, Settings } from "lucide-react"
+import { LayoutDashboard, User, Package, MapPin, CreditCard, Settings, Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
   {
-    title: "Profile",
+    title: "Dashboard",
     href: "/account",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Profile",
+    href: "/account/profile",
     icon: User,
   },
   {
     title: "Orders",
     href: "/account/orders",
     icon: Package,
+  },
+  {
+    title: "Reviews",
+    href: "/account/reviews",
+    icon: Star,
   },
   {
     title: "Addresses",

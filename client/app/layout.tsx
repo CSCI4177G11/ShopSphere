@@ -7,8 +7,7 @@ import { AuthProvider } from "@/components/auth-provider"
 import { MockAuthProvider } from "@/components/mock-auth-provider"
 import { MSWProvider } from "@/components/msw-provider"
 import { Toaster } from "@/components/ui/sonner"
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
+import { ConditionalLayout } from "@/components/layout/conditional-layout"
 import { CartDrawer } from "@/components/cart/cart-drawer"
 import "./globals.css"
 
@@ -33,19 +32,13 @@ export default function RootLayout({
             <MockAuthProvider enableMockMode={true}>
               <AuthProvider>
                 <QueryProvider>
-                <div className="min-h-screen bg-background flex flex-col">
-                  <Header />
-                  <main className="flex-1 w-full">
-                    <div className="w-full max-w-none mx-auto">
-                      {children}
-                    </div>
-                  </main>
-                  <Footer />
-                </div>
-                <CartDrawer />
-                <Toaster />
-              </QueryProvider>
-            </AuthProvider>
+                  <ConditionalLayout>
+                    {children}
+                  </ConditionalLayout>
+                  <CartDrawer />
+                  <Toaster />
+                </QueryProvider>
+              </AuthProvider>
             </MockAuthProvider>
           </ThemeProvider>
         </MSWProvider>

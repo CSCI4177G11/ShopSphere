@@ -1,264 +1,183 @@
 "use client"
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from "react"
-// import { useQuery } from "@tanstack/react-query"
 import { motion } from "framer-motion"
-import { Plus, Edit, Trash2, Check } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { AddressForm } from "@/components/account/address-form"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
-import { TableSkeleton } from "@/components/ui/skeletons"
-import { toast } from "sonner"
-// import { userService } from "@/lib/api/user-service"
-import type { Address } from "@/types/user"
+import { Badge } from "@/components/ui/badge"
+import { ArrowLeft, MapPin, Plus, Edit, Trash2, Home, Building } from "lucide-react"
+import Link from "next/link"
 
-// Mock data for addresses
-const mockAddresses: Address[] = [
+const mockAddresses = [
   {
-    id: "addr-1",
+    id: "1",
+    type: "Home",
     name: "John Doe",
-    phone: "+1 (555) 123-4567",
-    addressLine1: "123 Main Street",
-    addressLine2: "Apt 4B",
-    city: "New York",
-    state: "NY",
-    postalCode: "10001",
+    street: "123 Main Street",
+    city: "San Francisco",
+    state: "CA",
+    zipCode: "94105",
     country: "United States",
     isDefault: true
   },
   {
-    id: "addr-2",
+    id: "2",
+    type: "Work",
     name: "John Doe",
-    phone: "+1 (555) 123-4567",
-    addressLine1: "456 Work Plaza",
-    addressLine2: "Suite 200",
+    street: "456 Business Ave",
     city: "San Francisco",
-    state: "CA",
-    postalCode: "94102",
+    state: "CA", 
+    zipCode: "94107",
     country: "United States",
     isDefault: false
   }
 ]
 
-export default function AccountAddressesPage() {
-  const [isAddingAddress, setIsAddingAddress] = useState(false)
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null)
-  const [addressToDelete, setAddressToDelete] = useState<string | null>(null)
-  const [addresses, setAddresses] = useState<Address[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Mock API call to load addresses
-  useEffect(() => {
-    setTimeout(() => {
-      setAddresses(mockAddresses)
-      setIsLoading(false)
-    }, 500)
-  }, [])
-
-  /* Original API call (commented out for mock)
-  const {
-    data: addresses,
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["user-addresses"],
-    queryFn: () => userService.getUserAddresses(),
-  })
-  */
-
-  const handleAddAddress = async (address: Omit<Address, "id">) => {
-    try {
-      // Mock API call
-      const newAddress: Address = {
-        ...address,
-        id: `addr-${Date.now()}`,
-        isDefault: addresses.length === 0 // First address is default
-      }
-      
-      setTimeout(() => {
-        setAddresses(prev => [...prev, newAddress])
-        toast.success("Address added successfully")
-        setIsAddingAddress(false)
-      }, 500)
-      
-      /* Original API call (commented out for mock)
-      await userService.addAddress(address)
-      toast.success("Address added successfully")
-      setIsAddingAddress(false)
-      refetch()
-      */
-    } catch (error: any) {
-      toast.error(error.message || "Failed to add address")
-    }
-  }
-
-  const handleUpdateAddress = async (id: string, address: Omit<Address, "id">) => {
-    try {
-      // Mock API call
-      setTimeout(() => {
-        setAddresses(prev => 
-          prev.map(addr => 
-            addr.id === id ? { ...address, id, isDefault: addr.isDefault } : addr
-          )
-        )
-        toast.success("Address updated successfully")
-        setEditingAddress(null)
-      }, 500)
-      
-      /* Original API call (commented out for mock)
-      await userService.updateAddress(id, address)
-      toast.success("Address updated successfully")
-      setEditingAddress(null)
-      refetch()
-      */
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update address")
-    }
-  }
-
-  const handleDeleteAddress = async (id: string) => {
-    try {
-      // Mock API call
-      setTimeout(() => {
-        setAddresses(prev => prev.filter(addr => addr.id !== id))
-        toast.success("Address deleted successfully")
-        setAddressToDelete(null)
-      }, 500)
-      
-      /* Original API call (commented out for mock)
-      await userService.deleteAddress(id)
-      toast.success("Address deleted successfully")
-      setAddressToDelete(null)
-      refetch()
-      */
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete address")
-    }
-  }
-
-  const handleSetDefaultAddress = async (id: string) => {
-    try {
-      // Mock API call
-      setTimeout(() => {
-        setAddresses(prev => 
-          prev.map(addr => ({
-            ...addr,
-            isDefault: addr.id === id
-          }))
-        )
-        toast.success("Default address updated")
-      }, 500)
-      
-      /* Original API call (commented out for mock)
-      await userService.setDefaultAddress(id)
-      toast.success("Default address updated")
-      refetch()
-      */
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update default address")
-    }
-  }
-
+export default function AddressesPage() {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/account">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Addresses</h1>
+            <h1 className="text-3xl font-bold tracking-tight">My Addresses</h1>
             <p className="text-muted-foreground">Manage your shipping and billing addresses</p>
           </div>
-          <Button onClick={() => setIsAddingAddress(true)} disabled={isAddingAddress}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Address
-          </Button>
         </div>
+        <Button className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add New Address
+        </Button>
+      </div>
 
-        {isLoading ? (
-          <TableSkeleton rows={2} cols={1} />
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {addresses && addresses.length > 0 ? (
-              addresses.map((address) => (
-                <Card key={address.id} className={address.isDefault ? "border-primary" : ""}>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium">{address.name}</h3>
-                          {address.isDefault && (
-                            <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full">Default</span>
-                          )}
-                        </div>
-                        <p className="text-sm">{address.phone}</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-1 text-sm">
-                      <p>{address.addressLine1}</p>
-                      {address.addressLine2 && <p>{address.addressLine2}</p>}
-                      <p>
-                        {address.city}, {address.state} {address.postalCode}
-                      </p>
-                      <p>{address.country}</p>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between p-4 pt-0">
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setEditingAddress(address)}>
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => setAddressToDelete(address.id)}>
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
-                    {!address.isDefault && (
-                      <Button variant="ghost" size="sm" onClick={() => handleSetDefaultAddress(address.id)}>
-                        <Check className="h-4 w-4 mr-1" />
-                        Set as Default
-                      </Button>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-600">{mockAddresses.length}</div>
+            <div className="text-sm text-muted-foreground">Saved Addresses</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {mockAddresses.filter(a => a.isDefault).length}
+            </div>
+            <div className="text-sm text-muted-foreground">Default Address</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {mockAddresses.filter(a => a.type === 'Home').length}
+            </div>
+            <div className="text-sm text-muted-foreground">Home Addresses</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Addresses List */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {mockAddresses.map((address, index) => (
+          <motion.div
+            key={address.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className="hover:shadow-lg transition-shadow relative">
+              {address.isDefault && (
+                <Badge className="absolute top-4 right-4 bg-green-500 hover:bg-green-600">
+                  Default
+                </Badge>
+              )}
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    address.type === 'Home' 
+                      ? 'bg-blue-100 text-blue-600' 
+                      : 'bg-purple-100 text-purple-600'
+                  }`}>
+                    {address.type === 'Home' ? (
+                      <Home className="h-5 w-5" />
+                    ) : (
+                      <Building className="h-5 w-5" />
                     )}
-                  </CardFooter>
-                </Card>
-              ))
-            ) : (
-              <div className="col-span-2 flex flex-col items-center justify-center p-8 border rounded-lg">
-                <div className="text-center space-y-2">
-                  <h3 className="text-lg font-medium">No addresses found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Add a new address to save your shipping details for faster checkout
+                  </div>
+                  <span>{address.type} Address</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="font-semibold">{address.name}</p>
+                  <p className="text-muted-foreground">{address.street}</p>
+                  <p className="text-muted-foreground">
+                    {address.city}, {address.state} {address.zipCode}
                   </p>
-                  <Button onClick={() => setIsAddingAddress(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Address
+                  <p className="text-muted-foreground">{address.country}</p>
+                </div>
+                
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  {!address.isDefault && (
+                    <Button variant="outline" size="sm">
+                      Set Default
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="text-red-600 hover:bg-red-50">
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+        
+        {/* Add New Address Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: mockAddresses.length * 0.1 }}
+        >
+          <Card className="border-dashed hover:shadow-lg transition-shadow cursor-pointer group">
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="w-16 h-16 bg-gray-100 group-hover:bg-gray-200 rounded-lg flex items-center justify-center mx-auto transition-colors">
+                <Plus className="h-8 w-8 text-gray-400 group-hover:text-gray-600" />
               </div>
-            )}
-          </div>
-        )}
-
-        {isAddingAddress && <AddressForm onSubmit={handleAddAddress} onCancel={() => setIsAddingAddress(false)} />}
-
-        {editingAddress && (
-          <AddressForm
-            address={editingAddress}
-            onSubmit={(data) => handleUpdateAddress(editingAddress.id, data)}
-            onCancel={() => setEditingAddress(null)}
-          />
-        )}
-
-        <ConfirmDialog
-          open={!!addressToDelete}
-          onOpenChange={() => setAddressToDelete(null)}
-          title="Delete Address"
-          description="Are you sure you want to delete this address? This action cannot be undone."
-          onConfirm={() => addressToDelete && handleDeleteAddress(addressToDelete)}
-        />
+              <div>
+                <h3 className="font-semibold mb-2">Add New Address</h3>
+                <p className="text-sm text-muted-foreground">
+                  Add a new shipping or billing address
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </motion.div>
+
+      {/* Empty State */}
+      {mockAddresses.length === 0 && (
+        <Card className="text-center py-12">
+          <CardContent>
+            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No addresses saved</h3>
+            <p className="text-muted-foreground mb-4">
+              Add your first address to make checkout faster and easier.
+            </p>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Address
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
