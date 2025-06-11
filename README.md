@@ -1,30 +1,34 @@
-# 🔐 auth-service API Overview
+# 🔐 **auth‑service API**
 
-This microservice manages user authentication and authorization for the e-commerce platform.
+Centralized authentication & authorization microservice for **ShopSphere**
 
-## 📍 Base URL
+**Base path:** 
 ```
-/auth
+/api/auth
 ```
 
 ---
 
-## 📌 API Endpoints
 
-### 1. POST `/register`
-**Registers a new user.**
+## 1. POST `/register`
 
-**Request Body**
+Registers a new account and immediately returns the freshly created profile.
+
+| Success | Error(s) |
+|---------|----------|
+| **201 Created** | **400 Bad Request** – missing / malformed fields<br>**409 Conflict** – email or username already exists |
+
+### Request Body
 ```json
 {
   "username": "abdullah123",
   "email": "abdullah@example.com",
-  "password": "strongPassword!",
-  "role": "consumer"
+  "password": "StrongPassword!",
+  "role": "consumer"           // "consumer" | "vendor" | "admin"
 }
 ```
 
-**Response: 201 Created**
+### Success Response
 ```json
 {
   "message": "User registered successfully.",
@@ -37,20 +41,34 @@ This microservice manages user authentication and authorization for the e-commer
 }
 ```
 
+### Error Examples
+```json
+// 400 – missing password field
+{ "error": "Password is required." }
+
+// 409 – email taken
+{ "error": "Email already exists." }
+```
+
 ---
 
-### 2. POST `/login`
-**Authenticates the user and returns a JWT token.**
+## 2. POST `/login`
 
-**Request Body**
+Authenticates credentials and returns a signed JWT plus essential profile data.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – malformed body<br>**401 Unauthorized** – bad email/password |
+
+### Request Body
 ```json
 {
   "email": "abdullah@example.com",
-  "password": "strongPassword!"
+  "password": "StrongPassword!"
 }
 ```
 
-**Response: 200 OK**
+### Success Response
 ```json
 {
   "token": "jwt.token.here",
@@ -62,100 +80,105 @@ This microservice manages user authentication and authorization for the e-commer
 }
 ```
 
+### Error Examples
+```json
+// 400 – bad JSON
+{ "error": "Invalid request payload." }
+
+// 401 – wrong credentials
+{ "error": "Email or password is incorrect." }
+```
+
 ---
 
-### 3. GET `/me`
-**Returns the authenticated user's full profile.**
+## 3. POST `/logout`
 
-**Headers**
+Invalidates the supplied JWT (token blacklist / refresh‑token revocation).
+
+| Success | Error(s) |
+|---------|----------|
+| **204 No Content** | **401 Unauthorized** – token missing / expired |
+
+### Headers
 ```
 Authorization: Bearer <token>
 ```
 
-**Response: 200 OK**
+### Error Example
+```json
+{ "error": "Token expired or invalid." }
+```
+
+---
+
+## 4. GET `/me`
+
+Returns the **full** authenticated profile.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** – token missing / invalid |
+
+### Headers
+```
+Authorization: Bearer <token>
+```
+
+### Success Response
 ```json
 {
   "userId": "u123",
   "username": "abdullah123",
   "email": "abdullah@example.com",
-  "role": "consumer"
+  "role": "consumer",
+  "createdAt": "2025‑06‑11T17:32:00Z"
 }
+```
+
+### Error Example
+```json
+{ "error": "Authentication required." }
 ```
 
 ---
 
-### 4. GET `/validate`
-**Validates the JWT token and returns basic identity.**
+## 5. GET `/validate`
 
-**Headers**
+Light‑weight endpoint to **verify** a JWT and fetch minimal identity.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** – token missing / invalid |
+
+### Headers
 ```
 Authorization: Bearer <token>
 ```
 
-**Response: 200 OK**
+### Success Response
 ```json
 {
   "valid": true,
   "userId": "u123",
-  "role": "vendor"
+  "role": "vendor",
+  "exp": 1750000000
 }
 ```
 
----
-
-## 🔐 JWT Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Auth-Service
-    participant Middleware
-
-    Client->>Auth-Service: POST /login (email, password)
-    Auth-Service-->>Client: JWT token + user info
-
-    Client->>Middleware: GET /protected with Authorization: Bearer <token>
-    Middleware->>Middleware: jwt.verify(token, secret)
-    Middleware-->>Client: Grant or deny access
+### Error Example
+```json
+{ "error": "Token expired." }
 ```
 
 ---
 
-## ❌ Error Handling
+## 🛡️ Unified Error Contract
+All error payloads follow:
 
-**Error Format**
 ```json
 {
-  "error": "Error message here"
+  "error": "Human‑readable message."
 }
 ```
 
-**Common Errors**
-
-- `/register`:
-  - `400 Bad Request`: Missing fields
-  - `409 Conflict`: Email exists
-
-- `/login`:
-  - `401 Unauthorized`: Invalid credentials
-
-- `/me` & `/validate`:
-  - `401 Unauthorized`: Missing/invalid/expired token
-
 ---
-
-## ✅ Scope Coverage Summary
-
-✔ Role-Based Access and Permissions:
-- Supports distinct user roles: Consumer, Vendor, Admin
-- Provides JWT tokens for secure session management
-
-✔ Secure Authentication:
-- Handles user registration and login
-- Passwords are stored securely (hashed)
-
-✔ User Identity Management:
-- Stores core identity info (username, fullName, email)
-
-✔ Fields Supported:
-- userId, username, fullName, role, email, password
