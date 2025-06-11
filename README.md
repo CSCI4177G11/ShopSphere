@@ -1,267 +1,166 @@
-# 💳 payment-service API Overview
 
-This service manages secure payment processing through the Stripe API. It supports one-time and reusable payments and coordinates with the order-service upon successful transactions.
+# 💳 **payment‑service API**
 
-## 📍 Base URL
-```
-/payment
-```
+Handles payment transactions and saved payment methods via **Stripe** for **ShopSphere**.
+
+**Base path:** `/api/payment`
 
 ---
 
-## 📌 API Endpoints
+## 1. Consumer Payment Methods
 
-### 1. POST `/create-payment-intent`
-**Create a PaymentIntent in Stripe and return the client secret.**
+### 1.1 POST `/consumer/payment-methods`
+Save a new Stripe PaymentMethod to the authenticated consumer.
 
-📦 **Request Body**
+**Request**
 ```json
 {
-  "consumerId": "u123",
-  "cartItems": [
-    { "productId": "p001", "vendorId": "v101", "quantity": 2 },
-    { "productId": "p002", "vendorId": "v102", "quantity": 1 }
-  ],
-  "totalAmount": 59.97,
-  "currency": "CAD",
-  "paymentMethodId": "pm_123",
-  "useSavedMethod": true,
-  "savePaymentMethod": true
-}
-```
-
-✅ **Response: 200 OK**
-```json
-{
-  "clientSecret": "secret_abc123",
-  "message": "Payment intent created successfully."
-}
-```
-
----
-
-### 2. POST `/confirm-payment`
-**Confirm Stripe payment and trigger order creation.**
-
-📦 **Request Body**
-```json
-{
-  "consumerId": "u123",
-  "paymentId": "pi_abc123",
-  "paymentStatus": "succeeded",
-  "cartItems": [ ... ],
-  "shippingAddress": {
-    "line1": "123 Main St",
-    "city": "Halifax",
-    "postalCode": "B3H 1Y4",
-    "country": "CA"
+  "paymentMethodToken": "pm_123456789",
+  "billingDetails": {
+    "name": "Abdullah Al Salmi",
+    "email": "abdullah@example.com"
   }
 }
 ```
 
-✅ **Response: 201 Created**
+**Success 201**
 ```json
 {
-  "message": "Payment confirmed and orders created."
-}
-```
-
----
-
-### 3. GET `/methods/:consumerId`
-**Fetch saved payment methods for the consumer.**
-
-✅ **Response: 200 OK**
-```json
-[
-  {
-    "paymentMethodId": "pm_abc123",
-    "type": "card",
-    "brand": "visa",
-    "last4": "4242"
-  }
-]
-```
-
----
-
-## ❌ Error Handling
-
-🧱 **Standard Format**
-```json
-{
-  "error": "Error message here"
-}
-```
-
-❌ **Common Errors**
-- 400 Bad Request: Invalid or missing fields
-- 402 Payment Required: Stripe payment failed
-- 404 Not Found: Consumer or payment method not found
-- 500 Internal Server Error: Stripe API failure
-
----
-
-## ✅ Scope Coverage Summary
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant PaymentService
-    participant Stripe
-    participant OrderService
-
-    Client->>PaymentService: POST /create-payment-intent
-    PaymentService->>Stripe: Create PaymentIntent
-    Stripe-->>PaymentService: clientSecret
-    PaymentService-->>Client: Return clientSecret
-
-    Client->>PaymentService: POST /confirm-payment
-    PaymentService->>Stripe: Confirm Payment
-    Stripe-->>PaymentService: PaymentStatus
-    PaymentService->>OrderService: Trigger Order Creation
-    PaymentService-->>Client: Orders Created
-```
-
-📌 **Features Covered**
-# 💳 payment-service API Overview
-
-This service manages secure payment processing through the Stripe API. It supports one-time and reusable payments and coordinates with the order-service upon successful transactions.
-
-## 📍 Base URL
-```
-/payment
-```
-
----
-
-## 📌 API Endpoints
-
-### 1. POST `/create-payment-intent`
-**Create a PaymentIntent in Stripe and return the client secret.**
-
-📦 **Request Body**
-```json
-{
-  "consumerId": "u123",
-  "cartItems": [
-    { "productId": "p001", "vendorId": "v101", "quantity": 2 },
-    { "productId": "p002", "vendorId": "v102", "quantity": 1 }
-  ],
-  "totalAmount": 59.97,
-  "currency": "CAD",
-  "paymentMethodId": "pm_123",
-  "useSavedMethod": true,
-  "savePaymentMethod": true
-}
-```
-
-✅ **Response: 200 OK**
-```json
-{
-  "clientSecret": "secret_abc123",
-  "message": "Payment intent created successfully."
-}
-```
-
----
-
-### 2. POST `/confirm-payment`
-**Confirm Stripe payment and trigger order creation.**
-
-📦 **Request Body**
-```json
-{
-  "consumerId": "u123",
-  "paymentId": "pi_abc123",
-  "paymentStatus": "succeeded",
-  "cartItems": [ ... ],
-  "shippingAddress": {
-    "line1": "123 Main St",
-    "city": "Halifax",
-    "postalCode": "B3H 1Y4",
-    "country": "CA"
+  "message": "Payment method saved successfully.",
+  "paymentMethod": {
+    "paymentMethodId": "pm_123456789",
+    "brand": "Visa",
+    "last4": "4242",
+    "expMonth": 12,
+    "expYear": 2028,
+    "default": false
   }
 }
 ```
 
-✅ **Response: 201 Created**
+**Errors**
+
+| Code | When |
+|------|------|
+| 400  | Missing/invalid token |
+| 401  | No bearer token |
+| 402  | Card declined |
+
+---
+
+### 1.2 GET `/consumer/payment-methods`
+Returns saved methods.
+
+**Success 200**
 ```json
 {
-  "message": "Payment confirmed and orders created."
+  "paymentMethods": [
+    {
+      "paymentMethodId": "pm_123456789",
+      "brand": "Visa",
+      "last4": "4242",
+      "expMonth": 12,
+      "expYear": 2028,
+      "default": true
+    }
+  ]
 }
 ```
 
 ---
 
-### 3. GET `/methods/:consumerId`
-**Fetch saved payment methods for the consumer.**
+### 1.3 PUT `/consumer/payment-methods/:id/default`
+Set method `:id` as default.
 
-✅ **Response: 200 OK**
+**Success 200**
 ```json
-[
-  {
-    "paymentMethodId": "pm_abc123",
-    "type": "card",
-    "brand": "visa",
-    "last4": "4242"
-  }
-]
+{ "message": "Default payment method updated." }
 ```
 
 ---
 
-## ❌ Error Handling
+### 1.4 DELETE `/consumer/payment-methods/:id`
+Delete saved method.
 
-🧱 **Standard Format**
+**Success 204** – No body
+
+---
+
+## 2. Consumer Payments (Checkout)
+
+### 2.1 POST `/consumer/payments`
+Create a Stripe PaymentIntent for checkout.
+
+**Request**
 ```json
 {
-  "error": "Error message here"
+  "amount": 259900,
+  "currency": "usd",
+  "paymentMethodId": "pm_123456789",
+  "orderId": "o987"
 }
 ```
 
-❌ **Common Errors**
-- 400 Bad Request: Invalid or missing fields
-- 402 Payment Required: Stripe payment failed
-- 404 Not Found: Consumer or payment method not found
-- 500 Internal Server Error: Stripe API failure
+**Success 201**
+```json
+{
+  "paymentId": "pi_ABC123456789",
+  "clientSecret": "pi_ABC123456789_secret_XYZ...",
+  "amount": 259900,
+  "currency": "usd",
+  "status": "requires_confirmation",
+  "createdAt": "2025-06-11T18:30:00Z"
+}
+```
 
 ---
 
-## ✅ Scope Coverage Summary
+### 2.2 GET `/consumer/payments`
+Returns payment history.
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant PaymentService
-    participant Stripe
-    participant OrderService
-
-    Client->>PaymentService: POST /create-payment-intent
-    PaymentService->>Stripe: Create PaymentIntent
-    Stripe-->>PaymentService: clientSecret
-    PaymentService-->>Client: Return clientSecret
-
-    Client->>PaymentService: POST /confirm-payment
-    PaymentService->>Stripe: Confirm Payment
-    Stripe-->>PaymentService: PaymentStatus
-    PaymentService->>OrderService: Trigger Order Creation
-    PaymentService-->>Client: Orders Created
+**Success 200**
+```json
+{
+  "payments": [
+    {
+      "paymentId": "pi_ABC123456789",
+      "amount": 259900,
+      "currency": "usd",
+      "status": "succeeded",
+      "createdAt": "2025-06-11T18:30:00Z",
+      "paymentMethod": { "brand": "Visa", "last4": "4242" },
+      "orderId": "o987"
+    }
+  ]
+}
 ```
 
-📌 **Features Covered**
+---
 
-✔ Secure Payments:
-- Integrates with Stripe for PaymentIntent flow
-- Supports card saving, re-use, and auto-confirmation
+## 3. Stripe Webhooks
 
-✔ Checkout Integration:
-- Receives cart and shipping info
-- Confirms payment and triggers order creation
+### 3.1 POST `/webhook/stripe`
+Receives events like `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_method.attached`.
 
-✔ Saved Payment Methods:
-- Consumers can save and reuse cards via Stripe
+* Verifies `Stripe-Signature`
+* Updates internal payment status
+* Notifies order‑service on success
 
-✔ Fields Supported:
-- consumerId, cartItems, totalAmount, currency, paymentMethodId, useSavedMethod, savePaymentMethod
+**Success 200** – Empty body  
+**Error 400** – Invalid signature/payload
 
+---
+
+## ❌ Unified Error Format
+```json
+{ "error": "Human‑readable message here" }
+```
+
+---
+
+## ✅ Scope Coverage
+
+* Multi‑card support per consumer
+* Cart → PaymentIntent workflow
+* Webhook-driven status updates
+* Consistent error handling
