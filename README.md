@@ -5,24 +5,48 @@ Handles payment transactions and saved payment methods via **Stripe** for **Shop
 
 **Base path:** `/api/payment`
 
+> **Internal Stripe Customer Mapping**  
+> Each authenticated consumer is mapped to a Stripe **Customer** behind the scenes.  
+> The `stripeCustomerId` never leaves the payment‑service; you just use your JWT.
+
+---
+
+## 0. SetupIntent helper
+
+### POST `/setup-intent`
+Returns a Stripe **SetupIntent** `client_secret` so the front‑end can securely collect card details.
+
+**Headers**
+```
+Authorization: Bearer <token>
+```
+
+**Success 201**
+```json
+{
+  "setupIntentId": "seti_1OC...",
+  "clientSecret": "seti_1OC..._secret_xyz"
+}
+```
+
 ---
 
 ## 1. Consumer Payment Methods
 
-### 1.1 POST `/consumer/payment-methods`
-Save a new Stripe PaymentMethod to the authenticated consumer.
+| Method | Path | Purpose |
+|--------|------|---------|
+| **POST** | `/consumer/payment-methods` | Save a Stripe `pm_…` to the consumer |
+| **GET** | `/consumer/payment-methods` | List saved cards |
+| **PUT** | `/consumer/payment-methods/:id/default` | Make a saved card default |
+| **DELETE** | `/consumer/payment-methods/:id` | Remove a saved card |
 
-**Request**
+### 1.1 POST `/consumer/payment-methods`
 ```json
 {
   "paymentMethodToken": "pm_123456789",
-  "billingDetails": {
-    "name": "Abdullah Al Salmi",
-    "email": "abdullah@example.com"
-  }
+  "billingDetails": { "name": "Abdullah Al Salmi", "email": "abdullah@example.com" }
 }
 ```
-
 **Success 201**
 ```json
 {
@@ -38,20 +62,7 @@ Save a new Stripe PaymentMethod to the authenticated consumer.
 }
 ```
 
-**Errors**
-
-| Code | When |
-|------|------|
-| 400  | Missing/invalid token |
-| 401  | No bearer token |
-| 402  | Card declined |
-
----
-
 ### 1.2 GET `/consumer/payment-methods`
-Returns saved methods.
-
-**Success 200**
 ```json
 {
   "paymentMethods": [
@@ -61,71 +72,49 @@ Returns saved methods.
       "last4": "4242",
       "expMonth": 12,
       "expYear": 2028,
-      "default": true
+      "isDefault": true
     }
   ]
 }
+
 ```
 
----
-
 ### 1.3 PUT `/consumer/payment-methods/:id/default`
-Set method `:id` as default.
-
-**Success 200**
 ```json
 { "message": "Default payment method updated." }
 ```
 
----
-
 ### 1.4 DELETE `/consumer/payment-methods/:id`
-Delete saved method.
-
-**Success 204** – No body
+`204 No Content`
 
 ---
 
 ## 2. Consumer Payments (Checkout)
 
 ### 2.1 POST `/consumer/payments`
-Create a Stripe PaymentIntent for checkout.
-
-**Request**
 ```json
-{
-  "amount": 259900,
-  "currency": "usd",
-  "paymentMethodId": "pm_123456789",
-  "orderId": "o987"
-}
+{ "amount": 259900, "currency": "cad", "paymentMethodId": "pm_123456789", "orderId": "o987" }
 ```
-
 **Success 201**
 ```json
 {
   "paymentId": "pi_ABC123456789",
   "clientSecret": "pi_ABC123456789_secret_XYZ...",
   "amount": 259900,
-  "currency": "usd",
+  "currency": "cad",
   "status": "requires_confirmation",
   "createdAt": "2025-06-11T18:30:00Z"
 }
 ```
 
----
-
 ### 2.2 GET `/consumer/payments`
-Returns payment history.
-
-**Success 200**
 ```json
 {
   "payments": [
     {
       "paymentId": "pi_ABC123456789",
       "amount": 259900,
-      "currency": "usd",
+      "currency": "cad",
       "status": "succeeded",
       "createdAt": "2025-06-11T18:30:00Z",
       "paymentMethod": { "brand": "Visa", "last4": "4242" },
@@ -139,15 +128,10 @@ Returns payment history.
 
 ## 3. Stripe Webhooks
 
-### 3.1 POST `/webhook/stripe`
-Receives events like `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_method.attached`.
+### POST `/api/payment/webhook/stripe`
+Processes `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_method.attached`, etc.
 
-* Verifies `Stripe-Signature`
-* Updates internal payment status
-* Notifies order‑service on success
-
-**Success 200** – Empty body  
-**Error 400** – Invalid signature/payload
+`200 OK` on success, `400 Bad Request` if signature/payload invalid.
 
 ---
 
@@ -159,8 +143,8 @@ Receives events like `payment_intent.succeeded`, `payment_intent.payment_failed`
 ---
 
 ## ✅ Scope Coverage
-
-* Multi‑card support per consumer
-* Cart → PaymentIntent workflow
-* Webhook-driven status updates
+* SetupIntent helper for card saving  
+* Multi‑card support  
+* PaymentIntent checkout flow  
+* Webhook updates  
 * Consistent error handling
