@@ -1,26 +1,40 @@
-# 👤 user-service API Overview
+# 👤 **user‑service API**
 
-This service manages user profile data for both consumers and vendors (authentication is handled separately).
+Manages **consumer** and **vendor** profile data for ShopSphere  
+**Authentication / token validation is handled by `auth-service`.**
 
-## 📍 Base URL
+**Base path:** 
 ```
-/user
+/api/user
 ```
+
 
 ---
 
-## 📌 API Endpoints
+# 1. Consumer Profile
 
-### 1. GET `/consumer/:id`
-**Retrieve consumer profile by ID.**
+## 1.1 **GET `/consumer/profile`**
 
-✅ **Response: 200 OK**
+Returns the authenticated consumer’s complete profile.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** – token missing / invalid |
+
+### Headers
+```
+Authorization: Bearer <token>
+```
+
+### Success Response
 ```json
 {
   "consumerId": "u123",
+  "fullName": "Abdullah Al Salmi",
   "phoneNumber": "+19021234567",
   "addresses": [
     {
+      "addressId": "a1",
       "label": "Home",
       "line1": "123 Main St",
       "city": "Halifax",
@@ -28,66 +42,227 @@ This service manages user profile data for both consumers and vendors (authentic
       "country": "CA"
     }
   ],
-  "stripeCustomerId": "cus_abc123"
+  "createdAt": "2025-06-11T17:45:00Z"
 }
 ```
 
-❌ **Errors**
-- 404 Not Found: Consumer not found
+### Error Example
+```json
+{ "error": "Authentication required." }
+```
 
 ---
 
-### 2. PUT `/consumer/:id`
-**Update or add phone number and addresses for a consumer.**
+## 1.2 **PUT `/consumer/profile`**
 
-📦 **Request Body**
+Update personal fields (phone, username, email).
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid data<br>**404 Not Found** – consumer not found |
+
+### Request Body
 ```json
 {
-  "phoneNumber": "+19025556666",
-  "address": {
-    "label": "Home",
-    "line1": "456 New St",
-    "city": "Halifax",
-    "postalCode": "B3H 2Y6",
-    "country": "CA"
-  }
+  "fullName": "Asaad Al Salmi",
+  "phoneNumber": "+19025556666"
 }
 ```
 
-✅ **Response: 200 OK**
+### Success Response
 ```json
 {
   "message": "Consumer profile updated successfully",
   "consumer": {
     "consumerId": "u123",
-    "phoneNumber": "+19025556666",
-    "addresses": [
-      {
-        "label": "Home",
-        "line1": "456 New St",
-        "city": "Halifax",
-        "postalCode": "B3H 2Y6",
-        "country": "CA"
-      }
-    ]
+    "fullName": "Asaad Al Salmi",
+    "phoneNumber": "+19025556666"
   }
 }
 ```
 
-ℹ️ **Notes**
-- New phone number will be added if missing.
-- Address with the same label is updated, otherwise appended.
-
-❌ **Errors**
-- 400 Bad Request: Invalid input
-- 404 Not Found: Consumer not found
+### Error Example
+```json
+{ "error": "Invalid email format." }
+```
 
 ---
 
-### 3. GET `/vendor/:id`
-**Retrieve vendor profile by ID.**
+# 2. Consumer Settings
 
-✅ **Response: 200 OK**
+## 2.1 **GET `/consumer/settings`**
+
+Fetch user preference flags 
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** |
+
+### Success Response
+```json
+{
+  "theme": "dark"
+}
+```
+
+---
+
+## 2.2 **PUT `/consumer/settings`**
+
+Update preference flags.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
+
+### Request Body
+```json
+{
+  "theme": "light"
+}
+```
+
+### Success Response
+```json
+{
+  "message": "Settings updated."
+}
+```
+
+---
+
+# 3. Consumer Addresses
+
+| Method & Path | Purpose |
+|---------------|---------|
+| **POST `/consumer/addresses`** | Add a new address |
+| **GET `/consumer/addresses`** | List all addresses |
+| **PUT `/consumer/addresses/:id`** | Update existing address |
+| **DELETE `/consumer/addresses/:id`** | Remove address |
+
+---
+
+### 3.1 **POST `/consumer/addresses`**
+
+| Success | Error(s) |
+|---------|----------|
+| **201 Created** | **400 Bad Request** |
+
+#### Request Body
+```json
+{
+  "label": "Office",
+  "line1": "789 Work Ave",
+  "city": "Halifax",
+  "postalCode": "B3H 3Z1",
+  "country": "CA"
+}
+```
+
+#### Success Response
+```json
+{
+  "message": "Address added.",
+  "address": {
+    "addressId": "a2",
+    "label": "Office",
+    "line1": "789 Work Ave",
+    "city": "Halifax",
+    "postalCode": "B3H 3Z1",
+    "country": "CA"
+  }
+}
+```
+
+---
+
+### 3.2 **GET `/consumer/addresses`**
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** |
+
+#### Success Response
+```json
+{
+  "addresses": [
+    {
+      "addressId": "a1",
+      "label": "Home",
+      "line1": "123 Main St",
+      "city": "Halifax",
+      "postalCode": "B3H 1Y4",
+      "country": "CA"
+    },
+    {
+      "addressId": "a2",
+      "label": "Office",
+      "line1": "789 Work Ave",
+      "city": "Halifax",
+      "postalCode": "B3H 3Z1",
+      "country": "CA"
+    }
+  ]
+}
+```
+
+---
+
+### 3.3 **PUT `/consumer/addresses/:id`**
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request**<br>**404 Not Found** – address missing |
+
+#### Request Body
+```json
+{
+  "label": "Office",
+  "line1": "789 Work Ave",
+  "city": "Halifax",
+  "postalCode": "B3H 3Z1",
+  "country": "CA"
+}
+```
+
+#### Success Response
+```json
+{
+  "message": "Address updated.",
+  "address": {
+    "addressId": "a2",
+    "label": "Office",
+    "line1": "789 Work Ave",
+    "city": "Halifax",
+    "postalCode": "B3H 3Z1",
+    "country": "CA"
+  }
+}
+```
+
+---
+
+### 3.4 **DELETE `/consumer/addresses/:id`**
+
+| Success | Error(s) |
+|---------|----------|
+| **204 No Content** | **404 Not Found** |
+
+_No body on success._
+
+---
+
+# 4. Vendor Profile
+
+## 4.1 **GET `/vendor/profile`**
+
+Returns vendor profile (for the authenticated vendor).
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** |
+
+### Success Response
 ```json
 {
   "vendorId": "v456",
@@ -97,21 +272,24 @@ This service manages user profile data for both consumers and vendors (authentic
   "logoUrl": "https://cdn.app.com/logo.png",
   "storeBannerUrl": "https://cdn.app.com/banner.png",
   "rating": 4.8,
+  "isApproved": true,
   "socialLinks": {
     "instagram": "@tailorthreads"
   }
 }
 ```
 
-❌ **Errors**
-- 404 Not Found: Vendor not found
-
 ---
 
-### 4. PUT `/vendor/:id`
-**Update vendor profile.**
+## 4.2 **PUT `/vendor/profile`**
 
-📦 **Request Body**
+Update vendor public details.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request**<br>**401 Unauthorized** |
+
+### Request Body
 ```json
 {
   "storeName": "New Tailor Threads",
@@ -125,30 +303,78 @@ This service manages user profile data for both consumers and vendors (authentic
 }
 ```
 
-✅ **Response: 200 OK**
+### Success Response
 ```json
 {
-  "message": "Vendor profile updated successfully"
+  "message": "Vendor profile updated successfully."
 }
 ```
 
-❌ **Errors**
-- 400 Bad Request: Invalid input
-- 404 Not Found: Vendor not found
+---
+
+## 4.3 **PUT `/vendor/settings`**
+
+Update preference flags.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
+
+### Request Body
+```json
+{
+  "theme": "light"
+}
+```
+
+### Success Response
+```json
+{
+  "message": "Settings updated."
+}
+```
 
 ---
 
-### 5. PUT `/vendor/:id/approve`
-**Admin approves vendor visibility and store management.**
+## 4.4 **PUT `/vendor/settings`**
 
-📦 **Request Body**
+Update preference flags.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
+
+### Request Body
+```json
+{
+  "theme": "light"
+}
+```
+
+### Success Response
+```json
+{
+  "message": "Settings updated."
+}
+```
+
+---
+
+## 4.5 **PUT `/vendor/:id/approve`**
+Admin approves vendor visibility and store management.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid keys <br> **401 Unauthorized** |
+
+### Request Body
 ```json
 {
   "isApproved": true
 }
 ```
 
-✅ **Response: 200 OK**
+### Success Response
 ```json
 {
   "message": "Vendor approval status updated.",
@@ -158,41 +384,19 @@ This service manages user profile data for both consumers and vendors (authentic
   }
 }
 ```
-
-❌ **Errors**
-- 400 Bad Request: Missing or invalid data
-- 404 Not Found: Vendor not found
-
 ---
 
-## ❌ Standard Error Format
+# ❌ Unified Error Format
 
 ```json
-{
-  "error": "Error message here"
-}
+{ "error": "Human‑readable message here" }
 ```
-
-**Common Errors**
-- 400 Bad Request: Invalid or missing input data
-- 404 Not Found: Resource does not exist
-
 ---
+# ✅ Scope Coverage Summary
 
-## ✅ Scope Coverage Summary
+- **Consumer profile & settings**
+- **Address CRUD**
+- **Vendor profile & settings** (including admin approval)
+- Consistent error handling and token‑protected routes
 
-✔ User Profile Management:
-- Consumers manage phone numbers and multiple addresses
-- Vendors manage store profile and business information
-- Admins can be identified and elevated by userId
 
-✔ Vendor Approval System:
-- Vendors require admin approval via isApproved field
-
-✔ Payment Integration Support:
-- Stores stripeCustomerId for consumer payment linkage
-
-✔ Fields Supported:
-- consumerId, address, phoneNumber, stripeCustomerId
-- vendorId, isApproved, storeName, location, storeDescription, logoUrl, storeBannerUrl, rating, socialLinks
-- adminId
