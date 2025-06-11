@@ -1,25 +1,32 @@
-# 📦 order-service API Overview
+# 📦 **order‑service API**
 
-This service handles consumer orders, each associated with one vendor. Orders are created after successful payment and contain snapshots of product and address data for historical integrity.
+Responsible for **order lifecycle** in ShopSphere.  
+Orders are created **only after successful payment** (verified by `payment-service`).  
+Role enforcement:  
+* **Consumer** – view own orders, cancel pending orders  
+* **Vendor** – view orders they need to fulfil, update status  
+* **Admin** – full access to every order
 
-## 📍 Base URL
-```
-/order
-```
+**Base path:** `/api/orders`
 
 ---
 
-## 📌 API Endpoints
 
-### 1. POST `/create`
-**Create orders per vendor after payment.**
+# 1. Order Creation
 
-📦 **Request Body**
+## 1.1 **POST `/orders`**
+
+Creates **one order per vendor** contained in the cart.
+
+| Success | Error(s) |
+|---------|----------|
+| **201 Created** | **400** – malformed payload<br>**401** – unauthenticated<br>**402** – payment failed<br>**404** – consumer / vendor / product not found |
+
+### Request Body
 ```json
 {
   "consumerId": "u123",
   "paymentId": "pi_abc123",
-  "paymentStatus": "succeeded",
   "orders": [
     {
       "vendorId": "v101",
@@ -39,81 +46,107 @@ This service handles consumer orders, each associated with one vendor. Orders ar
 }
 ```
 
-✅ **Response: 201 Created**
+### Success Response 201
 ```json
 {
   "message": "Orders created successfully.",
-  "orderIds": ["ord_001", "ord_002"]
+  "orderIds": ["ord_001"]
 }
 ```
 
 ---
 
-### 2. GET `/consumer/:consumerId`
-**Retrieve all orders placed by a specific consumer.**
+# 2. Browse / Retrieve Orders
 
-✅ **Response: 200 OK**
+## 2.1 **GET `/orders`** (Admin)
+
+Return all orders with optional filters.
+
+### Query Params
+```
+?status=shipped&vendorId=v101&userId=u123&page=1&limit=50
+```
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401** – unauthenticated<br>**403** – not admin |
+
+### Success Response 200
+```json
+{
+  "page": 1,
+  "limit": 50,
+  "total": 3,
+  "orders": [
+    {
+      "orderId": "ord_001",
+      "consumerId": "u123",
+      "vendorId": "v101",
+      "orderStatus": "shipped",
+      "subtotalAmount": 59.97,
+      "createdAt": "2025-06-11T19:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+## 2.2 **GET `/orders/user/:userId`**
+
+Retrieve orders for a consumer (self or admin).
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden other user (if not admin) |
+
+### Success Response 200
 ```json
 [
   {
     "orderId": "ord_001",
     "vendorId": "v101",
-    "orderItems": [
-      { "productId": "p1", "quantity": 2, "price": 14.99 }
-    ],
-    "subtotalAmount": 29.98,
-    "orderStatus": "shipped",
-    "createdAt": "2025-05-31T12:30:00Z"
+    "orderStatus": "processing",
+    "subtotalAmount": 59.97,
+    "createdAt": "2025-06-11T19:00:00Z"
   }
 ]
 ```
 
 ---
 
-### 3. GET `/vendor/:vendorId`
-**Retrieve all orders received by a specific vendor.**
+## 2.3 **GET `/orders/vendor/:vendorId`**
 
-✅ **Response: 200 OK**
+Vendor’s received orders.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401** – unauthenticated<br>**403** – accessing another vendor |
+
+### Success Response 200
 ```json
 [
   {
-    "orderId": "ord_002",
+    "orderId": "ord_001",
     "consumerId": "u123",
-    "orderItems": [
-      { "productId": "p2", "quantity": 1, "price": 29.99 }
-    ],
-    "subtotalAmount": 29.99,
-    "orderStatus": "pending",
-    "createdAt": "2025-05-31T12:30:00Z"
+    "orderStatus": "processing",
+    "subtotalAmount": 59.97,
+    "createdAt": "2025-06-11T19:00:00Z"
   }
 ]
 ```
 
 ---
 
-### 4. PUT `/update-status/:orderId`
-**Update the status of a specific order (Vendor only).**
+## 2.4 **GET `/orders/:id`**
 
-📦 **Request Body**
-```json
-{
-  "orderStatus": "shipped"
-}
-```
+Full detail (consumer, vendor, or admin access as permitted).
 
-✅ **Response: 200 OK**
-```json
-{
-  "message": "Order status updated successfully."
-}
-```
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden (not your order)<br>**404** – order not found |
 
----
-
-### 5. GET `/detail/:orderId`
-**Get full details of a specific order.**
-
-✅ **Response: 200 OK**
+### Success Response 200
 ```json
 {
   "orderId": "ord_001",
@@ -132,46 +165,92 @@ This service handles consumer orders, each associated with one vendor. Orders ar
     "postalCode": "B3H 1Y4",
     "country": "CA"
   },
-  "createdAt": "2025-05-31T12:30:00Z",
-  "updatedAt": "2025-05-31T13:00:00Z"
+  "createdAt": "2025-06-11T19:00:00Z",
+  "updatedAt": "2025-06-12T09:10:00Z"
 }
 ```
 
 ---
 
-## ❌ Error Handling
+# 3. Order Lifecycle Actions
 
-🧱 **Standard Format**
+## 3.1 **PUT `/orders/:id/status`** (Vendor / Admin)
+
+Update status (`processing`, `shipped`, `delivered`, etc.).
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400** – invalid status<br>**401** – unauthenticated<br>**403** – not vendor of order / not admin<br>**404** – order not found |
+
+### Request Body
+```json
+{ "orderStatus": "shipped" }
+```
+
+### Success Response 200
+```json
+{ "message": "Order status updated successfully." }
+```
+
+---
+
+## 3.2 **POST `/orders/:id/cancel`** (Consumer / Admin)
+
+Consumer can cancel while status is `pending` or `processing`.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400** – cannot cancel current status<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – order not found |
+
+### Request Body _(optional)_
+```json
+{ "reason": "Ordered by mistake." }
+```
+
+### Success Response 200
 ```json
 {
-  "error": "Error message here"
+  "message": "Order cancelled.",
+  "orderStatus": "cancelled"
 }
 ```
 
-❌ **Common Errors**
-- 400 Bad Request: Invalid or missing fields
-- 404 Not Found: Order or user does not exist
-- 403 Forbidden: Unauthorized update attempt
+---
+
+## 3.3 **GET `/orders/:id/tracking`**
+
+Return chronological status updates for shipment tracking.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden<br>**404** – order not found |
+
+### Success Response 200
+```json
+{
+  "orderId": "ord_001",
+  "tracking": [
+    { "status": "processing", "timestamp": "2025-06-11T19:00:00Z" },
+    { "status": "shipped", "timestamp": "2025-06-12T08:00:00Z", "carrier": "Canada Post", "trackingNumber": "CP123456CA" },
+    { "status": "out_for_delivery", "timestamp": "2025-06-13T07:30:00Z" }
+  ]
+}
+```
 
 ---
 
-## ✅ Scope Coverage Summary
-✔ Order Management:
-- Orders created per vendor after payment
-- Full support for history tracking with snapshots
+# ❌ Unified Error Format
 
-✔ Order Tracking:
-- Vendors and consumers can view & manage their orders
-- `/update-status` allows tracking fulfillment
+```json
+{ "error": "Human‑readable message here" }
+```
 
-✔ Secure Order Creation:
-- Only occurs after successful payment
-- Includes payment reference and shipping info
+---
 
-✔ Role-Based View:
-- `/consumer/:id` and `/vendor/:id` scoped by role
+# ✅ Scope Coverage Summary
 
-✔ All Fields Covered:
-- orderId, consumerId, vendorId, orderItems, subtotalAmount, paymentId, paymentStatus,
-  orderStatus, shippingAddress, createdAt, updatedAt
-
+* **Order creation** post‑payment, split per vendor  
+* **Role‑scoped retrieval** for consumers, vendors, admin  
+* **Lifecycle actions**: status update, cancellation, tracking timeline  
+* **Consistent error handling** across all routes  
+* **Schema fields**: orderId, consumerId, vendorId, orderItems (productId, qty, price), subtotalAmount, paymentId, paymentStatus, orderStatus, shippingAddress, createdAt, updatedAt, tracking
