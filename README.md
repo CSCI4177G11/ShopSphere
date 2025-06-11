@@ -336,31 +336,8 @@ Update preference flags.
 
 ---
 
-## 4.4 **PUT `/vendor/settings`**
 
-Update preference flags.
-
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
-
-### Request Body
-```json
-{
-  "theme": "light"
-}
-```
-
-### Success Response
-```json
-{
-  "message": "Settings updated."
-}
-```
-
----
-
-## 4.5 **PUT `/vendor/:id/approve`**
+## 4.4 **PUT `/vendor/:id/approve`**
 Admin approves vendor visibility and store management.
 
 | Success | Error(s) |
