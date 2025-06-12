@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-// import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -11,11 +10,11 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
-import { useMockAuth } from "@/components/mock-auth-provider"
+import { useAuth } from "@/components/auth-provider"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -27,7 +26,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { signIn } = useMockAuth()
+  const { signIn } = useAuth()
 
   const {
     register,
@@ -41,53 +40,21 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // Mock login - always succeeds for testing
-      setTimeout(async () => {
-        await signIn(data.email, data.password)
-        toast.success("Welcome back!")
-        setIsLoading(false)
-        router.push("/")
-      }, 1000)
-
-      /* Original NextAuth call (commented out for mock)
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        toast.error("Invalid credentials")
-      } else {
-        toast.success("Welcome back!")
-        router.push("/")
-        router.refresh()
-      }
-      */
-    } catch {
-      toast.error("Something went wrong")
+      await signIn(data.email, data.password)
+      toast.success("Welcome back!")
+      router.push("/")
+    } catch (error: any) {
+      console.error('Login error:', error)
+      toast.error(error.message || "Login failed. Please try again.")
+    } finally {
       setIsLoading(false)
     }
   }
 
   const handleOAuthSignIn = async (provider: "google" | "github") => {
-    setIsLoading(true)
-    try {
-      // Mock OAuth sign in
-      setTimeout(async () => {
-        await signIn("", "")
-        toast.success(`Signed in with ${provider}!`)
-        setIsLoading(false)
-        router.push("/")
-      }, 1000)
-
-      /* Original OAuth call (commented out for mock)
-      await signIn(provider, { callbackUrl: "/" })
-      */
-    } catch {
-      toast.error("Something went wrong")
-      setIsLoading(false)
-    }
+    // For now, show a message that OAuth is not implemented
+    // You can implement OAuth later if needed
+    toast.info(`${provider} sign-in will be available soon`)
   }
 
   return (
@@ -155,12 +122,9 @@ export default function LoginPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                  <Link 
-                    href="/auth/reset-password" 
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
+                  <span className="text-sm text-muted-foreground">
+                    Forgot password? Contact support
+                  </span>
                 </div>
                 <Input 
                   id="password" 
@@ -190,12 +154,6 @@ export default function LoginPage() {
             Don't have an account?{" "}
             <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
               Create account
-            </Link>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Want to sell on ShopSphere?{" "}
-            <Link href="/auth/seller-register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Become a seller
             </Link>
           </p>
         </div>

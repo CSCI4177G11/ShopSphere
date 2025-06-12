@@ -10,12 +10,11 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
-import { useMockAuth } from "@/components/mock-auth-provider"
-// import { authService } from "@/lib/api/auth-service"
+import { useAuth } from "@/components/auth-provider"
 
 const registerSchema = z
   .object({
@@ -34,7 +33,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const { signIn } = useMockAuth()
+  const { signUp } = useAuth()
 
   const {
     register,
@@ -54,50 +53,22 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // Mock registration - simulate API call
-      setTimeout(async () => {
-        // Auto sign in the new user (mock)
-        await signIn(data.email, data.password)
-        toast.success("Account created successfully!")
-        setIsLoading(false)
-        router.push("/")
-      }, 1000)
-
-      /* Original API call (commented out for mock)
-      await authService.register({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        role: "consumer",
-      })
-
+      // Use the name as username for now (your API requires username)
+      await signUp(data.name, data.email, data.password, 'consumer')
       toast.success("Account created successfully!")
-      router.push("/auth/login")
-      */
+      router.push("/")
     } catch (error: any) {
-      toast.error(error.message || "Something went wrong")
+      console.error('Registration error:', error)
+      toast.error(error.message || "Registration failed. Please try again.")
+    } finally {
       setIsLoading(false)
     }
   }
 
   const handleOAuthSignIn = async (provider: "google" | "github") => {
-    setIsLoading(true)
-    try {
-      // Mock OAuth sign in
-      setTimeout(async () => {
-        await signIn("", "")
-        toast.success(`Signed in with ${provider}!`)
-        setIsLoading(false)
-        router.push("/")
-      }, 1000)
-
-      /* Original OAuth call (commented out for mock)
-      await authService.oauthSignIn(provider)
-      */
-    } catch (error) {
-      toast.error("Something went wrong")
-      setIsLoading(false)
-    }
+    // For now, show a message that OAuth is not implemented
+    // You can implement OAuth later if needed
+    toast.info(`${provider} sign-up will be available soon`)
   }
 
   return (
@@ -222,12 +193,6 @@ export default function RegisterPage() {
             Already have an account?{" "}
             <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
               Sign in
-            </Link>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Want to sell on ShopSphere?{" "}
-            <Link href="/auth/seller-register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Become a seller
             </Link>
           </p>
         </div>

@@ -14,10 +14,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   // Pages that should not have header/footer
   const excludeLayout = [
     "/auth/login",
-    "/auth/register", 
-    "/auth/seller-register",
-    "/mock-admin",
-    "/mock-vendor"
+    "/auth/register"
   ];
   
   // Check if current page should exclude layout

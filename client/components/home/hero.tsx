@@ -123,9 +123,9 @@ export function Hero() {
                 size="lg" 
                 className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
               >
-                <Link href="/shop">
+                <Link href="/auth/register">
                   <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                  Start Exploring
+                  Get Started
                   <motion.div
                     className="ml-3"
                     animate={{ x: [0, 4, 0] }}
@@ -147,9 +147,9 @@ export function Hero() {
                 size="lg" 
                 className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
               >
-                <Link href="/auth/seller-register">
+                <Link href="/auth/register">
                   <Users className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                  Become a Seller
+                  Join ShopSphere
                 </Link>
               </Button>
             </motion.div>

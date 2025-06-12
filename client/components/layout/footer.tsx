@@ -17,17 +17,13 @@ import {
 } from "lucide-react"
 
 const quickLinks = [
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
-  { name: "Help", href: "/help" },
-  { name: "Careers", href: "/careers" },
+  { name: "Sign In", href: "/auth/login" },
+  { name: "Sign Up", href: "/auth/register" },
 ]
 
 const shopLinks = [
-  { name: "Categories", href: "/categories" },
-  { name: "Shops", href: "/vendors" },
-  { name: "Deals", href: "/deals" },
-  { name: "New Arrivals", href: "/new" },
+  { name: "Home", href: "/" },
+  { name: "Get Started", href: "/auth/register" },
 ]
 
 const socialLinks = [
@@ -123,7 +119,7 @@ export function Footer() {
             </div>
           </motion.div>
 
-          {/* Company Links */}
+          {/* Auth Links */}
           <motion.div 
             className="space-y-6"
             initial={{ opacity: 0, y: 20 }}
@@ -131,7 +127,7 @@ export function Footer() {
             transition={{ duration: 0.5, delay: 0.1 }}
             viewport={{ once: true }}
           >
-            <h4 className="font-semibold text-gray-900 dark:text-white">Company</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">Account</h4>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <motion.li key={link.href}>
@@ -148,7 +144,7 @@ export function Footer() {
             </ul>
           </motion.div>
 
-          {/* Shop Links */}
+          {/* Navigation Links */}
           <motion.div 
             className="space-y-6"
             initial={{ opacity: 0, y: 20 }}
@@ -156,7 +152,7 @@ export function Footer() {
             transition={{ duration: 0.5, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            <h4 className="font-semibold text-gray-900 dark:text-white">Shop</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">Navigation</h4>
             <ul className="space-y-3">
               {shopLinks.map((link, index) => (
                 <motion.li key={link.href}>
