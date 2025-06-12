@@ -12,9 +12,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   
   // Pages that should not have header/footer
-  const excludeLayout = [
-    "/auth/login",
-    "/auth/register"
+  const excludeLayout: string[] = [
+    // Auth pages now include header for easy navigation
   ];
   
   // Check if current page should exclude layout

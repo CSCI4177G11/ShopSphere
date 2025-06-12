@@ -64,7 +64,7 @@ export function Hero() {
             transition={{ duration: 0.8 }}
             className="space-y-6"
           >
-            <div className="flex justify-center">
+            <div className="flex justify-center pt-16">
               <Badge 
                 variant="outline" 
                 className="bg-background/80 backdrop-blur-sm border-primary/20 text-primary px-6 py-2 text-sm font-medium"

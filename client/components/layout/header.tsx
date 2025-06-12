@@ -7,7 +7,6 @@ import {
   Menu,
   X,
   User,
-  Sparkles,
   ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,11 +37,6 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleQuickSignIn = () => {
-    // For quick demo, redirect to login page
-    window.location.href = "/auth/login";
-  };
 
   if (!mounted) {
     return null; // or a skeleton header
@@ -176,15 +170,6 @@ export function Header() {
                       transition={{ duration: 0.5, delay: 0.7 }}
                     >
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleQuickSignIn}
-                        className="rounded-xl h-9 px-4 hover:bg-primary/10 transition-all duration-200 group border border-transparent hover:border-primary/20"
-                      >
-                        <Sparkles className="h-4 w-4 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                        <span className="font-medium">Quick Sign In</span>
-                      </Button>
-                      <Button
                         variant="outline"
                         asChild
                         size="sm"
@@ -267,17 +252,6 @@ export function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.3 }}
                 >
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      handleQuickSignIn();
-                      setIsMenuOpen(false);
-                    }}
-                    className="justify-start gap-3 h-12 rounded-xl hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all duration-200 group"
-                  >
-                    <Sparkles className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                    <span className="font-medium">Quick Sign In</span>
-                  </Button>
                   <Button
                     variant="outline"
                     asChild
