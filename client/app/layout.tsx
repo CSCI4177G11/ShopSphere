@@ -24,16 +24,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            <QueryProvider>
-              <ConditionalLayout>
-                {children}
-              </ConditionalLayout>
-              <Toaster />
-            </QueryProvider>
-          </AuthProvider>
-        </ThemeProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+              <AuthProvider>
+                <QueryProvider>
+                  <ConditionalLayout>
+                    {children}
+                  </ConditionalLayout>
+                  <Toaster />
+                </QueryProvider>
+              </AuthProvider>
+          </ThemeProvider>
       </body>
     </html>
   )

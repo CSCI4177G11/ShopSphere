@@ -7,9 +7,10 @@ interface AuthContextType {
   user: User | null
   token: string | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<User>
   signUp: (username: string, email: string, password: string, role?: 'consumer' | 'vendor') => Promise<void>
   signOut: () => Promise<void>
+  logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
 
@@ -58,16 +59,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await authService.login({ email, password })
-      setUser({
+      const userData = {
         userId: response.user.userId,
         username: response.user.username,
         email: email, // API doesn't return email in login response
         role: response.user.role as 'consumer' | 'vendor' | 'admin'
-      })
+      }
+      setUser(userData)
       setToken(response.token)
       
       // Refresh user data to get complete profile
       await refreshUser()
+      
+      return userData
     } catch (error) {
       throw error
     }
@@ -128,6 +132,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signIn,
     signUp,
     signOut,
+    logout: signOut, // Alias for signOut
     refreshUser,
   }
 

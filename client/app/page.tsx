@@ -9,7 +9,7 @@ export default function HomePage() {
   return (
     <div className="w-full">
       <Hero />
-      
+
       {/* Newsletter Section */}
       <Newsletter />
     </div>

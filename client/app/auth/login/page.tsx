@@ -40,9 +40,17 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      await signIn(data.email, data.password)
-      toast.success("Welcome back!")
-      router.push("/")
+        const user = await signIn(data.email, data.password)
+        toast.success("Welcome back!")
+        
+        // Redirect based on user role
+        if (user.role === 'admin') {
+          router.push("/admin")
+        } else if (user.role === 'vendor') {
+          router.push("/vendor")
+        } else {
+          router.push("/")
+        }
     } catch (error: any) {
       console.error('Login error:', error)
       toast.error(error.message || "Login failed. Please try again.")
