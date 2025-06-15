@@ -96,7 +96,7 @@ Return orders with role-based access:
 
 ## 2.2 **GET `/orders/user/:userId`**
 
-Retrieve orders for a consumer (self or admin).
+Retrieve orders for a consumer with consumerID (self or admin), and for vendor with vendorID.
 
 | Success | Error(s) |
 |---------|----------|
