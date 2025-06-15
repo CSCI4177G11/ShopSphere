@@ -1,6 +1,6 @@
 # 🛍 **product‑service API**
 
-Central service for **all product operations** in ShopSphere.  
+Central service for **all product operations** in **ShopSphere**.  
 Authentication is handled by `auth-service`; vendor/admin authorization is enforced by middleware in this service.  
 Reviews & ratings require the user to be authenticated as a **consumer**.
 
@@ -8,10 +8,9 @@ Reviews & ratings require the user to be authenticated as a **consumer**.
 
 ---
 
+## 1. Vendor / Admin Operations
 
-# 1. Vendor / Admin Operations
-
-## 1.1 **POST `/product`**
+### 1.1 **POST `/product`**
 
 Create a new product.
 
@@ -19,7 +18,7 @@ Create a new product.
 |---------|----------|
 | **201 Created** | **400 Bad Request** – invalid fields<br>**401 Unauthorized** – not logged in<br>**403 Forbidden** – not vendor/admin |
 
-### Request Body
+#### Request Body
 ```json
 {
   "vendorId": "v123",
@@ -33,7 +32,7 @@ Create a new product.
 }
 ```
 
-### Success Response 201
+#### Success Response 201
 ```json
 {
   "message": "Product created successfully.",
@@ -43,7 +42,7 @@ Create a new product.
 
 ---
 
-## 1.2 **PUT `/product/:id`**
+### 1.2 **PUT `/product/:id`**
 
 Update **any** product field.
 
@@ -51,7 +50,7 @@ Update **any** product field.
 |---------|----------|
 | **200 OK** | **400** – malformed body<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
 
-### Example Request Body
+#### Example Request Body
 ```json
 {
   "name": "Premium Cotton Shirt",
@@ -67,14 +66,14 @@ Update **any** product field.
 }
 ```
 
-### Success Response 200
+#### Success Response 200
 ```json
 { "message": "Product updated successfully." }
 ```
 
 ---
 
-## 1.3 **DELETE `/product/:id`**
+### 1.3 **DELETE `/product/:id`**
 
 Remove a product.
 
@@ -82,20 +81,20 @@ Remove a product.
 |---------|----------|
 | **200 OK** | **401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
 
-### Success Response 200
+#### Success Response 200
 ```json
 { "message": "Product deleted successfully." }
 ```
 
 ---
 
-# 2. Consumer‑Facing Catalogue
+## 2. Consumer‑Facing Catalogue
 
-## 2.1 **GET `/product`**
+### 2.1 **GET `/product`**
 
 Paginated catalogue with optional filters.
 
-### Query Parameters
+#### Query Parameters
 ```
 ?page=1&limit=20&minPrice=10&maxPrice=50&tags=shirt,cotton&sort=price:asc
 ```
@@ -104,7 +103,7 @@ Paginated catalogue with optional filters.
 |---------|----------|
 | **200 OK** | **400** – bad query value |
 
-### Success Response 200
+#### Success Response 200
 ```json
 {
   "page": 1,
@@ -125,15 +124,15 @@ Paginated catalogue with optional filters.
 
 ---
 
-## 2.2 **GET `/product/:id`**
+### 2.2 **GET `/product/:id`**
 
-Full product details (now includes aggregated rating & review count).
+Full product details (includes aggregated rating & review count).
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **404** – product not found |
 
-### Success Response 200
+#### Success Response 200
 ```json
 {
   "productId": "p001",
@@ -151,17 +150,51 @@ Full product details (now includes aggregated rating & review count).
 }
 ```
 
-(Other browse endpoints remain unchanged; they now optionally surface `averageRating` and `reviewCount` fields.)
+---
+
+### 2.3 **GET `/product/vendor/:vendorId`**
+
+Retrieve **all products for a specific vendor**.  
+Supports the same pagination & filter query params as the general catalogue endpoint.
+
+#### Example
+```
+/product/vendor/v123?page=1&limit=30&sort=createdAt:desc
+```
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400** – bad query<br>**404** – vendor not found (if no products associated) |
+
+#### Success Response 200
+```json
+{
+  "vendorId": "v123",
+  "page": 1,
+  "limit": 30,
+  "total": 42,
+  "products": [
+    {
+      "productId": "p001",
+      "name": "Premium Cotton Shirt",
+      "price": 44.99,
+      "thumbnail": "https://cdn.app.com/images/product1-thumb.jpg",
+      "averageRating": 4.2,
+      "reviewCount": 13
+    }
+  ]
+}
+```
 
 ---
 
-# 3. Reviews & Ratings
+## 3. Reviews & Ratings
 
 Each review contains a **rating (1‑5)** and an optional **text comment**.  
 Users may create **one review per product** but can update or delete their own review.  
 Admins may update/delete any review.
 
-## 3.1 **POST `/product/:id/reviews`**
+### 3.1 **POST `/product/:id/reviews`**
 
 Create a review.
 
@@ -169,7 +202,7 @@ Create a review.
 |---------|----------|
 | **201 Created** | **400** – rating outside 1‑5<br>**401** – unauthenticated<br>**409** – review already exists |
 
-### Request Body
+#### Request Body
 ```json
 {
   "rating": 5,
@@ -177,7 +210,7 @@ Create a review.
 }
 ```
 
-### Success Response 201
+#### Success Response 201
 ```json
 {
   "message": "Review submitted.",
@@ -195,11 +228,11 @@ Create a review.
 
 ---
 
-## 3.2 **GET `/product/:id/reviews`**
+### 3.2 **GET `/product/:id/reviews`**
 
 List reviews (paginated).
 
-### Query Parameters
+#### Query Parameters
 ```
 ?page=1&limit=10&sort=createdAt:desc
 ```
@@ -208,7 +241,7 @@ List reviews (paginated).
 |---------|----------|
 | **200 OK** | **404** – product not found |
 
-### Success Response 200
+#### Success Response 200
 ```json
 {
   "page": 1,
@@ -229,7 +262,7 @@ List reviews (paginated).
 
 ---
 
-## 3.3 **PUT `/product/:id/reviews/:reviewId`**
+### 3.3 **PUT `/product/:id/reviews/:reviewId`**
 
 Update own review.
 
@@ -237,7 +270,7 @@ Update own review.
 |---------|----------|
 | **200 OK** | **400** – invalid rating<br>**401** – unauthenticated<br>**403** – not review owner / not admin<br>**404** – review not found |
 
-### Request Body
+#### Request Body
 ```json
 {
   "rating": 4,
@@ -245,7 +278,7 @@ Update own review.
 }
 ```
 
-### Success Response 200
+#### Success Response 200
 ```json
 {
   "message": "Review updated.",
@@ -261,7 +294,7 @@ Update own review.
 
 ---
 
-## 3.4 **DELETE `/product/:id/reviews/:reviewId`**
+### 3.4 **DELETE `/product/:id/reviews/:reviewId`**
 
 Delete own review.
 
@@ -273,18 +306,17 @@ _No body on success._
 
 ---
 
-# ❌ Unified Error Format
-
+## ❌ Unified Error Format
 ```json
 { "error": "Human‑readable message here" }
 ```
 
 ---
 
-# ✅ Scope Coverage Summary
+## ✅ Scope Coverage Summary
 
 * **Vendor / admin CRUD** with full‑field updates  
-* **Public browsing**: catalogue, free‑text search, trending, featured, related, vendor listings  
+* **Public browsing**: catalogue, free‑text search, trending, featured, related, **vendor listings**  
 * **Consumer review & rating** workflow with aggregation  
 * **Role enforcement**:  
   * **Vendor / Admin** for product CRUD  
