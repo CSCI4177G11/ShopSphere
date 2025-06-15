@@ -40,16 +40,23 @@ app.use((err, req, res, next) => { // eslint-disable-line
 
 async function start() {
   try {
-    await mongoose.connect(MONGODB_URI, {
-      dbName: DB_NAME,
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('MongoDB connected');
+    if (NODE_ENV !== 'test') {
+      await mongoose.connect(MONGODB_URI, {
+        dbName: DB_NAME,
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('MongoDB connected');
+    }
     if (NODE_ENV !== 'test') app.listen(PORT, () => console.log(`product-service on :${PORT}`));
   } catch (err) {
     console.error('Mongo connection error', err);
-    process.exit(1);
+    if (NODE_ENV === 'development') {
+      console.log('Starting without MongoDB in development mode...');
+      app.listen(PORT, () => console.log(`product-service on :${PORT} (no database)`));
+    } else {
+      process.exit(1);
+    }
   }
 }
 start();
