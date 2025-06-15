@@ -2,7 +2,7 @@
 import jwt from 'jsonwebtoken';
 
 const {
-  JWT_SECRET = 'super-secret',  // must match auth‑service
+  JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',  // must match auth‑service
   JWT_ALGORITHM = 'HS256',
 } = process.env;
 
