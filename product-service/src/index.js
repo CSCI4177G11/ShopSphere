@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: false }));
 
 app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: Date.now() }));
 app.use('/api/product', productRoutes);
-app.use('/api/product/:productId/reviews', reviewRoutes);
+app.use('/api/product/:id/reviews', reviewRoutes);
 
 app.use((req, res, next) => {
   const err = new Error(`Not found: ${req.originalUrl}`);
@@ -33,15 +33,20 @@ app.use((req, res, next) => {
   next(err);
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({ error: err.message || 'Internal server error' });
+});
 
 mongoose.connect(MONGODB_URI)
-.then(() => {
-  console.log("✅ Connected to MongoDB");
-  app.listen(PORT || 4000, () =>
-    console.log(`✅ Auth Service running on port ${PORT || 4000}`)
-  );
-})
-.catch(err => console.error("MongoDB connection error:", err));
+  .then(() => {
+    console.log("✅ Connected to MongoDB");
+    app.listen(PORT || 4000, () =>
+      console.log(`✅ Product Service running on port ${PORT || 4000}`)
+    );
+  })
+  .catch(err => console.error("MongoDB connection error:", err));
 
 process.on('SIGINT', async () => {
   await mongoose.connection.close();
