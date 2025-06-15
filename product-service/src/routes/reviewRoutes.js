@@ -10,7 +10,7 @@ router.post(
   '/',
   requireAuth,
   [
-    param('productId').isMongoId(),
+    param('id').isMongoId(),
     body('rating').isInt({ min: 1, max: 5 }),
     body('comment').optional().isString().isLength({ max: 2000 }),
   ],
@@ -20,7 +20,7 @@ router.post(
 router.get(
   '/',
   [
-    param('productId').isMongoId(),
+    param('id').isMongoId(),
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     query('sort').optional().isString(),
@@ -32,7 +32,7 @@ router.put(
   '/:reviewId',
   requireAuth,
   [
-    param('productId').isMongoId(),
+    param('id').isMongoId(),
     param('reviewId').isMongoId(),
     body('rating').optional().isInt({ min: 1, max: 5 }),
     body('comment').optional().isString().isLength({ max: 2000 }),
@@ -44,7 +44,7 @@ router.delete(
   '/:reviewId',
   requireAuth,
   [
-    param('productId').isMongoId(),
+    param('id').isMongoId(),
     param('reviewId').isMongoId(),
   ],
   reviewCtrl.deleteReview
