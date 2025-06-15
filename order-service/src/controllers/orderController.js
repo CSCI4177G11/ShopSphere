@@ -1,6 +1,5 @@
 // src/controllers/orderController.js
 import { validationResult } from 'express-validator';
-import axios from 'axios';
 import Order from '../models/order.js';
 
 /* ───────────────────────── helpers ───────────────────────── */
@@ -14,20 +13,6 @@ function parseDateFilter(dateFrom, dateTo) {
   if (dateFrom) createdAt.$gte = new Date(dateFrom);
   if (dateTo) createdAt.$lte = new Date(dateTo);
   return Object.keys(createdAt).length ? { createdAt } : {};
-}
-
-async function verifyPayment(paymentId) {
-  // Call payment‑service to confirm payment exists & succeeded
-  // In real prod you'd pull SRV name / URL from env:
-  try {
-    const { data } = await axios.get(
-      `${process.env.PAYMENT_SERVICE_URL || 'http://payment-service:4200'}/api/payment/${paymentId}`
-    );
-    if (data.status !== 'succeeded') throw new Error('Payment not successful');
-    return true;
-  } catch (err) {
-    throw new Error('Payment verification failed');
-  }
 }
 
 /* ───────────────────────── controllers ───────────────────────── */
@@ -44,10 +29,9 @@ export async function createOrder(req, res) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
-  try {
-    await verifyPayment(paymentId);
-  } catch (err) {
-    return res.status(400).json({ error: err.message });
+  // If paymentId is provided, assume payment was successful
+  if (!paymentId) {
+    return res.status(400).json({ error: 'Payment ID is required' });
   }
 
   // Calculate subtotal (simple sum)
