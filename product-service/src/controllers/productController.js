@@ -6,7 +6,7 @@ export const createProduct = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid request data' });
         }
         const {
             vendorId,
@@ -16,7 +16,7 @@ export const createProduct = async (req, res) => {
             quantityInStock,
             images,
             tags,
-            isPublished = true,
+            isPublished = false,
         } = req.body;
         const product = await Product.create({
             vendorId,
@@ -29,8 +29,8 @@ export const createProduct = async (req, res) => {
             isPublished,
         });
         res.status(201).json({
-            message: 'Product created successfully',
-            product,
+            message: "Product created successfully.",
+            productId: product._id
         });
     } catch (error) {
         console.error('Error creating product:', error);
@@ -42,7 +42,7 @@ export const updateProduct = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid request data' });
         }
         const { id } = req.params;
         const updateData = req.body;
@@ -52,8 +52,7 @@ export const updateProduct = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
         res.json({
-            message: 'Product updated successfully',
-            product,
+            message: "Product updated successfully."
         });
     } catch (error) {
         console.error('Error updating product:', error);
@@ -65,7 +64,7 @@ export const deleteProduct = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid request data' });
         }
         const { id } = req.params;
         const product = await Product.findByIdAndDelete(id);
@@ -73,8 +72,7 @@ export const deleteProduct = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
         res.json({
-            message: 'Product deleted successfully',
-            product,
+            message: "Product deleted successfully."
         });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -86,40 +84,51 @@ export const listProducts = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid query parameters' });
         }
         const {
             page = 1,
-            limit = 10,
+            limit = 20,
             minPrice,
             maxPrice,
             tags,
-            sort = 'createdAt',
+            sort = 'createdAt:desc',
         } = req.query;
         const query = {};
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+
+        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
-        if (sort === 'price_asc') sortOption = { price: 1 };
-        if (sort === 'price_desc') sortOption = { price: -1 };
-        if (sort === 'name_asc') sortOption = { name: 1 };
-        if (sort === 'name_desc') sortOption = { name: -1 };
-        if (sort === 'created_asc') sortOption = { createdAt: 1 };
-        if (sort === 'created_desc') sortOption = { createdAt: -1 };
+        if (sort === 'price:asc') sortOption = { price: 1 };
+        if (sort === 'price:desc') sortOption = { price: -1 };
+        if (sort === 'name:asc') sortOption = { name: 1 };
+        if (sort === 'name:desc') sortOption = { name: -1 };
+        if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
+        if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+
         const products = await Product.find(query)
             .sort(sortOption)
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
+
+        // Transform products to match README format
+        const transformedProducts = products.map(product => ({
+            productId: product._id,
+            name: product.name,
+            price: product.price,
+            thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
+            averageRating: product.averageRating,
+            reviewCount: product.reviewCount
+        }));
+
         res.json({
-            products,
-            pagination: {
-                page: Number(page),
-                limit: Number(limit),
-                total,
-                pages: Math.ceil(total / limit),
-            },
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            products: transformedProducts
         });
     } catch (error) {
         console.error('Error listing products:', error);
@@ -131,41 +140,53 @@ export const listProductsByVendor = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid query parameters' });
         }
         const { vendorId } = req.params;
         const {
             page = 1,
-            limit = 10,
+            limit = 30,
             minPrice,
             maxPrice,
             tags,
-            sort = 'createdAt',
+            sort = 'createdAt:desc',
         } = req.query;
         const query = { vendorId };
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+
+        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
-        if (sort === 'price_asc') sortOption = { price: 1 };
-        if (sort === 'price_desc') sortOption = { price: -1 };
-        if (sort === 'name_asc') sortOption = { name: 1 };
-        if (sort === 'name_desc') sortOption = { name: -1 };
-        if (sort === 'created_asc') sortOption = { createdAt: 1 };
-        if (sort === 'created_desc') sortOption = { createdAt: -1 };
+        if (sort === 'price:asc') sortOption = { price: 1 };
+        if (sort === 'price:desc') sortOption = { price: -1 };
+        if (sort === 'name:asc') sortOption = { name: 1 };
+        if (sort === 'name:desc') sortOption = { name: -1 };
+        if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
+        if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+
         const products = await Product.find(query)
             .sort(sortOption)
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
+
+        // Transform products to match README format
+        const transformedProducts = products.map(product => ({
+            productId: product._id,
+            name: product.name,
+            price: product.price,
+            thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
+            averageRating: product.averageRating,
+            reviewCount: product.reviewCount
+        }));
+
         res.json({
-            products,
-            pagination: {
-                page: Number(page),
-                limit: Number(limit),
-                total,
-                pages: Math.ceil(total / limit),
-            },
+            vendorId,
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            products: transformedProducts
         });
     } catch (error) {
         console.error('Error listing products by vendor:', error);
@@ -177,14 +198,31 @@ export const getProductById = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid product ID' });
         }
         const { id } = req.params;
         const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-        res.json({ product });
+
+        // Transform to match README format
+        const productResponse = {
+            productId: product._id,
+            vendorId: product.vendorId,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            quantityInStock: product.quantityInStock,
+            images: product.images,
+            tags: product.tags,
+            averageRating: product.averageRating,
+            reviewCount: product.reviewCount,
+            isPublished: product.isPublished,
+            createdAt: product.createdAt
+        };
+
+        res.json(productResponse);
     } catch (error) {
         console.error('Error getting product by ID:', error);
         res.status(500).json({ error: 'Internal server error' });

@@ -6,22 +6,42 @@ export const createReview = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Rating must be between 1 and 5' });
         }
-        const { productId } = req.params;
+        const { id: productId } = req.params;
         const { rating, comment } = req.body;
         const { userId } = req.user;
+
+        // Check if user already reviewed this product
+        const existingReview = await Review.findOne({ productId, userId });
+        if (existingReview) {
+            return res.status(409).json({ error: 'You have already reviewed this product' });
+        }
+
         const review = await Review.create({
             productId,
             userId,
             rating,
             comment: comment || '',
         });
+
         // Recalculate product rating
         await Product.recalculateRating(productId);
+
+        // Get updated product to get new average rating and count
+        const updatedProduct = await Product.findById(productId);
+
         res.status(201).json({
-            message: 'Review created successfully',
-            review,
+            message: "Review submitted.",
+            review: {
+                reviewId: review._id,
+                userId: review.userId,
+                rating: review.rating,
+                comment: review.comment,
+                createdAt: review.createdAt
+            },
+            newAverageRating: updatedProduct.averageRating,
+            newReviewCount: updatedProduct.reviewCount
         });
     } catch (error) {
         console.error('Error creating review:', error);
@@ -33,32 +53,43 @@ export const listReviews = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid query parameters' });
         }
-        const { productId } = req.params;
+        const { id: productId } = req.params;
         const {
             page = 1,
             limit = 10,
-            sort = 'createdAt',
+            sort = 'createdAt:desc',
         } = req.query;
+
+        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
-        if (sort === 'created_asc') sortOption = { createdAt: 1 };
-        if (sort === 'created_desc') sortOption = { createdAt: -1 };
-        if (sort === 'rating_asc') sortOption = { rating: 1 };
-        if (sort === 'rating_desc') sortOption = { rating: -1 };
+        if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
+        if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+        if (sort === 'rating:asc') sortOption = { rating: 1 };
+        if (sort === 'rating:desc') sortOption = { rating: -1 };
+
         const reviews = await Review.find({ productId })
             .sort(sortOption)
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Review.countDocuments({ productId });
+
+        // Transform reviews to match README format (note: username would need to come from user service)
+        const transformedReviews = reviews.map(review => ({
+            reviewId: review._id,
+            userId: review.userId,
+            username: `user_${review.userId}`, // Placeholder - should come from user service
+            rating: review.rating,
+            comment: review.comment,
+            createdAt: review.createdAt
+        }));
+
         res.json({
-            reviews,
-            pagination: {
-                page: Number(page),
-                limit: Number(limit),
-                total,
-                pages: Math.ceil(total / limit),
-            },
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            reviews: transformedReviews
         });
     } catch (error) {
         console.error('Error listing reviews:', error);
@@ -70,23 +101,36 @@ export const updateReview = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid rating value' });
         }
-        const { productId, reviewId } = req.params;
+        const { id: productId, reviewId } = req.params;
         const { userId } = req.user;
         const updateData = req.body;
+
         const review = await Review.findOneAndUpdate(
             { _id: reviewId, productId, userId },
             updateData,
             { new: true }
         );
         if (!review) {
-            return res.status(404).json({ error: 'Review not found or unauthorized' });
+            return res.status(404).json({ error: 'Review not found' });
         }
+
+        // Recalculate product rating
         await Product.recalculateRating(productId);
+
+        // Get updated product to get new average rating
+        const updatedProduct = await Product.findById(productId);
+
         res.json({
-            message: 'Review updated successfully',
-            review,
+            message: "Review updated.",
+            review: {
+                reviewId: review._id,
+                rating: review.rating,
+                comment: review.comment,
+                updatedAt: review.updatedAt
+            },
+            newAverageRating: updatedProduct.averageRating
         });
     } catch (error) {
         console.error('Error updating review:', error);
@@ -98,19 +142,20 @@ export const deleteReview = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ error: 'Invalid review ID' });
         }
-        const { productId, reviewId } = req.params;
+        const { id: productId, reviewId } = req.params;
         const { userId } = req.user;
+
         const review = await Review.findOneAndDelete({ _id: reviewId, productId, userId });
         if (!review) {
-            return res.status(404).json({ error: 'Review not found or unauthorized' });
+            return res.status(404).json({ error: 'Review not found' });
         }
+
+        // Recalculate product rating
         await Product.recalculateRating(productId);
-        res.json({
-            message: 'Review deleted successfully',
-            review,
-        });
+
+        res.status(204).send();
     } catch (error) {
         console.error('Error deleting review:', error);
         res.status(500).json({ error: 'Internal server error' });

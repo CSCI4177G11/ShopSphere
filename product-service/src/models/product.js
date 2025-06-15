@@ -7,7 +7,7 @@ const productSchema = new Schema(
     vendorId: {
       type: String,
       required: true,
-      index: true,            
+      index: true,
     },
     name: {
       type: String,
@@ -35,7 +35,7 @@ const productSchema = new Schema(
     },
     tags: {
       type: [String],
-      index: true,            
+      index: true,
     },
     averageRating: {
       type: Number,
@@ -66,7 +66,7 @@ productSchema.set('toJSON', {
 
 productSchema.statics.recalculateRating = async function (productId) {
   const result = await this.model('Review').aggregate([
-    { $match: { productId: mongoose.Types.ObjectId(productId) } },
+    { $match: { productId: new mongoose.Types.ObjectId(productId) } },
     {
       $group: {
         _id: '$productId',
