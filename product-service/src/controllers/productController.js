@@ -1,9 +1,6 @@
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
-
-// Mock data for now - replace with actual database operations
-let products = [];
-let productIdCounter = 1;
+import Product from '../models/product.js';
 
 export const createProduct = async (req, res) => {
     try {
@@ -11,7 +8,6 @@ export const createProduct = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const {
             vendorId,
             name,
@@ -22,9 +18,7 @@ export const createProduct = async (req, res) => {
             tags,
             isPublished = true,
         } = req.body;
-
-        const product = {
-            id: productIdCounter++,
+        const product = await Product.create({
             vendorId,
             name,
             description,
@@ -33,12 +27,7 @@ export const createProduct = async (req, res) => {
             images,
             tags: tags || [],
             isPublished,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-        products.push(product);
-
+        });
         res.status(201).json({
             message: 'Product created successfully',
             product,
@@ -55,22 +44,16 @@ export const updateProduct = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { id } = req.params;
-        const productIndex = products.findIndex(p => p.id === parseInt(id));
-
-        if (productIndex === -1) {
-            return res.status(404).json({ error: 'Product not found' });
-        }
-
         const updateData = req.body;
         updateData.updatedAt = new Date();
-
-        products[productIndex] = { ...products[productIndex], ...updateData };
-
+        const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
         res.json({
             message: 'Product updated successfully',
-            product: products[productIndex],
+            product,
         });
     } catch (error) {
         console.error('Error updating product:', error);
@@ -84,19 +67,14 @@ export const deleteProduct = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { id } = req.params;
-        const productIndex = products.findIndex(p => p.id === parseInt(id));
-
-        if (productIndex === -1) {
+        const product = await Product.findByIdAndDelete(id);
+        if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-
-        const deletedProduct = products.splice(productIndex, 1)[0];
-
         res.json({
             message: 'Product deleted successfully',
-            product: deletedProduct,
+            product,
         });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -110,7 +88,6 @@ export const listProducts = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const {
             page = 1,
             limit = 10,
@@ -119,42 +96,29 @@ export const listProducts = async (req, res) => {
             tags,
             sort = 'createdAt',
         } = req.query;
-
-        let filteredProducts = [...products];
-
-        // Apply filters
-        if (minPrice) {
-            filteredProducts = filteredProducts.filter(p => p.price >= parseFloat(minPrice));
-        }
-        if (maxPrice) {
-            filteredProducts = filteredProducts.filter(p => p.price <= parseFloat(maxPrice));
-        }
-        if (tags) {
-            const tagArray = tags.split(',').map(tag => tag.trim());
-            filteredProducts = filteredProducts.filter(p =>
-                p.tags.some(tag => tagArray.includes(tag))
-            );
-        }
-
-        // Apply sorting
-        filteredProducts.sort((a, b) => {
-            if (sort === 'price') return a.price - b.price;
-            if (sort === 'name') return a.name.localeCompare(b.name);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-
-        // Apply pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
+        const query = {};
+        if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
+        if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+        if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+        let sortOption = { createdAt: -1 };
+        if (sort === 'price_asc') sortOption = { price: 1 };
+        if (sort === 'price_desc') sortOption = { price: -1 };
+        if (sort === 'name_asc') sortOption = { name: 1 };
+        if (sort === 'name_desc') sortOption = { name: -1 };
+        if (sort === 'created_asc') sortOption = { createdAt: 1 };
+        if (sort === 'created_desc') sortOption = { createdAt: -1 };
+        const products = await Product.find(query)
+            .sort(sortOption)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+        const total = await Product.countDocuments(query);
         res.json({
-            products: paginatedProducts,
+            products,
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total: filteredProducts.length,
-                pages: Math.ceil(filteredProducts.length / limit),
+                page: Number(page),
+                limit: Number(limit),
+                total,
+                pages: Math.ceil(total / limit),
             },
         });
     } catch (error) {
@@ -169,7 +133,6 @@ export const listProductsByVendor = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { vendorId } = req.params;
         const {
             page = 1,
@@ -179,42 +142,29 @@ export const listProductsByVendor = async (req, res) => {
             tags,
             sort = 'createdAt',
         } = req.query;
-
-        let filteredProducts = products.filter(p => p.vendorId === vendorId);
-
-        // Apply filters
-        if (minPrice) {
-            filteredProducts = filteredProducts.filter(p => p.price >= parseFloat(minPrice));
-        }
-        if (maxPrice) {
-            filteredProducts = filteredProducts.filter(p => p.price <= parseFloat(maxPrice));
-        }
-        if (tags) {
-            const tagArray = tags.split(',').map(tag => tag.trim());
-            filteredProducts = filteredProducts.filter(p =>
-                p.tags.some(tag => tagArray.includes(tag))
-            );
-        }
-
-        // Apply sorting
-        filteredProducts.sort((a, b) => {
-            if (sort === 'price') return a.price - b.price;
-            if (sort === 'name') return a.name.localeCompare(b.name);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-
-        // Apply pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
+        const query = { vendorId };
+        if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
+        if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+        if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+        let sortOption = { createdAt: -1 };
+        if (sort === 'price_asc') sortOption = { price: 1 };
+        if (sort === 'price_desc') sortOption = { price: -1 };
+        if (sort === 'name_asc') sortOption = { name: 1 };
+        if (sort === 'name_desc') sortOption = { name: -1 };
+        if (sort === 'created_asc') sortOption = { createdAt: 1 };
+        if (sort === 'created_desc') sortOption = { createdAt: -1 };
+        const products = await Product.find(query)
+            .sort(sortOption)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+        const total = await Product.countDocuments(query);
         res.json({
-            products: paginatedProducts,
+            products,
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total: filteredProducts.length,
-                pages: Math.ceil(filteredProducts.length / limit),
+                page: Number(page),
+                limit: Number(limit),
+                total,
+                pages: Math.ceil(total / limit),
             },
         });
     } catch (error) {
@@ -229,14 +179,11 @@ export const getProductById = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { id } = req.params;
-        const product = products.find(p => p.id === parseInt(id));
-
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-
         res.json({ product });
     } catch (error) {
         console.error('Error getting product by ID:', error);

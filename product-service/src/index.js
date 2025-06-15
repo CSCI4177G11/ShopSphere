@@ -33,33 +33,15 @@ app.use((req, res, next) => {
   next(err);
 });
 
-app.use((err, req, res, next) => { // eslint-disable-line
-  console.error(err);
-  res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
-});
 
-async function start() {
-  try {
-    if (NODE_ENV !== 'test') {
-      await mongoose.connect(MONGODB_URI, {
-        dbName: DB_NAME,
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log('MongoDB connected');
-    }
-    if (NODE_ENV !== 'test') app.listen(PORT, () => console.log(`product-service on :${PORT}`));
-  } catch (err) {
-    console.error('Mongo connection error', err);
-    if (NODE_ENV === 'development') {
-      console.log('Starting without MongoDB in development mode...');
-      app.listen(PORT, () => console.log(`product-service on :${PORT} (no database)`));
-    } else {
-      process.exit(1);
-    }
-  }
-}
-start();
+mongoose.connect(MONGODB_URI)
+.then(() => {
+  console.log("✅ Connected to MongoDB");
+  app.listen(PORT || 4000, () =>
+    console.log(`✅ Auth Service running on port ${PORT || 4000}`)
+  );
+})
+.catch(err => console.error("MongoDB connection error:", err));
 
 process.on('SIGINT', async () => {
   await mongoose.connection.close();

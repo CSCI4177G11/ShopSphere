@@ -1,8 +1,6 @@
 import { validationResult } from 'express-validator';
-
-// Mock data for now - replace with actual database operations
-let reviews = [];
-let reviewIdCounter = 1;
+import Review from '../models/review.js';
+import Product from '../models/product.js';
 
 export const createReview = async (req, res) => {
     try {
@@ -10,23 +8,17 @@ export const createReview = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { productId } = req.params;
         const { rating, comment } = req.body;
         const { userId } = req.user;
-
-        const review = {
-            id: reviewIdCounter++,
-            productId: parseInt(productId),
+        const review = await Review.create({
+            productId,
             userId,
             rating,
             comment: comment || '',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-
-        reviews.push(review);
-
+        });
+        // Recalculate product rating
+        await Product.recalculateRating(productId);
         res.status(201).json({
             message: 'Review created successfully',
             review,
@@ -43,36 +35,29 @@ export const listReviews = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
         const { productId } = req.params;
         const {
             page = 1,
             limit = 10,
             sort = 'createdAt',
         } = req.query;
-
-        let filteredReviews = reviews.filter(r => r.productId === parseInt(productId));
-
-        // Apply sorting
-        filteredReviews.sort((a, b) => {
-            if (sort === 'rating') return b.rating - a.rating;
-            if (sort === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
-            if (sort === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-
-        // Apply pagination
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + parseInt(limit);
-        const paginatedReviews = filteredReviews.slice(startIndex, endIndex);
-
+        let sortOption = { createdAt: -1 };
+        if (sort === 'created_asc') sortOption = { createdAt: 1 };
+        if (sort === 'created_desc') sortOption = { createdAt: -1 };
+        if (sort === 'rating_asc') sortOption = { rating: 1 };
+        if (sort === 'rating_desc') sortOption = { rating: -1 };
+        const reviews = await Review.find({ productId })
+            .sort(sortOption)
+            .skip((page - 1) * limit)
+            .limit(Number(limit));
+        const total = await Review.countDocuments({ productId });
         res.json({
-            reviews: paginatedReviews,
+            reviews,
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total: filteredReviews.length,
-                pages: Math.ceil(filteredReviews.length / limit),
+                page: Number(page),
+                limit: Number(limit),
+                total,
+                pages: Math.ceil(total / limit),
             },
         });
     } catch (error) {
@@ -87,23 +72,21 @@ export const updateReview = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
-        const { reviewId } = req.params;
+        const { productId, reviewId } = req.params;
         const { userId } = req.user;
-        const reviewIndex = reviews.findIndex(r => r.id === parseInt(reviewId) && r.userId === userId);
-
-        if (reviewIndex === -1) {
+        const updateData = req.body;
+        const review = await Review.findOneAndUpdate(
+            { _id: reviewId, productId, userId },
+            updateData,
+            { new: true }
+        );
+        if (!review) {
             return res.status(404).json({ error: 'Review not found or unauthorized' });
         }
-
-        const updateData = req.body;
-        updateData.updatedAt = new Date();
-
-        reviews[reviewIndex] = { ...reviews[reviewIndex], ...updateData };
-
+        await Product.recalculateRating(productId);
         res.json({
             message: 'Review updated successfully',
-            review: reviews[reviewIndex],
+            review,
         });
     } catch (error) {
         console.error('Error updating review:', error);
@@ -117,20 +100,16 @@ export const deleteReview = async (req, res) => {
         if (!errors.isEmpty()) {
             return res.status(400).json({ errors: errors.array() });
         }
-
-        const { reviewId } = req.params;
+        const { productId, reviewId } = req.params;
         const { userId } = req.user;
-        const reviewIndex = reviews.findIndex(r => r.id === parseInt(reviewId) && r.userId === userId);
-
-        if (reviewIndex === -1) {
+        const review = await Review.findOneAndDelete({ _id: reviewId, productId, userId });
+        if (!review) {
             return res.status(404).json({ error: 'Review not found or unauthorized' });
         }
-
-        const deletedReview = reviews.splice(reviewIndex, 1)[0];
-
+        await Product.recalculateRating(productId);
         res.json({
             message: 'Review deleted successfully',
-            review: deletedReview,
+            review,
         });
     } catch (error) {
         console.error('Error deleting review:', error);
