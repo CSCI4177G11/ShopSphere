@@ -14,15 +14,15 @@ Role enforcement:
 
 # 1. Order Creation
 
-## 1.1 **POST `/orders`**
+## 1.1 **POST `/orders`**
 
 Creates **one order per vendor** contained in the cart.
 
 | Success | Error(s) |
 |---------|----------|
-| **201 Created** | **400** – malformed payload<br>**401** – unauthenticated<br>**402** – payment failed<br>**404** – consumer / vendor / product not found |
+| **201 Created** | **400** – malformed payload<br>**401** – unauthenticated<br>**402** – payment failed<br>**404** – consumer / vendor / product not found |
 
-### Request Body
+### Request Body
 ```json
 {
   "consumerId": "u123",
@@ -46,7 +46,7 @@ Creates **one order per vendor** contained in the cart.
 }
 ```
 
-### Success Response 201
+### Success Response 201
 ```json
 {
   "message": "Orders created successfully.",
@@ -58,20 +58,22 @@ Creates **one order per vendor** contained in the cart.
 
 # 2. Browse / Retrieve Orders
 
-## 2.1 **GET `/orders`** (Admin)
+## 2.1 **GET `/orders`** (Vendor / Admin)
 
-Return all orders with optional filters.
+Return orders with role-based access:
+- **Vendor**: Only sees orders for their products (`vendorId = user.userId`)
+- **Admin**: Sees all orders
 
-### Query Params
+### Query Params
 ```
-?status=shipped&vendorId=v101&userId=u123&page=1&limit=50
+?orderStatus=shipped&dateFrom=2025-06-01T00:00:00Z&dateTo=2025-06-15T23:59:59Z&page=1&limit=50
 ```
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – not admin |
+| **200 OK** | **401** – unauthenticated<br>**403** – not vendor/admin |
 
-### Success Response 200
+### Success Response 200
 ```json
 {
   "page": 1,
@@ -92,61 +94,43 @@ Return all orders with optional filters.
 
 ---
 
-## 2.2 **GET `/orders/user/:userId`**
+## 2.2 **GET `/orders/user/:userId`**
 
 Retrieve orders for a consumer (self or admin).
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden other user (if not admin) |
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden other user (if not admin) |
 
-### Success Response 200
+### Success Response 200
 ```json
-[
-  {
-    "orderId": "ord_001",
-    "vendorId": "v101",
-    "orderStatus": "processing",
-    "subtotalAmount": 59.97,
-    "createdAt": "2025-06-11T19:00:00Z"
-  }
-]
+{
+  "page": 1,
+  "limit": 20,
+  "total": 2,
+  "orders": [
+    {
+      "orderId": "ord_001",
+      "vendorId": "v101",
+      "orderStatus": "processing",
+      "subtotalAmount": 59.97,
+      "createdAt": "2025-06-11T19:00:00Z"
+    }
+  ]
+}
 ```
 
 ---
 
-## 2.3 **GET `/orders/vendor/:vendorId`**
-
-Vendor’s received orders.
-
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – accessing another vendor |
-
-### Success Response 200
-```json
-[
-  {
-    "orderId": "ord_001",
-    "consumerId": "u123",
-    "orderStatus": "processing",
-    "subtotalAmount": 59.97,
-    "createdAt": "2025-06-11T19:00:00Z"
-  }
-]
-```
-
----
-
-## 2.4 **GET `/orders/:id`**
+## 2.3 **GET `/orders/:id`**
 
 Full detail (consumer, vendor, or admin access as permitted).
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden (not your order)<br>**404** – order not found |
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden (not your order)<br>**404** – order not found |
 
-### Success Response 200
+### Success Response 200
 ```json
 {
   "orderId": "ord_001",
@@ -174,40 +158,40 @@ Full detail (consumer, vendor, or admin access as permitted).
 
 # 3. Order Lifecycle Actions
 
-## 3.1 **PUT `/orders/:id/status`** (Vendor / Admin)
+## 3.1 **PUT `/orders/:id/status`** (Vendor / Admin)
 
 Update status (`processing`, `shipped`, `delivered`, etc.).
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **400** – invalid status<br>**401** – unauthenticated<br>**403** – not vendor of order / not admin<br>**404** – order not found |
+| **200 OK** | **400** – invalid status<br>**401** – unauthenticated<br>**403** – not vendor of order / not admin<br>**404** – order not found |
 
-### Request Body
+### Request Body
 ```json
 { "orderStatus": "shipped" }
 ```
 
-### Success Response 200
+### Success Response 200
 ```json
 { "message": "Order status updated successfully." }
 ```
 
 ---
 
-## 3.2 **POST `/orders/:id/cancel`** (Consumer / Admin)
+## 3.2 **POST `/orders/:id/cancel`** (Consumer / Admin)
 
 Consumer can cancel while status is `pending` or `processing`.
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **400** – cannot cancel current status<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – order not found |
+| **200 OK** | **400** – cannot cancel current status<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – order not found |
 
-### Request Body _(optional)_
+### Request Body _(optional)_
 ```json
 { "reason": "Ordered by mistake." }
 ```
 
-### Success Response 200
+### Success Response 200
 ```json
 {
   "message": "Order cancelled.",
@@ -217,15 +201,15 @@ Consumer can cancel while status is `pending` or `processing`.
 
 ---
 
-## 3.3 **GET `/orders/:id/tracking`**
+## 3.3 **GET `/orders/:id/tracking`**
 
 Return chronological status updates for shipment tracking.
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden<br>**404** – order not found |
+| **200 OK** | **401** – unauthenticated<br>**403** – forbidden<br>**404** – order not found |
 
-### Success Response 200
+### Success Response 200
 ```json
 {
   "orderId": "ord_001",
