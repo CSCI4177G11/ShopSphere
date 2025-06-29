@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 5001;
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connected");
-    app.listen(PORT || 4000, () =>
-      console.log(`Authentication is running on port ${PORT || 5001}`)
+    app.listen(PORT || 5001, () =>
+      console.log(`User is running on port ${PORT || 5002}`)
     );
   })
   .catch(err => console.error("Error:", err));
