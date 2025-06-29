@@ -1,8 +1,3 @@
-// src/index.js
-// ────────────────────────────────────────────────────────────
-// Payment-service entry point for ShopSphere
-// ------------------------------------------------------------
-
 import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
@@ -24,7 +19,7 @@ const {
 } = process.env;
 
 if (!STRIPE_SECRET_KEY) {
-  console.error('❌  STRIPE_SECRET_KEY missing – aborting start-up.');
+  console.error('STRIPE_SECRET_KEY missing – aborting start-up.');
   process.exit(1);
 }
 
