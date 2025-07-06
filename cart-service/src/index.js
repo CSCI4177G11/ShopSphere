@@ -7,8 +7,9 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: Date.now() }));
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/shopsphere')
+mongoose.connect(process.env.MONGO_URI || 'mongodb://mongo:27017/shopsphere')
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error(err));
 
