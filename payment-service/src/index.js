@@ -1,80 +1,119 @@
-import 'express-async-errors';
+// src/index.js
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import Stripe from 'stripe';
+import dotenv from 'dotenv';
 
-import apiRouter from './routes/index.js';      
+import paymentRoutes from './routes/paymentRoutes.js'; // ⇦ you’ll add these soon!
 
 dotenv.config();
 
+// -----------------------------------------------------------------------------
+// Environment variables
+// -----------------------------------------------------------------------------
 const {
-  PORT           = 4004,
-  NODE_ENV       = 'development',
+  PORT = 5002,
   MONGO_URI,
   STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET,
+  NODE_ENV = 'development',
 } = process.env;
 
-if (!STRIPE_SECRET_KEY) {
-  console.error('STRIPE_SECRET_KEY missing – aborting start-up.');
+if (!MONGO_URI || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+  console.error('❌  Missing one or more required env vars in .env');
   process.exit(1);
 }
 
-export const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
+// -----------------------------------------------------------------------------
+// External services
+// -----------------------------------------------------------------------------
+export const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: '2024-04-10', // pin to a specific Stripe API version
+});
 
+// -----------------------------------------------------------------------------
+// App bootstrap
+// -----------------------------------------------------------------------------
 const app = express();
 
-app.use(cors());
-app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
-
-
+/**
+ * Stripe webhooks MUST receive the raw request body for signature verification.
+ * Register this route BEFORE express.json(), so no body parsing has happened.
+ */
 app.post(
-  '/api/payment/webhook/stripe',
+  '/api/payments/webhook',
   express.raw({ type: 'application/json' }),
-  async (req, res, next) => {
-    const signature = req.headers['stripe-signature'];
-    let event;
+  (req, res) => {
+    const sig = req.headers['stripe-signature'];
 
+    let event;
     try {
-      event = stripe.webhooks.constructEvent(req.body, signature, STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        STRIPE_WEBHOOK_SECRET,
+      );
     } catch (err) {
-      console.error('⚡️  Stripe signature verification failed:', err.message);
-      return res.status(400).json({ error: `Invalid signature: ${err.message}` });
+      console.error(`⚠️  Webhook signature verification failed: ${err.message}`);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    console.log('🔔  Stripe event received:', event.type);
-    return res.json({ received: true });
+    // TODO: delegate to a dedicated webhook controller
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+      case 'payment_intent.payment_failed':
+      case 'payment_method.attached':
+        console.log(`🔔  Stripe event received: ${event.type}`);
+        break;
+      default:
+        console.log(`🤷‍  Unhandled event type: ${event.type}`);
+    }
+
+    return res.sendStatus(200);
   },
 );
 
-app.use(express.json({ limit: '10kb' }));
+// -----------------------------------------------------------------------------
+// Global middle-ware (runs AFTER the webhook route)
+// -----------------------------------------------------------------------------
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
+if (NODE_ENV !== 'test') {
+  app.use(morgan('dev'));
+}
 
-app.use('/api/payment', apiRouter); 
+// -----------------------------------------------------------------------------
+// Domain routes
+// -----------------------------------------------------------------------------
+app.use('/api/payments', paymentRoutes);
 
-app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
+// Simple health-check
+app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
-app.use((err, req, res, next) => {
-  console.error('🔥  Uncaught error:', err);
-  res.status(err.statusCode || 500).json({ error: err.message || 'Internal Server Error' });
+// -----------------------------------------------------------------------------
+// Central error handler
+// -----------------------------------------------------------------------------
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(err.statusCode || 500).json({
+    error: err.message || 'Internal Server Error',
+  });
 });
 
-(async () => {
-  try {
-    if (MONGO_URI) {
-      await mongoose.connect(MONGO_URI);
-      console.log('💾  MongoDB connected');
-    } else {
-      console.warn('⚠️  MONGO_URI not set – skipping DB connection (ephemeral only)');
-    }
-
+// -----------------------------------------------------------------------------
+// Database connection & server start
+// -----------------------------------------------------------------------------
+mongoose
+  .connect(MONGO_URI, { dbName: 'payments' })
+  .then(() => {
+    console.log('✅  MongoDB connected');
     app.listen(PORT, () =>
-      console.log(`🚀  payment-service running on port ${PORT} (${NODE_ENV})`),
+      console.log(`🚀  Payment-service running on http://localhost:${PORT}`),
     );
-  } catch (err) {
-    console.error('❌  Failed to initialise payment-service:', err);
+  })
+  .catch((err) => {
+    console.error('❌  MongoDB connection failed', err);
     process.exit(1);
-  }
-})();
+  });
