@@ -1,36 +1,27 @@
 {
-    "name": "payment-service",
-    "version": "1.0.0",
-    "description": "ShopSphere payment micro-service – handles Stripe transactions, saved cards and webhooks",
-    "main": "src/index.js",
-    "type": "module",
-    "scripts": {
-      "start": "node src/index.js",
-      "dev": "nodemon src/index.js",
-      "lint": "eslint .",
-      "test": "jest --runInBand"
-    },
-    "dependencies": {
-      "express": "^4.19.2",
-      "stripe": "^13.0.0",
-      "dotenv": "^16.4.1",
-      "cors": "^2.8.5",
-      "morgan": "^1.10.0",
-      "body-parser": "^1.20.2",
-      "express-async-errors": "^3.1.1",
-      "mongoose": "^8.0.1",          
-      "uuid": "^9.0.1"
-    },
-    "devDependencies": {
-      "nodemon": "^3.0.3",
-      "eslint": "^8.57.0",
-      "jest": "^30.1.1",
-      "supertest": "^7.4.2"
-    },
-    "engines": {
-      "node": ">=18"
-    },
-    "author": "ShopSphere Team",
-    "license": "MIT"
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Microservice that handles Stripe customer creation, card vaulting, and checkout payments for the ShopSphere platform.",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "author": "Abdullah Mohammed Al Salmi",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.0",
+    "express-validator": "^7.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.3",
+    "morgan": "^1.10.0",
+    "stripe": "^14.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
-  
+}
