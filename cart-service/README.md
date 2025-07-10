@@ -85,7 +85,9 @@ Add a product (or increase quantity if already present).
 ### Request Body
 ```json
 {
-  "productId": "p001",
+  "productId": "abc123",
+  "productName": "Wireless Mouse",
+  "price": 29.99,
   "quantity": 2
 }
 ```
