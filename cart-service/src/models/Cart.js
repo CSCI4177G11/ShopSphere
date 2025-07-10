@@ -1,7 +1,12 @@
 import mongoose from 'mongoose';
-const { Schema, model } = mongoose;
+const { Schema, model, Types } = mongoose;
 
 const ItemSchema = new Schema({
+  itemId: {
+    type: String,
+    default: () => new Types.ObjectId().toString(),
+    unique: true
+  },
   productId: String,
   productName: String,
   price: Number,
