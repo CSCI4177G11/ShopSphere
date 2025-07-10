@@ -8,7 +8,8 @@ function resolveUserId(req) {
 function requireUserId(req, res) {
   const userId = resolveUserId(req);
   if (!userId) {
-    return res.status(401).json({ error: 'Authentication required' });
+    res.status(401).json({ error: 'Unauthorized: missing or expired token' });
+    return null;
   }
   return userId;
 }
@@ -17,9 +18,31 @@ export const getCart = async (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
 
+  // Parse pagination params
+  let page = parseInt(req.query.page, 10) || 1;
+  let limit = parseInt(req.query.limit, 10) || 50;
+  if (page < 1) page = 1;
+  if (limit < 1) limit = 50;
+
   try {
     const cart = await Cart.findOne({ userId });
-    res.json(cart || { userId, items: [] });
+    const items = cart ? cart.items : [];
+    const totalItems = items.length;
+    const start = (page - 1) * limit;
+    const paginatedItems = items.slice(start, start + limit).map(item => ({
+      itemId: item.itemId,
+      productId: item.productId,
+      productName: item.productName,
+      price: item.price,
+      quantity: item.quantity,
+      addedAt: item.addedAt
+    }));
+    res.status(200).json({
+      page,
+      limit,
+      totalItems,
+      items: paginatedItems
+    });
   } catch (err) {
     console.error('getCart error:', err);
     res.status(500).json({ error: 'Server error while fetching cart' });
@@ -31,20 +54,35 @@ export const addToCart = async (req, res) => {
   if (!userId) return;
 
   const { productId, productName, price, quantity = 1 } = req.body;
-  if (!productId || !productName || !price || quantity < 1) {
-    return res.status(400).json({ error: 'Invalid input data' });
+  if (!productId || !productName || !price) {
+    return res.status(400).json({ error: 'Invalid body: productId, productName, and price are required.' });
+  }
+  if (quantity < 1) {
+    return res.status(400).json({ error: 'Quantity must be at least 1.' });
   }
 
   try {
     let cart = await Cart.findOne({ userId });
     if (!cart) cart = new Cart({ userId, items: [] });
 
-    const existing = cart.items.find((i) => i.productId === productId);
-    existing ? (existing.quantity += quantity)
-             : cart.items.push({ productId, productName, price, quantity });
+    let item = cart.items.find((i) => i.productId === productId);
+    if (item) {
+      item.quantity += quantity;
+    } else {
+      item = { productId, productName, price, quantity };
+      cart.items.push(item);
+      item = cart.items[cart.items.length - 1];
+    }
 
     await cart.save();
-    res.status(201).json({ message: 'Product added', cart });
+    res.status(201).json({
+      message: 'Product added to cart.',
+      item: {
+        itemId: item.itemId,
+        productId: item.productId,
+        quantity: item.quantity
+      }
+    });
   } catch (err) {
     console.error('addToCart error:', err);
     res.status(500).json({ error: 'Server error while adding item' });
@@ -58,20 +96,29 @@ export const updateCart = async (req, res) => {
   const { itemId } = req.params;
   const { quantity } = req.body;
 
-  if (!quantity || quantity < 1) {
-    return res.status(400).json({ error: 'Quantity must be ≥ 1' });
+  if (typeof quantity !== 'number' || isNaN(quantity)) {
+    return res.status(400).json({ error: 'Invalid body: quantity is required and must be a number.' });
+  }
+  if (quantity < 1) {
+    return res.status(400).json({ error: 'Quantity must be at least 1.' });
   }
 
   try {
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ error: 'Cart not found' });
+    if (!cart) return res.status(404).json({ error: 'Item not found' });
 
-    const item = cart.items.find((i) => i.productId === itemId);
+    const item = cart.items.find((i) => i.itemId === itemId);
     if (!item) return res.status(404).json({ error: 'Item not found' });
 
     item.quantity = quantity;
     await cart.save();
-    res.json({ message: 'Cart updated', cart });
+    res.json({
+      message: 'Cart item updated.',
+      item: {
+        itemId: item.itemId,
+        quantity: item.quantity
+      }
+    });
   } catch (err) {
     console.error('updateCart error:', err);
     res.status(500).json({ error: 'Server error while updating cart' });
@@ -86,11 +133,15 @@ export const removeFromCart = async (req, res) => {
 
   try {
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ error: 'Cart not found' });
+    if (!cart) return res.status(404).json({ error: 'Item not found' });
 
-    cart.items = cart.items.filter((i) => i.productId !== itemId);
+    const initialLength = cart.items.length;
+    cart.items = cart.items.filter((i) => i.itemId !== itemId);
+    if (cart.items.length === initialLength) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
     await cart.save();
-    res.json({ message: 'Item removed', cart });
+    res.json({ message: 'Product removed from cart.' });
   } catch (err) {
     console.error('removeFromCart error:', err);
     res.status(500).json({ error: 'Server error while removing item' });
@@ -102,12 +153,12 @@ export const clearCart = async (req, res) => {
   if (!userId) return;
 
   try {
-    const cart = await Cart.findOneAndUpdate(
+    await Cart.findOneAndUpdate(
       { userId },
       { $set: { items: [] } },
       { new: true }
     );
-    res.json({ message: 'Cart cleared', cart });
+    res.status(200).json({ message: 'Cart cleared successfully.' });
   } catch (err) {
     console.error('clearCart error:', err);
     res.status(500).json({ error: 'Server error while clearing cart' });
@@ -120,18 +171,25 @@ export const getCartTotals = async (req, res) => {
 
   try {
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ error: 'Cart not found' });
+    if (!cart) return res.status(200).json({
+      totalItems: 0,
+      subtotal: 0,
+      estimatedTax: 0,
+      total: 0,
+      currency: 'CAD'
+    });
 
-    const totals = cart.items.reduce(
-      (acc, i) => {
-        acc.totalItems += i.quantity;
-        acc.totalPrice += i.quantity * i.price;
-        return acc;
-      },
-      { totalItems: 0, totalPrice: 0 }
-    );
-
-    res.json(totals);
+    const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const totalItems = cart.items.reduce((sum, i) => sum + i.quantity, 0);
+    const estimatedTax = +(subtotal * 0.15).toFixed(2); // 15% tax
+    const total = +(subtotal + estimatedTax).toFixed(2);
+    res.status(200).json({
+      totalItems,
+      subtotal: +subtotal.toFixed(2),
+      estimatedTax,
+      total,
+      currency: 'CAD'
+    });
   } catch (err) {
     console.error('getCartTotals error:', err);
     res.status(500).json({ error: 'Server error while calculating totals' });
