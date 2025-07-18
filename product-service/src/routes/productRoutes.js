@@ -5,7 +5,15 @@ import * as productCtrl from '../controllers/productController.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
-
+router.get('/health', (req, res) => {
+  res.json({
+    service: 'product',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Product service is running smoothly.',
+  });
+});
 router.post(
   '/',
   requireAuth,
@@ -46,6 +54,14 @@ router.delete(
   requireRole(['vendor', 'admin']),
   [param('id').isMongoId()],
   productCtrl.deleteProduct
+);
+
+router.patch(
+  '/:id/decrement-stock',
+  requireAuth,
+  requireRole(['admin', 'vendor', 'consumer']),
+  [param('id').isMongoId(), body('quantity').isInt({ min: 1 })],
+  productCtrl.decrementStock
 );
 
 router.get(
