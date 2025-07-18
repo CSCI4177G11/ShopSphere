@@ -8,6 +8,31 @@ Reviews & ratings require the user to be authenticated as a **consumer**.
 
 ---
 
+## 0. Service Health
+
+### **GET `/product/health`**
+
+Check if the product service is running.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **500** – server error |
+
+**Headers:** None required
+
+**Success Response 200**
+```json
+{
+  "service": "product",
+  "status": "up",
+  "uptime_seconds": "123.45",
+  "checked_at": "2024-05-01T12:34:56.789Z",
+  "message": "Product service is running smoothly."
+}
+```
+
+---
+
 ## 1. Vendor / Admin Operations
 
 ### 1.1 **POST `/product`**
@@ -88,6 +113,35 @@ Remove a product.
 
 ---
 
+### 1.4 **PATCH `/product/:id/decrement-stock`**
+
+Decrement product stock (e.g., after a purchase). Vendor/Admin only.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400** – invalid data/insufficient stock<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
+
+**Headers:**
+- `Authorization: Bearer <JWT>`
+
+**Request Body**
+```json
+{
+  "quantity": 2
+}
+```
+
+**Success Response 200**
+```json
+{
+  "message": "Stock decremented",
+  "productId": "p001",
+  "newQuantity": 8
+}
+```
+
+---
+
 ## 2. Consumer‑Facing Catalogue
 
 ### 2.1 **GET `/product`**
@@ -122,6 +176,17 @@ Paginated catalogue with optional filters.
 }
 ```
 
+**_links** fields are included for each product:
+```json
+{
+  "_links": {
+    "self": "/product/p001",
+    "reviews": "/product/p001/reviews",
+    "vendor": "/vendors/v123"
+  }
+}
+```
+
 ---
 
 ### 2.2 **GET `/product/:id`**
@@ -147,6 +212,17 @@ Full product details (includes aggregated rating & review count).
   "reviewCount": 12,
   "isPublished": true,
   "createdAt": "2025-06-11T18:00:00Z"
+}
+```
+
+**_links** fields are included:
+```json
+{
+  "_links": {
+    "self": "/product/p001",
+    "reviews": "/product/p001/reviews",
+    "vendor": "/vendors/v123"
+  }
 }
 ```
 
@@ -201,6 +277,9 @@ Create a review.
 | Success | Error(s) |
 |---------|----------|
 | **201 Created** | **400** – rating outside 1‑5<br>**401** – unauthenticated<br>**409** – review already exists |
+
+**Headers:**
+- `Authorization: Bearer <JWT>`
 
 #### Request Body
 ```json
@@ -259,6 +338,7 @@ List reviews (paginated).
   ]
 }
 ```
+*Note: Review responses do **not** include a `_links` field.*
 
 ---
 
@@ -269,6 +349,9 @@ Update own review.
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **400** – invalid rating<br>**401** – unauthenticated<br>**403** – not review owner / not admin<br>**404** – review not found |
+
+**Headers:**
+- `Authorization: Bearer <JWT>`
 
 #### Request Body
 ```json
@@ -291,6 +374,7 @@ Update own review.
   "newAverageRating": 4.2
 }
 ```
+*Note: Review responses do **not** include a `_links` field.*
 
 ---
 
@@ -302,14 +386,64 @@ Delete own review.
 |---------|----------|
 | **204 No Content** | **401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – review not found |
 
+**Headers:**
+- `Authorization: Bearer <JWT>`
+
 _No body on success._
+*Note: Review responses do **not** include a `_links` field.*
 
 ---
 
-## ❌ Unified Error Format
+## 4. Permissions & Roles
+
+- **Vendor**: Can create, update, delete, and decrement stock for their own products.
+- **Admin**: Can manage all products.
+- **Consumer/Guest**: Can browse, search, and view product details and reviews.
+- **Authorization**: All protected endpoints require `Authorization: Bearer <JWT>` header.
+
+---
+
+## 5. Error Handling
+
+All endpoints return errors in the following format:
 ```json
-{ "error": "Human‑readable message here" }
+{
+  "error": "Error message here."
+}
 ```
+- 400: Invalid request data or parameters
+- 401: Authentication required or invalid token
+- 403: Insufficient permissions
+- 404: Resource not found
+- 409: Conflict (e.g., duplicate review)
+- 500: Internal server error
+
+---
+
+## 6. Endpoint Summary Table
+
+| Endpoint | Method | Who Can Use | Auth? | Main Use Case |
+|----------|--------|-------------|-------|---------------|
+| `/product/health` | GET | All | No | Service health check |
+| `/product` | POST | Vendor/Admin | Yes | Create product |
+| `/product/:id` | PUT | Vendor/Admin | Yes | Update product |
+| `/product/:id` | DELETE | Vendor/Admin | Yes | Delete product |
+| `/product/:id/decrement-stock` | PATCH | Vendor/Admin | Yes | Decrement stock |
+| `/product` | GET | All | No | Browse/search products |
+| `/product/vendor/:vendorId` | GET | All | No | View vendor’s products |
+| `/product/:id` | GET | All | No | View product details |
+
+---
+
+## 7. Usage Notes for Frontend Developers
+
+- Always include the `Authorization: Bearer <JWT>` header for protected endpoints.
+- Use the `_links` fields in responses to easily navigate to related resources (product details, reviews, vendor info).
+- Handle error responses as described above for robust UX.
+- Use query parameters for filtering, sorting, and pagination in catalogue endpoints.
+- Vendors should ensure they only manage their own products (enforced by backend).
+- Admins have full access to all product management endpoints.
+- Guests/consumers can browse and view products and reviews, but cannot manage products.
 
 ---
 
