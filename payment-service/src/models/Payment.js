@@ -42,10 +42,7 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-/**
- * Helper to convert the Mongo document into a clean JSON object
- * for API responses (removes __v, renames _id ➜ id).
- */
+
 paymentSchema.method('toJSON', function () {
   const { _id, __v, ...obj } = this.toObject();
   obj.id = _id.toString();
