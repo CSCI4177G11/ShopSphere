@@ -1,108 +1,92 @@
-# 📦 **order‑service API**
+# 📦 order-service API
 
-Responsible for **order lifecycle** in ShopSphere.  
-Orders are created **only after successful payment** (verified by `payment-service`).  
-Role enforcement:  
-* **Consumer** – view own orders, cancel pending orders  
-* **Vendor** – view orders they need to fulfil, update status  
-* **Admin** – full access to every order
+Responsible for **order lifecycle** in ShopSphere.
+
+Orders are created **only after successful payment** (verified by `payment-service`).
+
+**Role enforcement:**
+- **Consumer** – view own orders, cancel pending orders
+- **Vendor** – view orders to fulfill, update status
+- **Admin** – full access to every order
 
 **Base path:** `/api/orders`
 
 ---
 
+# 0. Health Check
+
+## **GET `/orders/health`**
+Returns the health status of the order service.
+
+**Roles:** Public
+
+**Response 200:**
+```json
+{
+  "service": "orders",
+  "status": "up",
+  "uptime_seconds": "123.45",
+  "checked_at": "2025-07-17T20:55:40.500Z",
+  "message": "Order service is operational."
+}
+```
+
+---
 
 # 1. Order Creation
 
-## 1.1 **POST `/orders`**
+## **POST `/orders`**
+Creates **one child order per vendor** in the cart, all linked by a single parent order ID (from the payment service).
 
-Creates **one order per vendor** contained in the cart.
+**Roles:** Consumer (authenticated)
 
-| Success | Error(s) |
-|---------|----------|
-| **201 Created** | **400** – malformed payload<br>**401** – unauthenticated<br>**402** – payment failed<br>**404** – consumer / vendor / product not found |
-
-### Request Body
+**Request Body:**
 ```json
 {
   "consumerId": "u123",
   "paymentId": "pi_abc123",
-  "orders": [
-    {
-      "vendorId": "v101",
-      "orderItems": [
-        { "productId": "p1", "quantity": 2, "price": 14.99 },
-        { "productId": "p2", "quantity": 1, "price": 29.99 }
-      ],
-      "subtotalAmount": 59.97,
-      "shippingAddress": {
-        "line1": "123 Main St",
-        "city": "Halifax",
-        "postalCode": "B3H 1Y4",
-        "country": "CA"
-      }
-    }
-  ]
+  "orderId": "parent_order_id_from_payment_service",
+  "shippingAddress": {
+    "line1": "123 Main St",
+    "city": "Halifax",
+    "postalCode": "B3H 1Y4",
+    "country": "CA"
+  }
 }
 ```
 
-### Success Response 201
+**Response 201:**
 ```json
 {
-  "message": "Orders created successfully.",
-  "orderIds": ["ord_001"]
+  "message": "Orders created",
+  "parentOrderId": "parent_order_id_from_payment_service",
+  "childOrderIds": ["child_order_id_1", "child_order_id_2"]
 }
 ```
+
+**Errors:**
+- 400 – malformed payload, missing payment, cart empty, price/stock mismatch
+- 401 – unauthenticated
+- 403 – forbidden (wrong user)
+- 502 – failed to contact payment/cart/product service
 
 ---
 
-# 2. Browse / Retrieve Orders
+# 2. List Orders
 
-## 2.1 **GET `/orders`** (Vendor / Admin)
+## **GET `/orders`**
+List all orders (paginated, filterable). **Vendor** sees their orders, **Admin** sees all.
 
-Return orders with role-based access:
-- **Vendor**: Only sees orders for their products (`vendorId = user.userId`)
-- **Admin**: Sees all orders
+**Roles:** Vendor, Admin (authenticated)
 
-### Query Params
-```
-?orderStatus=shipped&dateFrom=2025-06-01T00:00:00Z&dateTo=2025-06-15T23:59:59Z&page=1&limit=50
-```
+**Query Parameters:**
+- `page` (int, optional, default: 1)
+- `limit` (int, optional, default: 20, max: 100)
+- `orderStatus` (string, optional)
+- `dateFrom` (ISO8601, optional)
+- `dateTo` (ISO8601, optional)
 
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – not vendor/admin |
-
-### Success Response 200
-```json
-{
-  "page": 1,
-  "limit": 50,
-  "total": 3,
-  "orders": [
-    {
-      "orderId": "ord_001",
-      "consumerId": "u123",
-      "vendorId": "v101",
-      "orderStatus": "shipped",
-      "subtotalAmount": 59.97,
-      "createdAt": "2025-06-11T19:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-## 2.2 **GET `/orders/user/:userId`**
-
-Retrieve orders for a consumer with consumerID (self or admin), and for vendor with vendorID.
-
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden other user (if not admin) |
-
-### Success Response 200
+**Response 200:**
 ```json
 {
   "page": 1,
@@ -110,106 +94,169 @@ Retrieve orders for a consumer with consumerID (self or admin), and for vendor w
   "total": 2,
   "orders": [
     {
-      "orderId": "ord_001",
-      "vendorId": "v101",
-      "orderStatus": "processing",
-      "subtotalAmount": 59.97,
-      "createdAt": "2025-06-11T19:00:00Z"
+      "_id": "child_order_id_1",
+      "consumerId": "u123",
+      "vendorId": "v456",
+      "orderItems": [
+        {
+          "productId": "p789",
+          "quantity": 2,
+          "price": 10.0,
+          "_links": { "product": "api/product/p789" }
+        }
+      ],
+      "orderStatus": "pending",
+      "paymentId": "pi_abc123",
+      "shippingAddress": { ... },
+      "createdAt": "...",
+      "updatedAt": "...",
+      "_links": {
+        "self": "api/order/child_order_id_1",
+        "payment": "api/payment/pi_abc123",
+        "tracking": "api/order/child_order_id_1/tracking"
+      }
     }
   ]
 }
 ```
 
+**Errors:**
+- 401 – unauthenticated
+- 403 – forbidden (not vendor/admin)
+
 ---
 
-## 2.3 **GET `/orders/:id`**
+## **GET `/orders/user/:userId`**
+List all orders for a specific user (paginated).
 
-Full detail (consumer, vendor, or admin access as permitted).
+**Roles:** Consumer (self), Admin
 
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden (not your order)<br>**404** – order not found |
+**Query Parameters:**
+- `page` (int, optional, default: 1)
+- `limit` (int, optional, default: 20, max: 100)
 
-### Success Response 200
+**Response 200:**
 ```json
 {
-  "orderId": "ord_001",
-  "consumerId": "u123",
-  "vendorId": "v101",
-  "orderItems": [
-    { "productId": "p1", "quantity": 2, "price": 14.99 }
-  ],
-  "subtotalAmount": 29.98,
-  "paymentId": "pi_abc123",
-  "paymentStatus": "succeeded",
-  "orderStatus": "shipped",
-  "shippingAddress": {
-    "line1": "123 Main St",
-    "city": "Halifax",
-    "postalCode": "B3H 1Y4",
-    "country": "CA"
-  },
-  "createdAt": "2025-06-11T19:00:00Z",
-  "updatedAt": "2025-06-12T09:10:00Z"
+  "page": 1,
+  "limit": 20,
+  "total": 2,
+  "orders": [ ... ]
 }
 ```
 
+**Errors:**
+- 401 – unauthenticated
+- 403 – forbidden (not self/admin)
+
 ---
 
-# 3. Order Lifecycle Actions
+# 3. Retrieve Orders by Parent or ID
 
-## 3.1 **PUT `/orders/:id/status`** (Vendor / Admin)
+## **GET `/orders/parent/:parentOrderId`**
+Returns all child orders created for a given parent order ID (from the payment service).
 
-Update status (`processing`, `shipped`, `delivered`, etc.).
+**Roles:** Authenticated (consumer, vendor, admin)
 
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **400** – invalid status<br>**401** – unauthenticated<br>**403** – not vendor of order / not admin<br>**404** – order not found |
+**Response 200:**
+```json
+{
+  "parentOrderId": "parent_order_id_from_payment_service",
+  "childOrders": [ { ... }, { ... } ]
+}
+```
 
-### Request Body
+**Errors:**
+- 400 – invalid parentOrderId
+- 404 – no child orders found
+
+---
+
+## **GET `/orders/:id`**
+- If `id` is a child order ID, returns that order.
+- If `id` is a parent order ID, returns all child orders for that parent.
+
+**Roles:**
+- Consumer: only own orders
+- Vendor: only their orders
+- Admin: all
+
+**Response 200 (parent order ID):**
+```json
+{
+  "parentOrderId": "parent_order_id_from_payment_service",
+  "childOrders": [ { ... }, { ... } ]
+}
+```
+**Response 200 (child order ID):**
+```json
+{
+  "_id": "child_order_id_1",
+  ...
+}
+```
+
+**Errors:**
+- 401 – unauthenticated
+- 403 – forbidden
+- 404 – not found
+
+---
+
+# 4. Order Lifecycle Actions
+
+## **PUT `/orders/:id/status`**
+Update order status (`processing`, `shipped`, `out_for_delivery`, `delivered`).
+
+**Roles:** Vendor (for their orders), Admin
+
+**Request Body:**
 ```json
 { "orderStatus": "shipped" }
 ```
 
-### Success Response 200
+**Response 200:**
 ```json
-{ "message": "Order status updated successfully." }
+{ "message": "Status updated", "newStatus": "shipped" }
 ```
+
+**Errors:**
+- 400 – invalid status
+- 401 – unauthenticated
+- 403 – forbidden
+- 404 – order not found
 
 ---
 
-## 3.2 **POST `/orders/:id/cancel`** (Consumer / Admin)
+## **POST `/orders/:id/cancel`**
+Cancel an order (only if not shipped/delivered).
 
-Consumer can cancel while status is `pending` or `processing`.
+**Roles:** Consumer (own order), Admin
 
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **400** – cannot cancel current status<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – order not found |
-
-### Request Body _(optional)_
+**Request Body (optional):**
 ```json
 { "reason": "Ordered by mistake." }
 ```
 
-### Success Response 200
+**Response 200:**
 ```json
-{
-  "message": "Order cancelled.",
-  "orderStatus": "cancelled"
-}
+{ "message": "Order cancelled" }
 ```
+
+**Errors:**
+- 400 – cannot cancel at this stage
+- 401 – unauthenticated
+- 403 – forbidden
+- 404 – order not found
 
 ---
 
-## 3.3 **GET `/orders/:id/tracking`**
-
+## **GET `/orders/:id/tracking`**
 Return chronological status updates for shipment tracking.
 
-| Success | Error(s) |
-|---------|----------|
-| **200 OK** | **401** – unauthenticated<br>**403** – forbidden<br>**404** – order not found |
+**Roles:** Consumer (own order), Vendor (their order), Admin
 
-### Success Response 200
+**Response 200:**
 ```json
 {
   "orderId": "ord_001",
@@ -221,20 +268,60 @@ Return chronological status updates for shipment tracking.
 }
 ```
 
+**Errors:**
+- 401 – unauthenticated
+- 403 – forbidden
+- 404 – order not found
+
 ---
 
-# ❌ Unified Error Format
+# 5. Response Object Details
 
+- All order and order item objects may include a `_links` field with URLs to related resources (self, payment, tracking, product).
+- All error responses:
 ```json
-{ "error": "Human‑readable message here" }
+{ "error": "Human-readable message here" }
 ```
 
 ---
 
-# ✅ Scope Coverage Summary
+# 6. Schema Fields
 
-* **Order creation** post‑payment, split per vendor  
-* **Role‑scoped retrieval** for consumers, vendors, admin  
-* **Lifecycle actions**: status update, cancellation, tracking timeline  
-* **Consistent error handling** across all routes  
-* **Schema fields**: orderId, consumerId, vendorId, orderItems (productId, qty, price), subtotalAmount, paymentId, paymentStatus, orderStatus, shippingAddress, createdAt, updatedAt, tracking
+- `orderId`, `consumerId`, `vendorId`, `orderItems` (with `productId`, `quantity`, `price`), `subtotalAmount`, `paymentId`, `paymentStatus`, `orderStatus`, `shippingAddress`, `createdAt`, `updatedAt`, `tracking`
+
+---
+
+# 7. Role Matrix
+
+| Endpoint                       | Consumer | Vendor | Admin |
+|--------------------------------|:--------:|:------:|:-----:|
+| GET /orders/health             |    ✔     |   ✔    |   ✔   |
+| POST /orders                   |    ✔     |        |   ✔   |
+| GET /orders                    |          |   ✔    |   ✔   |
+| GET /orders/user/:userId       |    ✔*    |        |   ✔   |
+| GET /orders/parent/:parentId   |    ✔     |   ✔    |   ✔   |
+| GET /orders/:id                |    ✔*    |   ✔*   |   ✔   |
+| PUT /orders/:id/status         |          |   ✔*   |   ✔   |
+| POST /orders/:id/cancel        |    ✔*    |        |   ✔   |
+| GET /orders/:id/tracking       |    ✔*    |   ✔*   |   ✔   |
+
+*✔* = only for own orders (consumer) or their orders (vendor)
+
+---
+
+# 8. Error Handling
+
+All errors are returned in the following format:
+```json
+{ "error": "Human-readable message here" }
+```
+
+---
+
+# 9. Notes
+- All endpoints require authentication except `/orders/health`.
+- Pagination defaults: `page=1`, `limit=20`.
+- All date/times are ISO8601.
+- Status transitions: `processing` → `shipped` → `out_for_delivery` → `delivered`.
+- Orders cannot be cancelled after shipping.
+- All endpoints return only fields the user is authorized to see.
