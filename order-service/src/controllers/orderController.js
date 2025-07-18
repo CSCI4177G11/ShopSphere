@@ -47,12 +47,6 @@ export async function createOrder(req, res) {
     return res.status(502).json({ error: 'Failed to verify payment with payment service' });
   }
 
-  // --- Mock user data (since no user service) ---
-  const mockUser = {
-    name: 'Mock User',
-    email: 'mockuser@example.com'
-  };
-
   let cartItems = [];
   try {
     const cartRes = await axios.get(
@@ -104,8 +98,6 @@ export async function createOrder(req, res) {
       orderStatus: 'pending',
       paymentStatus: 'succeeded',
       tracking: [{ status: 'pending' }],
-      userName: mockUser.name,
-      userEmail: mockUser.email
     });
     createdOrders.push(childOrder._id);
   }
