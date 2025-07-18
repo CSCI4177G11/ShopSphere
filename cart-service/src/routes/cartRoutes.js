@@ -40,6 +40,23 @@ router.delete(
 
 router.delete('/clear', cartCtrl.clearCart);
 
+router.delete(
+  '/admin/clear-expired',
+  requireAuth,
+  requireRole(['admin']),
+  cartCtrl.clearExpiredCarts
+);
+
 router.get('/totals', cartCtrl.getCartTotals);
+
+router.get('/health', (req, res) => {
+  res.json({
+    service: 'cart',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Cart service is operational.',
+  });
+});
 
 export default router;
