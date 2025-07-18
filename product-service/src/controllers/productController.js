@@ -18,6 +18,10 @@ export const createProduct = async (req, res) => {
             tags,
             isPublished = false,
         } = req.body;
+        // Vendor validation
+        if (req.user.role !== 'admin' && req.user.userId !== vendorId) {
+            return res.status(403).json({ error: 'You can only create products for your own vendor account' });
+        }
         const product = await Product.create({
             vendorId,
             name,
@@ -47,10 +51,16 @@ export const updateProduct = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
         updateData.updatedAt = new Date();
-        const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
+        // Vendor validation
+        if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
+            return res.status(403).json({ error: 'You can only update your own products' });
+        }
+        Object.assign(product, updateData);
+        await product.save();
         res.json({
             message: "Product updated successfully."
         });
@@ -67,10 +77,15 @@ export const deleteProduct = async (req, res) => {
             return res.status(400).json({ error: 'Invalid request data' });
         }
         const { id } = req.params;
-        const product = await Product.findByIdAndDelete(id);
+        const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
+        // Vendor validation
+        if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
+            return res.status(403).json({ error: 'You can only delete your own products' });
+        }
+        await product.deleteOne();
         res.json({
             message: "Product deleted successfully."
         });
@@ -93,11 +108,13 @@ export const listProducts = async (req, res) => {
             maxPrice,
             tags,
             sort = 'createdAt:desc',
+            name,
         } = req.query;
         const query = {};
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+        if (name) query.name = { $regex: name, $options: 'i' };
 
         // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
@@ -114,14 +131,19 @@ export const listProducts = async (req, res) => {
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
 
-        // Transform products to match README format
+        // Transform products to match README format and add _links
         const transformedProducts = products.map(product => ({
             productId: product._id,
             name: product.name,
             price: product.price,
             thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
             averageRating: product.averageRating,
-            reviewCount: product.reviewCount
+            reviewCount: product.reviewCount,
+            _links: {
+                self: `api/product/${product._id}`,
+                reviews: `api/product/${product._id}/reviews`,
+                vendor: `api/product/vendor/${product.vendorId}`
+            }
         }));
 
         res.json({
@@ -171,14 +193,19 @@ export const listProductsByVendor = async (req, res) => {
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
 
-        // Transform products to match README format
+        // Transform products to match README format and add _links
         const transformedProducts = products.map(product => ({
             productId: product._id,
             name: product.name,
             price: product.price,
             thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
             averageRating: product.averageRating,
-            reviewCount: product.reviewCount
+            reviewCount: product.reviewCount,
+            _links: {
+                self: `api/product/${product._id}`,
+                reviews: `api/product/${product._id}/reviews`,
+                vendor: `api/product/vendor/${product.vendorId}`
+            }
         }));
 
         res.json({
@@ -206,7 +233,7 @@ export const getProductById = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        // Transform to match README format
+        // Transform to match README format and add _links
         const productResponse = {
             productId: product._id,
             vendorId: product.vendorId,
@@ -219,12 +246,41 @@ export const getProductById = async (req, res) => {
             averageRating: product.averageRating,
             reviewCount: product.reviewCount,
             isPublished: product.isPublished,
-            createdAt: product.createdAt
+            createdAt: product.createdAt,
+            _links: {
+                self: `api/product/${product._id}`,
+                reviews: `api/product/${product._id}/reviews`,
+                vendor: `api/product/vendor/${product.vendorId}`
+            }
         };
 
         res.json(productResponse);
     } catch (error) {
         console.error('Error getting product by ID:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+export const decrementStock = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: 'Invalid request data' });
+        }
+        const { id } = req.params;
+        const { quantity } = req.body;
+        const product = await Product.findById(id);
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+        if (product.quantityInStock < quantity) {
+            return res.status(400).json({ error: 'Insufficient stock' });
+        }
+        product.quantityInStock -= quantity;
+        await product.save();
+        res.json({ message: 'Stock decremented', productId: id, newQuantity: product.quantityInStock });
+    } catch (error) {
+        console.error('Error decrementing stock:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
