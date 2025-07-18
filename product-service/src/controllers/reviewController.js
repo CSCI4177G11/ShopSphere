@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import Review from '../models/review.js';
 import Product from '../models/product.js';
+import axios from 'axios';
 
 export const createReview = async (req, res) => {
     try {
@@ -12,10 +13,27 @@ export const createReview = async (req, res) => {
         const { rating, comment } = req.body;
         const { userId } = req.user;
 
-        // Check if user already reviewed this product
         const existingReview = await Review.findOne({ productId, userId });
         if (existingReview) {
             return res.status(409).json({ error: 'You have already reviewed this product' });
+        }
+
+        let hasPurchased = false;
+        try {
+            const orderRes = await axios.get(
+                `http://order-service:4600/api/orders/user/${userId}`,
+                { headers: { Authorization: req.headers.authorization } }
+            );
+            const orders = orderRes.data.orders || [];
+            hasPurchased = orders.some(order =>
+                order.orderStatus === 'delivered' &&
+                order.orderItems.some(item => item.productId === productId)
+            );
+        } catch (err) {
+            return res.status(502).json({ error: 'Failed to verify purchase history with order service' });
+        }
+        if (!hasPurchased) {
+            return res.status(403).json({ error: 'You can only review products you have purchased and received' });
         }
 
         const review = await Review.create({
@@ -25,10 +43,8 @@ export const createReview = async (req, res) => {
             comment: comment || '',
         });
 
-        // Recalculate product rating
         await Product.recalculateRating(productId);
 
-        // Get updated product to get new average rating and count
         const updatedProduct = await Product.findById(productId);
 
         res.status(201).json({
@@ -62,7 +78,6 @@ export const listReviews = async (req, res) => {
             sort = 'createdAt:desc',
         } = req.query;
 
-        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
         if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
         if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
@@ -75,7 +90,6 @@ export const listReviews = async (req, res) => {
             .limit(Number(limit));
         const total = await Review.countDocuments({ productId });
 
-        // Transform reviews to match README format (note: username would need to come from user service)
         const transformedReviews = reviews.map(review => ({
             reviewId: review._id,
             userId: review.userId,
@@ -116,10 +130,8 @@ export const updateReview = async (req, res) => {
             return res.status(404).json({ error: 'Review not found' });
         }
 
-        // Recalculate product rating
         await Product.recalculateRating(productId);
 
-        // Get updated product to get new average rating
         const updatedProduct = await Product.findById(productId);
 
         res.json({
@@ -152,7 +164,6 @@ export const deleteReview = async (req, res) => {
             return res.status(404).json({ error: 'Review not found' });
         }
 
-        // Recalculate product rating
         await Product.recalculateRating(productId);
 
         res.status(204).send();
