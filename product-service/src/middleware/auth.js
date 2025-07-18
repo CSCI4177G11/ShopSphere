@@ -1,9 +1,8 @@
-// src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 
 const {
-  JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',   
-  JWT_ALGORITHM = 'HS256',       
+  JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',
+  JWT_ALGORITHM = 'HS256',
 } = process.env;
 
 export function requireAuth(req, res, next) {
@@ -20,7 +19,7 @@ export function requireAuth(req, res, next) {
 
     req.user = {
       userId: payload.sub,
-      role:   payload.role,   
+      role: payload.role,
       ...payload,
     };
     return next();
@@ -35,6 +34,9 @@ export function requireRole(allowed) {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (req.user.role === 'admin') {
+      return next();
     }
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions' });
