@@ -2,48 +2,47 @@ import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
-/* ───────── helper sub‑schemas ───────── */
 
 const orderItemSchema = new Schema(
   {
     productId: { type: String, required: true },
-    quantity:  { type: Number, required: true, min: 1 },
-    price:     { type: Number, required: true, min: 0 },
+    quantity: { type: Number, required: true, min: 1 },
+    price: { type: Number, required: true, min: 0 },
   },
   { _id: false }
 );
 
 const shippingAddressSchema = new Schema(
   {
-    line1:       { type: String, required: true },
-    line2:       { type: String },
-    city:        { type: String, required: true },
-    province:    { type: String },
-    postalCode:  { type: String, required: true },
-    country:     { type: String, required: true, maxlength: 2 }, // ISO 3166‑1 alpha‑2
+    line1: { type: String, required: true },
+    line2: { type: String },
+    city: { type: String, required: true },
+    province: { type: String },
+    postalCode: { type: String, required: true },
+    country: { type: String, required: true, maxlength: 2 }, 
   },
   { _id: false }
 );
 
 const trackingEventSchema = new Schema(
   {
-    status:         { type: String, required: true },
-    timestamp:      { type: Date,   default: Date.now },
-    carrier:        { type: String },
+    status: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+    carrier: { type: String },
     trackingNumber: { type: String },
   },
   { _id: false }
 );
 
-/* ───────── main Order schema ───────── */
 
 const orderSchema = new Schema(
   {
-    consumerId:     { type: String, required: true, index: true },
-    vendorId:       { type: String, required: true, index: true },
+    consumerId: { type: String, required: true, index: true },
+    vendorId: { type: String, required: true, index: true },
+    parentOrderId: { type: String, required: false, index: true },
 
-    paymentId:      { type: String, required: true },
-    paymentStatus:  {
+    paymentId: { type: String, required: true },
+    paymentStatus: {
       type: String,
       enum: ['pending', 'succeeded', 'failed'],
       default: 'succeeded',
@@ -52,8 +51,8 @@ const orderSchema = new Schema(
     orderStatus: {
       type: String,
       enum: [
-        'pending',          // awaiting vendor acceptance
-        'processing',       // vendor preparing
+        'pending',          
+        'processing',       
         'shipped',
         'out_for_delivery',
         'delivered',
@@ -65,7 +64,7 @@ const orderSchema = new Schema(
 
     subtotalAmount: { type: Number, required: true, min: 0 },
 
-    orderItems:      { type: [orderItemSchema], required: true },
+    orderItems: { type: [orderItemSchema], required: true },
     shippingAddress: { type: shippingAddressSchema, required: true },
 
     tracking: { type: [trackingEventSchema], default: [] },
@@ -73,9 +72,6 @@ const orderSchema = new Schema(
   { timestamps: true, versionKey: false }
 );
 
-/* ───────── virtuals & helpers ───────── */
-
-// Expose _id as orderId in JSON responses
 orderSchema.set('toJSON', {
   virtuals: true,
   transform: (_, ret) => {
@@ -84,10 +80,7 @@ orderSchema.set('toJSON', {
   },
 });
 
-/**
- * Append a tracking event and update the orderStatus
- *   await Order.appendTracking(orderId, { status: 'shipped', carrier: 'UPS' });
- */
+
 orderSchema.statics.appendTracking = async function (orderId, event) {
   await this.findByIdAndUpdate(orderId, {
     $push: { tracking: event },
