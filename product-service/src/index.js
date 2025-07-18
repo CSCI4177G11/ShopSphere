@@ -1,4 +1,3 @@
-// src/index.js
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -12,18 +11,16 @@ dotenv.config();
 
 const app = express();
 
-const PORT = process.env.PORT || 4000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.DB_NAME || 'shopsphere';
+const PORT = process.env.PORT || 4300;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shopsphere';
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
-app.use(morgan(NODE_ENV === 'production' ? 'tiny' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
+app.use(morgan(NODE_ENV === 'production' ? 'tiny' : 'dev'));
 
-app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: Date.now() }));
 app.use('/api/product', productRoutes);
 app.use('/api/product/:id/reviews', reviewRoutes);
 
@@ -33,13 +30,18 @@ app.use((req, res, next) => {
   next(err);
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    return res.status(400).json({ error: 'Invalid ID format' });
+  }
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({ error: err.message || 'Internal server error' });
 });
 
-mongoose.connect(MONGODB_URI)
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => {
     console.log("✅ Connected to MongoDB");
     app.listen(PORT || 4000, () =>
