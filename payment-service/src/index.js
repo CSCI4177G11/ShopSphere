@@ -10,9 +10,6 @@ import paymentRoutes from './routes/paymentRoutes.js'; // ⇦ you’ll add these
 
 dotenv.config();
 
-// -----------------------------------------------------------------------------
-// Environment variables
-// -----------------------------------------------------------------------------
 const {
   PORT = 5002,
   MONGO_URI,
@@ -26,22 +23,13 @@ if (!MONGO_URI || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   process.exit(1);
 }
 
-// -----------------------------------------------------------------------------
-// External services
-// -----------------------------------------------------------------------------
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2024-04-10', // pin to a specific Stripe API version
 });
 
-// -----------------------------------------------------------------------------
-// App bootstrap
-// -----------------------------------------------------------------------------
 const app = express();
 
-/**
- * Stripe webhooks MUST receive the raw request body for signature verification.
- * Register this route BEFORE express.json(), so no body parsing has happened.
- */
+
 app.post(
   '/api/payments/webhook',
   express.raw({ type: 'application/json' }),
@@ -75,26 +63,15 @@ app.post(
   },
 );
 
-// -----------------------------------------------------------------------------
-// Global middle-ware (runs AFTER the webhook route)
-// -----------------------------------------------------------------------------
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 if (NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// -----------------------------------------------------------------------------
-// Domain routes
-// -----------------------------------------------------------------------------
 app.use('/api/payments', paymentRoutes);
 
-// Simple health-check
-app.get('/health', (_, res) => res.json({ status: 'ok' }));
 
-// -----------------------------------------------------------------------------
-// Central error handler
-// -----------------------------------------------------------------------------
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(err.statusCode || 500).json({
@@ -102,11 +79,8 @@ app.use((err, _req, res, _next) => {
   });
 });
 
-// -----------------------------------------------------------------------------
-// Database connection & server start
-// -----------------------------------------------------------------------------
 mongoose
-  .connect(MONGO_URI, { dbName: 'payments' })
+  .connect(MONGO_URI)
   .then(() => {
     console.log('✅  MongoDB connected');
     app.listen(PORT, () =>
