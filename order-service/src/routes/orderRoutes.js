@@ -7,14 +7,23 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
+router.get('/health', (req, res) => {
+  res.json({
+    service: 'orders',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Order service is operational.',
+  });
+});
 
 router.post(
   '/',
   requireAuth,
   requireRole('consumer'),
   [
-    body('paymentId').isString().notEmpty(),             
-    body('orderItems').isArray({ min: 1 }),
+    body('paymentId').isString().notEmpty(),
+    body('orderId').isMongoId(),
     body('shippingAddress').isObject().notEmpty(),
   ],
   orderCtrl.createOrder
@@ -46,6 +55,12 @@ router.get(
   orderCtrl.listOrdersByUser
 );
 
+router.get(
+  '/parent/:parentOrderId',
+  requireAuth,
+  [param('parentOrderId').isMongoId()],
+  orderCtrl.getOrdersByParentId
+);
 
 router.get(
   '/:id',
@@ -60,7 +75,7 @@ router.put(
   requireRole(['vendor', 'admin']),
   [
     param('id').isMongoId(),
-    body('orderStatus').isString().notEmpty(),           
+    body('orderStatus').isString().notEmpty(),
   ],
   orderCtrl.updateOrderStatus
 );
