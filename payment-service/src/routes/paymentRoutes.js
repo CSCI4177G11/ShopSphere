@@ -1,4 +1,3 @@
-// src/routes/paymentRoutes.js
 import { Router } from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 
@@ -11,13 +10,11 @@ import {
     getPaymentById,
     savePaymentMethod,
     setDefaultPaymentMethod,
+    refundPayment,
 } from '../controllers/paymentController.js';
 
 import { requireAuth, requireRole } from '../middleware/auth.js';
 
-/**
- * Reusable validator-error helper
- */
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -28,27 +25,23 @@ const handleValidationErrors = (req, res, next) => {
 
 const router = Router();
 
-/* -------------------------------------------------------------------------- */
-/*  All routes below require a valid JWT                                       */
-/* -------------------------------------------------------------------------- */
 router.use(requireAuth);
 
-/**
- * POST /api/payments/setup-intent
- * Create a Stripe SetupIntent so the consumer can save a card on file.
- */
+
+router.get('/health', (req, res) => {
+    res.json({
+        service: 'payments',
+        status: 'up',
+        uptime_seconds: process.uptime().toFixed(2),
+        checked_at: new Date().toISOString(),
+        message: 'Payments service is operational.',
+    });
+});
+
 router.post('/setup-intent', createSetupIntent);
 
-/**
- * GET  /api/payments/payment-methods
- * List saved payment methods for the authenticated consumer.
- */
 router.get('/payment-methods', listPaymentMethods);
 
-/**
- * DELETE /api/payments/payment-methods/:paymentMethodId
- * Detach a saved card.
- */
 router.delete(
     '/payment-methods/:paymentMethodId',
     [
@@ -58,16 +51,11 @@ router.delete(
     detachPaymentMethod,
 );
 
-/**
- * POST /api/payments
- * Charge the consumer for an order (Stripe PaymentIntent).
- * Body: { orderId, amount, currency, paymentMethodId }
- */
 router.post(
     '/',
     [
-        body('orderId').isString().notEmpty(),
-        body('amount').isInt({ min: 1 }),
+        body('orderId').optional().isString().notEmpty(),
+        body('amount').isFloat({ min: 0.01 }),
         body('currency').isString().isLength({ min: 3, max: 3 }),
         body('paymentMethodId').isString().notEmpty(),
         handleValidationErrors,
@@ -75,11 +63,7 @@ router.post(
     createPayment,
 );
 
-/**
- * GET /api/payments
- * List consumer’s payments (supports simple pagination).
- * Query: ?page=1&limit=10
- */
+
 router.get(
     '/',
     [
@@ -90,10 +74,7 @@ router.get(
     listPayments,
 );
 
-/**
- * GET /api/payments/:paymentId
- * Fetch one payment record by Mongo _id.
- */
+
 router.get(
     '/:paymentId',
     [
@@ -103,10 +84,7 @@ router.get(
     getPaymentById,
 );
 
-/**
- * POST /api/payments/consumer/payment-methods
- * Save a Stripe payment method to the consumer
- */
+
 router.post(
     '/consumer/payment-methods',
     [
@@ -117,10 +95,7 @@ router.post(
     savePaymentMethod,
 );
 
-/**
- * PUT /api/payments/consumer/payment-methods/:id/default
- * Set a saved card as the default for the Stripe customer
- */
+
 router.put(
     '/consumer/payment-methods/:id/default',
     [
@@ -130,9 +105,20 @@ router.put(
     setDefaultPaymentMethod,
 );
 
+
+router.post(
+    '/:paymentId/refund',
+    [
+        param('paymentId').isMongoId().withMessage('Invalid payment id'),
+        handleValidationErrors,
+    ],
+    requireAuth,
+    getPaymentById, 
+    refundPayment
+);
+
 /**
  * (Optional) Admin-only endpoint to list all payments across consumers.
- * Uncomment if/when you implement the controller.
  */
 // router.get(
 //   '/admin/all',
