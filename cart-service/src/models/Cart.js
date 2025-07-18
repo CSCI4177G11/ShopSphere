@@ -17,6 +17,6 @@ const ItemSchema = new Schema({
 const CartSchema = new Schema({
   userId: { type: String, required: true, unique: true },
   items: [ItemSchema]
-});
+}, { timestamps: true });
 
 export default model('Cart', CartSchema);
