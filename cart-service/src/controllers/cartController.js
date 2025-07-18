@@ -18,7 +18,6 @@ export const getCart = async (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
 
-  // Parse pagination params
   let page = parseInt(req.query.page, 10) || 1;
   let limit = parseInt(req.query.limit, 10) || 50;
   if (page < 1) page = 1;
@@ -35,7 +34,12 @@ export const getCart = async (req, res) => {
       productName: item.productName,
       price: item.price,
       quantity: item.quantity,
-      addedAt: item.addedAt
+      addedAt: item.addedAt,
+      _links: {
+        product: `api/product/${item.productId}`,
+        update: `api/cart/items/${item.itemId}`,
+        remove: `api/cart/items/${item.itemId}`
+      }
     }));
     res.status(200).json({
       page,
@@ -105,10 +109,12 @@ export const updateCart = async (req, res) => {
 
   try {
     const cart = await Cart.findOne({ userId });
-    if (!cart) return res.status(404).json({ error: 'Item not found' });
+    if (!cart) return res.status(404).json({ error: 'Cart not found: ' + userId });
+
+
 
     const item = cart.items.find((i) => i.itemId === itemId);
-    if (!item) return res.status(404).json({ error: 'Item not found' });
+    if (!item) return res.status(404).json({ error: 'Item not found: ' + itemId });
 
     item.quantity = quantity;
     await cart.save();
@@ -165,6 +171,18 @@ export const clearCart = async (req, res) => {
   }
 };
 
+export const clearExpiredCarts = async (req, res) => {
+  const days = parseInt(req.query.days, 10) || 7;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  try {
+    const result = await Cart.deleteMany({ updatedAt: { $lt: cutoff } });
+    res.json({ message: 'Expired carts cleared', deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('clearExpiredCarts error:', err);
+    res.status(500).json({ error: 'Server error while clearing expired carts' });
+  }
+};
+
 export const getCartTotals = async (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
@@ -181,7 +199,8 @@ export const getCartTotals = async (req, res) => {
 
     const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
     const totalItems = cart.items.reduce((sum, i) => sum + i.quantity, 0);
-    const estimatedTax = +(subtotal * 0.15).toFixed(2); // 15% tax
+    const TAX_RATE = parseFloat(process.env.TAX_RATE) || 0.15;
+    const estimatedTax = +(subtotal * TAX_RATE).toFixed(2);
     const total = +(subtotal + estimatedTax).toFixed(2);
     res.status(200).json({
       totalItems,
