@@ -11,7 +11,7 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 4100;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'shopsphere';
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -21,8 +21,6 @@ app.use(morgan(NODE_ENV === 'production' ? 'tiny' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.get('/health', (_, res) => res.json({ status: 'ok', timestamp: Date.now() }));
-
 app.use('/api/orders', orderRoutes);
 
 app.use((req, res, next) => {
@@ -31,7 +29,10 @@ app.use((req, res, next) => {
   next(err);
 });
 
-app.use((err, req, res, next) => { // eslint-disable-line
+app.use((err, req, res, next) => { 
+  if (err.name === 'CastError' && err.kind === 'ObjectId') {
+    return res.status(400).json({ error: 'Invalid ID format' });
+  }
   console.error(err);
   res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
 });
