@@ -11,29 +11,53 @@ router.get('/consumer/profile', consumerCtrl.getConsumerProfile);
 router.put(
   '/consumer/profile',
   [ 
-    body('storeName').isString().trim().notEmpty().isLength({max:120}),
-    body('location').isString().isLength({max: 120}),
-    body('logoUrl').isString(),
-    body('storeBannerUrl').isString(),
-    body('phoneNumber').isString(),
-    body('socialLinks').isArray().isOptional(),
+    body('fullName').isString().notEmpty(),
+    body('phoneNumber').isString()
   ],
-  vendorCtrl.updateVendorProfile
+  consumerCtrl.updateConsumerProfile
 );
 
-router.put('/vendor/settings',
-  [
-
-  ],
-  vendorCtrl.changeTheme
+router.get('/consumer/settings',
+  consumerCtrl.getTheme
 );
 
-router.put('/vendor/:id/approve',
+router.put('/consumer/settings',
     [
-    param('vendorId').isString().notEmpty(),
-    body('isApproved').isBoolean(),
+        body('isApproved').isBoolean()
     ],
-    vendorCtrl.approval
+    consumerCtrl.changeTheme
 )
+
+router.post('consumer/addresses',
+    [
+    body('label').isString().isRequired(),
+    body('line').isString().isRequired(),
+    body('city').isString().isRequired(),
+    body('postalCode').isString().isRequired(),
+    body('country').isString().isRequired()
+    ],
+    consumerCtrl.addNewAddress
+)
+
+router.get('/consumer/addresses', consumerCtrl.getAddresses);
+
+router.put('consumer/addresses/id:',
+    [
+    param('addressId').isRequired(),
+    body('label').isString().isRequired(),
+    body('line').isString().isRequired(),
+    body('city').isString().isRequired(),
+    body('postalCode').isString().isRequired(),
+    body('country').isString().isRequired()
+    ],
+    consumerCtrl.updateAddress
+)
+
+router.delete('/consumer/addresses/id:',
+    [
+        param('addressId').isRequired()
+    ]
+)
+consumerCtrl.deleteAddress
 
 export default router;
