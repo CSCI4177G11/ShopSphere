@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -33,7 +33,10 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { signUp } = useAuth()
+  
+  const isVendorRegistration = searchParams.get('role') === 'vendor'
 
   const {
     register,
@@ -54,9 +57,16 @@ export default function RegisterPage() {
 
     try {
       // Use the name as username for now (your API requires username)
-      await signUp(data.name, data.email, data.password, 'consumer')
+      const role = isVendorRegistration ? 'vendor' : 'consumer'
+      await signUp(data.name, data.email, data.password, role)
       toast.success("Account created successfully!")
-      router.push("/")
+      
+      // Redirect based on role
+      if (isVendorRegistration) {
+        router.push("/vendor")
+      } else {
+        router.push("/")
+      }
     } catch (error: any) {
       console.error('Registration error:', error)
       toast.error(error.message || "Registration failed. Please try again.")
@@ -83,8 +93,14 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6 shadow-lg">
             <span className="text-primary-foreground font-bold text-xl">SS</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2">Create account</h1>
-          <p className="text-muted-foreground">Join ShopSphere and start shopping</p>
+          <h1 className="text-3xl font-bold mb-2">
+            {isVendorRegistration ? "Become a Vendor" : "Create account"}
+          </h1>
+          <p className="text-muted-foreground">
+            {isVendorRegistration 
+              ? "Join ShopSphere marketplace and start selling" 
+              : "Join ShopSphere and start shopping"}
+          </p>
         </div>
 
         <Card className="border-0 shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -195,6 +211,14 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </p>
+          {!isVendorRegistration && (
+            <p className="text-sm text-muted-foreground">
+              Want to sell on ShopSphere?{" "}
+              <Link href="/auth/register?role=vendor" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                Become a seller
+              </Link>
+            </p>
+          )}
         </div>
       </motion.div>
     </div>

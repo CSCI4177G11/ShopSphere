@@ -8,15 +8,24 @@ import {
   X,
   User,
   ChevronDown,
+  ShoppingCart,
+  Package,
+  LayoutDashboard,
+  LogOut,
+  ShoppingBag,
+  Store,
+  Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -86,16 +95,55 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Center space for future features */}
-            <div className="flex-1 max-w-xl mx-4 min-w-0">
-              {/* Empty space for clean look */}
-            </div>
+            {/* Navigation Links */}
+            <nav className="hidden lg:flex flex-1 items-center justify-center gap-6">
+              <Link href="/shop" className="text-sm font-medium hover:text-primary transition-colors">
+                Shops
+              </Link>
+              <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">
+                Products
+              </Link>
+              <Link href="/categories" className="text-sm font-medium hover:text-primary transition-colors">
+                Categories
+              </Link>
+              {session?.user?.role === 'vendor' && (
+                <Link href="/vendor" className="text-sm font-medium hover:text-primary transition-colors">
+                  Vendor Dashboard
+                </Link>
+              )}
+              {session?.user?.role === 'admin' && (
+                <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">
+                  Admin Panel
+                </Link>
+              )}
+            </nav>
 
             {/* Right Actions - Fixed width */}
             <div className="flex-shrink-0 min-w-0">
               <div className="flex items-center gap-2">
                 {/* Enhanced Action Buttons */}
                 <div className="flex items-center gap-1">
+                  {/* Cart Button for Consumers */}
+                  {session?.user?.role === 'consumer' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.5, delay: 0.5 }}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        asChild
+                        className="relative h-10 w-10 rounded-xl hover:bg-primary/10"
+                      >
+                        <Link href="/cart">
+                          <ShoppingCart className="h-5 w-5" />
+                          <span className="sr-only">Cart</span>
+                        </Link>
+                      </Button>
+                    </motion.div>
+                  )}
+
                   {/* Enhanced Theme Toggle */}
                   <motion.div
                     className="flex-shrink-0"
@@ -141,22 +189,82 @@ export function Header() {
                           align="end"
                           forceMount
                         >
-                          <div className="flex items-center justify-start gap-2 p-2">
-                            <div className="flex flex-col space-y-1 leading-none">
-                              {session.user?.name && (
-                                <p className="font-medium">
-                                  {session.user.name}
-                                </p>
-                              )}
-                              {session.user?.email && (
-                                <p className="w-[200px] truncate text-sm text-muted-foreground">
-                                  {session.user.email}
-                                </p>
-                              )}
+                          <DropdownMenuLabel className="font-normal">
+                            <div className="flex flex-col space-y-1">
+                              <p className="text-sm font-medium leading-none">
+                                {session.user?.name}
+                              </p>
+                              <p className="text-xs leading-none text-muted-foreground">
+                                {session.user?.email}
+                              </p>
+                              <Badge variant="secondary" className="mt-1 w-fit capitalize">
+                                {session.user?.role}
+                              </Badge>
                             </div>
-                          </div>
+                          </DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={signOut}>
+                          
+                          {/* Role-based menu items */}
+                          {session.user?.role === 'consumer' && (
+                            <>
+                              <DropdownMenuItem asChild>
+                                <Link href="/orders">
+                                  <Package className="mr-2 h-4 w-4" />
+                                  My Orders
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href="/cart">
+                                  <ShoppingCart className="mr-2 h-4 w-4" />
+                                  Cart
+                                </Link>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {session.user?.role === 'vendor' && (
+                            <>
+                              <DropdownMenuItem asChild>
+                                <Link href="/vendor">
+                                  <Store className="mr-2 h-4 w-4" />
+                                  Dashboard
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href="/vendor/products">
+                                  <Package className="mr-2 h-4 w-4" />
+                                  My Products
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href="/vendor/orders">
+                                  <ShoppingBag className="mr-2 h-4 w-4" />
+                                  Orders
+                                </Link>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          {session.user?.role === 'admin' && (
+                            <>
+                              <DropdownMenuItem asChild>
+                                <Link href="/admin">
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  Admin Panel
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href="/admin/vendors">
+                                  <Store className="mr-2 h-4 w-4" />
+                                  Manage Vendors
+                                </Link>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => signOut()}>
+                            <LogOut className="mr-2 h-4 w-4" />
                             Sign out
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -244,6 +352,67 @@ export function Header() {
             className="lg:hidden border-t border-gray-300 dark:border-border/50 bg-gray-50/95 dark:bg-background/95 backdrop-blur-xl shadow-lg overflow-hidden"
           >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+              {/* Mobile Navigation Links */}
+              <nav className="flex flex-col gap-2">
+                <Link 
+                  href="/shop" 
+                  className="text-base font-medium hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Shops
+                </Link>
+                <Link 
+                  href="/products" 
+                  className="text-base font-medium hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Products
+                </Link>
+                <Link 
+                  href="/categories" 
+                  className="text-base font-medium hover:text-primary transition-colors py-2"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Categories
+                </Link>
+                {session?.user?.role === 'consumer' && (
+                  <>
+                    <Link 
+                      href="/cart" 
+                      className="text-base font-medium hover:text-primary transition-colors py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Cart
+                    </Link>
+                    <Link 
+                      href="/orders" 
+                      className="text-base font-medium hover:text-primary transition-colors py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Orders
+                    </Link>
+                  </>
+                )}
+                {session?.user?.role === 'vendor' && (
+                  <Link 
+                    href="/vendor" 
+                    className="text-base font-medium hover:text-primary transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Vendor Dashboard
+                  </Link>
+                )}
+                {session?.user?.role === 'admin' && (
+                  <Link 
+                    href="/admin" 
+                    className="text-base font-medium hover:text-primary transition-colors py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin Panel
+                  </Link>
+                )}
+              </nav>
+
               {/* Enhanced Auth buttons for non-logged in users */}
               {!session && (
                 <motion.div

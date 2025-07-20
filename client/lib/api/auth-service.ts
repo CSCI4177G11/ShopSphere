@@ -34,50 +34,128 @@ export interface ApiError {
   error: string
 }
 
+// Mock users for testing
+const mockUsers = [
+  { userId: '1', username: 'consumer1', email: 'consumer@test.com', password: 'password', role: 'consumer' as const },
+  { userId: '2', username: 'vendor1', email: 'vendor@test.com', password: 'password', role: 'vendor' as const },
+  { userId: '3', username: 'admin1', email: 'admin@test.com', password: 'password', role: 'admin' as const },
+]
+
+// Mock JWT token generation
+function generateMockToken(user: any): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const payload = btoa(JSON.stringify({
+    userId: user.userId,
+    email: user.email,
+    role: user.role,
+    iat: Date.now() / 1000,
+    exp: (Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+  }))
+  const signature = btoa('mock-signature-super-secret-super-secret-super-secret-super-secret')
+  return `${header}.${payload}.${signature}`
+}
+
 class AuthService {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${AUTH_BASE_URL}${endpoint}`
+    // Mock implementation until backend is ready
+    await new Promise(resolve => setTimeout(resolve, 300)) // Simulate network delay
     
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    }
-
-    // Add auth token if available
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      }
-    }
-
-    try {
-      const response = await fetch(url, config)
+    // Handle different endpoints
+    if (endpoint === '/login' && options.method === 'POST') {
+      const body = JSON.parse(options.body as string) as LoginRequest
+      const user = mockUsers.find(u => u.email === body.email && u.password === body.password)
       
-      if (!response.ok) {
-        const errorData: ApiError = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}`)
+      if (!user) {
+        throw new Error('Invalid credentials')
       }
-
-      // Handle 204 No Content
-      if (response.status === 204) {
-        return {} as T
-      }
-
-      return await response.json()
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error
-      }
-      throw new Error('Network error occurred')
+      
+      const token = generateMockToken(user)
+      return {
+        token,
+        user: {
+          userId: user.userId,
+          username: user.username,
+          role: user.role
+        }
+      } as T
     }
+    
+    if (endpoint === '/register' && options.method === 'POST') {
+      const body = JSON.parse(options.body as string) as RegisterRequest
+      const existingUser = mockUsers.find(u => u.email === body.email)
+      
+      if (existingUser) {
+        throw new Error('Email already exists')
+      }
+      
+      const newUser = {
+        userId: String(mockUsers.length + 1),
+        username: body.username,
+        email: body.email,
+        password: body.password,
+        role: body.role,
+        createdAt: new Date().toISOString()
+      }
+      
+      mockUsers.push(newUser)
+      
+      return {
+        message: 'Registration successful',
+        user: {
+          userId: newUser.userId,
+          username: newUser.username,
+          email: newUser.email,
+          role: newUser.role,
+          createdAt: newUser.createdAt
+        }
+      } as T
+    }
+    
+    if (endpoint === '/me') {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+      
+      // Decode mock token
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const user = mockUsers.find(u => u.userId === payload.userId)
+      
+      if (!user) {
+        throw new Error('User not found')
+      }
+      
+      return {
+        userId: user.userId,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      } as T
+    }
+    
+    if (endpoint === '/validate') {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('No token found')
+      }
+      
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return {
+        valid: true,
+        userId: payload.userId,
+        role: payload.role,
+        exp: payload.exp
+      } as T
+    }
+    
+    if (endpoint === '/logout' && options.method === 'POST') {
+      return {} as T
+    }
+    
+    throw new Error('Endpoint not found')
   }
 
   async register(data: RegisterRequest): Promise<{ message: string; user: User }> {
@@ -96,6 +174,7 @@ class AuthService {
     // Store token in localStorage
     if (response.token) {
       localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
     }
     
     return response
@@ -108,6 +187,7 @@ class AuthService {
     
     // Clear token from localStorage
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
   }
 
   async getMe(): Promise<User> {
@@ -136,8 +216,15 @@ class AuthService {
   clearToken(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     }
+  }
+  
+  getCurrentUser(): { userId: string; username: string; role: string } | null {
+    if (typeof window === 'undefined') return null
+    const userStr = localStorage.getItem('user')
+    return userStr ? JSON.parse(userStr) : null
   }
 }
 
-export const authService = new AuthService() 
+export const authService = new AuthService()
