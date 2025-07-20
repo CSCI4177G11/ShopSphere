@@ -1,0 +1,39 @@
+import { Router } from 'express';
+import { body, param, query } from 'express-validator';
+import * as vendorCtrl from '../controllers/vendorController.js';
+import { requireAuth, requireRole} from '../middleware.auth.js';
+
+const router = Router();
+router.use(requireAuth);
+router.use(requireRole(['vendor', 'admin']));
+
+router.get('/vendor/profile', vendorCtrl.getVendorProfile);
+router.put(
+  '/vendor/profile',
+  [ 
+    body('storeName').isString().trim().notEmpty().isLength({max:120}),
+    body('location').isString().isLength({max: 120}),
+    body('logoUrl').isString(),
+    body('storeBannerUrl').isString(),
+    body('phoneNumber').isString(),
+    body('socialLinks').isArray().isOptional(),
+  ],
+  vendorCtrl.updateVendorProfile
+);
+
+router.put('/vendor/settings',
+  [
+
+  ],
+  vendorCtrl.changeTheme
+);
+
+router.put('/vendor/:id/approve',
+    [
+    param('vendorId').isString().notEmpty(),
+    body('isApproved').isBoolean(),
+    ],
+    vendorCtrl.approval
+)
+
+export default router;

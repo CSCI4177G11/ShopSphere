@@ -11,17 +11,20 @@ app.use(express.json());
 app.use('/api/auth', route);
 
 const MONGODB_URI = process.env.MONGODB_URI;
+const DB_NAME = process.env.DB_NAME;
+const NODE_ENV = process.env.NODE_ENV;
 const PORT = process.env.PORT || 5001;
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connected");
     app.listen(PORT || 5001, () =>
-      console.log(`User is running on port ${PORT || 5002}`)
+      console.log(`Authentication is running on port ${PORT || 5001}`)
     );
   })
   .catch(err => console.error("Error:", err));
     
+start();
 
 
 
