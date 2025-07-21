@@ -103,12 +103,11 @@ export async function createOrder(req, res) {
   }
 
   try {
-    await axios.post(
-      `http://cart-service:4400/api/cart/clear`,
-      {},
-      { headers: { Authorization: req.headers.authorization } }
-    );
+    await axios.delete(`http://cart-service:4400/api/cart/clear`, {
+      headers: { Authorization: req.headers.authorization }
+  });
   } catch (err) {
+    // Not critical, but log if cart clearing fails
     console.error('Failed to clear cart after order creation:', err.message);
   }
 
