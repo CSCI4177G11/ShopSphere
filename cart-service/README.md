@@ -119,8 +119,6 @@ Add a product (or increase quantity if already present).
 ```json
 {
   "productId": "p001",
-  "productName": "Custom Cotton Shirt",
-  "price": 39.99,
   "quantity": 2
 }
 ```
@@ -132,6 +130,7 @@ Add a product (or increase quantity if already present).
   "item": {
     "itemId": "ci003",
     "productId": "p001",
+    "productName": "Custom Cotton Shirt",
     "quantity": 2
   }
 }
