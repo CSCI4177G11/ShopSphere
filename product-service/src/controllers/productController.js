@@ -1,6 +1,8 @@
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import Product from '../models/product.js';
+import { uploadImage, deleteImage } from '../services/cloudinary.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export const createProduct = async (req, res) => {
     try {
@@ -14,13 +16,22 @@ export const createProduct = async (req, res) => {
             description,
             price,
             quantityInStock,
-            images,
             tags,
             isPublished = false,
+            images = [], // array of paths/urls
         } = req.body;
         // Vendor validation
         if (req.user.role !== 'admin' && req.user.userId !== vendorId) {
             return res.status(403).json({ error: 'You can only create products for your own vendor account' });
+        }
+        let imageUrls = [];
+        if (Array.isArray(images) && images.length > 0) {
+            const uploadPromises = images.map(async (img) => {
+                const imageId = uuidv4();
+                await uploadImage(img, imageId, 'products');
+                return getCloudinaryUrl(imageId);
+            });
+            imageUrls = await Promise.all(uploadPromises);
         }
         const product = await Product.create({
             vendorId,
@@ -28,7 +39,7 @@ export const createProduct = async (req, res) => {
             description,
             price,
             quantityInStock,
-            images,
+            images: imageUrls,
             tags: tags || [],
             isPublished,
         });
@@ -59,11 +70,35 @@ export const updateProduct = async (req, res) => {
         if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
             return res.status(403).json({ error: 'You can only update your own products' });
         }
-        Object.assign(product, updateData);
+        if (Array.isArray(updateData.deleteImages)) {
+            for (const url of updateData.deleteImages) {
+                const matches = url.match(/\/products\/([^./]+)(?:\.[a-zA-Z]+)?$/);
+                if (matches && matches[1]) {
+                    await deleteImage(`products/${matches[1]}`);
+                }
+                product.images = product.images.filter(imgUrl => imgUrl !== url);
+            }
+        }
+        if (Array.isArray(updateData.addImages)) {
+            const uploadPromises = updateData.addImages.map(async (img) => {
+                const imageId = uuidv4();
+                await uploadImage(img, imageId, 'products');
+                return getCloudinaryUrl(imageId);
+            });
+            const newImageUrls = await Promise.all(uploadPromises);
+            product.images = [...product.images, ...newImageUrls];
+        }
+        if (!product.images || product.images.length === 0) {
+            return res.status(400).json({ error: 'At least one image is required.' });
+        }
+        const ignoreFields = ['images', 'addImages', 'deleteImages'];
+        for (const key in updateData) {
+            if (!ignoreFields.includes(key)) {
+                product[key] = updateData[key];
+            }
+        }
         await product.save();
-        res.json({
-            message: "Product updated successfully."
-        });
+        res.json({ message: "Product updated successfully." });
     } catch (error) {
         console.error('Error updating product:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -81,7 +116,6 @@ export const deleteProduct = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-        // Vendor validation
         if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
             return res.status(403).json({ error: 'You can only delete your own products' });
         }
@@ -115,8 +149,6 @@ export const listProducts = async (req, res) => {
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
         if (name) query.name = { $regex: name, $options: 'i' };
-
-        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
         if (sort === 'price:asc') sortOption = { price: 1 };
         if (sort === 'price:desc') sortOption = { price: -1 };
@@ -124,28 +156,28 @@ export const listProducts = async (req, res) => {
         if (sort === 'name:desc') sortOption = { name: -1 };
         if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
         if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
-
         const products = await Product.find(query)
             .sort(sortOption)
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
-
-        // Transform products to match README format and add _links
-        const transformedProducts = products.map(product => ({
-            productId: product._id,
-            name: product.name,
-            price: product.price,
-            thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
-            averageRating: product.averageRating,
-            reviewCount: product.reviewCount,
-            _links: {
-                self: `api/product/${product._id}`,
-                reviews: `api/product/${product._id}/reviews`,
-                vendor: `api/product/vendor/${product.vendorId}`
-            }
-        }));
-
+        const transformedProducts = products.map(product => {
+            const images = product.images || [];
+            return {
+                productId: product._id,
+                name: product.name,
+                price: product.price,
+                thumbnail: images.length > 0 ? images[0] : null,
+                averageRating: product.averageRating,
+                reviewCount: product.reviewCount,
+                images,
+                _links: {
+                    self: `api/product/${product._id}`,
+                    reviews: `api/product/${product._id}/reviews`,
+                    vendor: `api/product/vendor/${product.vendorId}`
+                }
+            };
+        });
         res.json({
             page: Number(page),
             limit: Number(limit),
@@ -177,8 +209,6 @@ export const listProductsByVendor = async (req, res) => {
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
-
-        // Parse sort parameter to match README format
         let sortOption = { createdAt: -1 };
         if (sort === 'price:asc') sortOption = { price: 1 };
         if (sort === 'price:desc') sortOption = { price: -1 };
@@ -186,28 +216,28 @@ export const listProductsByVendor = async (req, res) => {
         if (sort === 'name:desc') sortOption = { name: -1 };
         if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
         if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
-
         const products = await Product.find(query)
             .sort(sortOption)
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
-
-        // Transform products to match README format and add _links
-        const transformedProducts = products.map(product => ({
-            productId: product._id,
-            name: product.name,
-            price: product.price,
-            thumbnail: product.images && product.images.length > 0 ? product.images[0] : null,
-            averageRating: product.averageRating,
-            reviewCount: product.reviewCount,
-            _links: {
-                self: `api/product/${product._id}`,
-                reviews: `api/product/${product._id}/reviews`,
-                vendor: `api/product/vendor/${product.vendorId}`
-            }
-        }));
-
+        const transformedProducts = products.map(product => {
+            const images = product.images || [];
+            return {
+                productId: product._id,
+                name: product.name,
+                price: product.price,
+                thumbnail: images.length > 0 ? images[0] : null,
+                averageRating: product.averageRating,
+                reviewCount: product.reviewCount,
+                images,
+                _links: {
+                    self: `api/product/${product._id}`,
+                    reviews: `api/product/${product._id}/reviews`,
+                    vendor: `api/product/vendor/${product.vendorId}`
+                }
+            };
+        });
         res.json({
             vendorId,
             page: Number(page),
@@ -232,8 +262,7 @@ export const getProductById = async (req, res) => {
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
         }
-
-        // Transform to match README format and add _links
+        const images = product.images || [];
         const productResponse = {
             productId: product._id,
             vendorId: product.vendorId,
@@ -241,7 +270,7 @@ export const getProductById = async (req, res) => {
             description: product.description,
             price: product.price,
             quantityInStock: product.quantityInStock,
-            images: product.images,
+            images,
             tags: product.tags,
             averageRating: product.averageRating,
             reviewCount: product.reviewCount,
@@ -253,7 +282,6 @@ export const getProductById = async (req, res) => {
                 vendor: `api/product/vendor/${product.vendorId}`
             }
         };
-
         res.json(productResponse);
     } catch (error) {
         console.error('Error getting product by ID:', error);
@@ -284,3 +312,5 @@ export const decrementStock = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+const getCloudinaryUrl = (imageId) => `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/products/${imageId}`;
