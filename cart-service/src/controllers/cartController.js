@@ -1,4 +1,5 @@
 import Cart from '../models/Cart.js';
+import axios from 'axios';
 
 
 function resolveUserId(req) {
@@ -18,6 +19,7 @@ export const getCart = async (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
 
+  // Parse pagination params
   let page = parseInt(req.query.page, 10) || 1;
   let limit = parseInt(req.query.limit, 10) || 50;
   if (page < 1) page = 1;
@@ -57,15 +59,21 @@ export const addToCart = async (req, res) => {
   const userId = requireUserId(req, res);
   if (!userId) return;
 
-  const { productId, productName, price, quantity = 1 } = req.body;
-  if (!productId || !productName || !price) {
-    return res.status(400).json({ error: 'Invalid body: productId, productName, and price are required.' });
+  const { productId, quantity = 1 } = req.body;
+  if (!productId) {
+    return res.status(400).json({ error: 'Invalid body: productId is required.' });
   }
   if (quantity < 1) {
     return res.status(400).json({ error: 'Quantity must be at least 1.' });
   }
 
   try {
+    // Fetch product details from product service
+    const productRes = await axios.get(`http://product-service:4300/api/product/${productId}`);
+    const product = productRes.data;
+    if (!product || !product.name || !product.price) {
+      return res.status(404).json({ error: 'Product not found or missing required fields.' });
+    }
     let cart = await Cart.findOne({ userId });
     if (!cart) cart = new Cart({ userId, items: [] });
 
@@ -73,7 +81,7 @@ export const addToCart = async (req, res) => {
     if (item) {
       item.quantity += quantity;
     } else {
-      item = { productId, productName, price, quantity };
+      item = { productId, productName: product.name, price: product.price, quantity };
       cart.items.push(item);
       item = cart.items[cart.items.length - 1];
     }
@@ -84,10 +92,14 @@ export const addToCart = async (req, res) => {
       item: {
         itemId: item.itemId,
         productId: item.productId,
+        productName: product.name,
         quantity: item.quantity
       }
     });
   } catch (err) {
+    if (err.response && err.response.status === 404) {
+      return res.status(404).json({ error: 'Product not found.' });
+    }
     console.error('addToCart error:', err);
     res.status(500).json({ error: 'Server error while adding item' });
   }
