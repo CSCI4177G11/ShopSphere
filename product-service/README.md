@@ -75,19 +75,30 @@ Update **any** product field.
 |---------|----------|
 | **200 OK** | **400** – malformed body<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
 
-#### Example Request Body
+#### Example Request Body (all fields except images)
 ```json
 {
   "name": "Premium Cotton Shirt",
   "description": "Softer, thicker 100 % cotton shirt in all sizes",
   "price": 44.99,
   "quantityInStock": 80,
-  "images": [
-    "https://cdn.app.com/images/product1.jpg",
-    "https://cdn.app.com/images/product1-alt.jpg"
-  ],
   "tags": ["shirt", "cotton", "premium"],
   "isPublished": true
+}
+```
+- **addImages:** To add new images, include an `addImages` field as a JSON array of image URLs (these will be uploaded to Cloudinary and appended to the product).
+- **deleteImages:** To delete images, include a `deleteImages` field as a JSON array of Cloudinary image URLs to remove from the product and Cloudinary.
+- All other fields are sent as usual.
+
+#### Example (Add and Delete Images)
+```json
+{
+  "addImages": [
+    "https://m.media-amazon.com/images/I/41JACWT-wWL._AC_SL1200_.jpg"
+  ],
+  "deleteImages": [
+    "https://res.cloudinary.com/<cloud_name>/image/upload/products/abc123.jpg"
+  ]
 }
 ```
 
