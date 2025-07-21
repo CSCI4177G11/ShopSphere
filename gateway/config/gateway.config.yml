@@ -1,5 +1,5 @@
 http:
-  port: ${PORT} # container port
+  port: 8080 
 
 admin:
   port: 9876
@@ -7,12 +7,33 @@ admin:
 
 apiEndpoints:
   product:
-    pathRegex: "/api/product/.*" 
+    pathRegex: "/api/product.*" 
+    host: "*"
+  cart:
+    pathRegex: "/api/cart.*" 
+    host: "*"  
+  order:
+    pathRegex: "/api/order.*" 
+    host: "*"
+  payment:
+    pathRegex: "/api/payment.*" 
+    host: "*"
+  analytics:
+    pathRegex: "/api/analytics.*" 
     host: "*"
 
 serviceEndpoints:
   product-service:
-    url: http://localhost:4000/
+    url: http://product-service:4300/ 
+  cart-service:
+    url: http://cart-service:4400/
+  payment-service:
+    url: http://payment-service:4500/
+  order-service:
+    url: http://order-service:4600/
+  analytics-service:
+    url: http://analytics-service:4700/
+
 
 policies:
   - cors
@@ -31,5 +52,52 @@ pipelines:
           - action:
               serviceEndpoint: product-service
               changeOrigin: true
-
+  cart-pipeline:
+    apiEndpoints:
+      - cart
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"
+      - proxy:
+          - action:
+              serviceEndpoint: cart-service
+              changeOrigin: true
+  order-pipeline:
+    apiEndpoints:
+      - order
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"  
+      - proxy:
+          - action:
+              serviceEndpoint: order-service
+              changeOrigin: true
+  payment-pipeline:
+    apiEndpoints:
+      - payment
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"  
+      - proxy:
+          - action:
+              serviceEndpoint: payment-service
+              changeOrigin: true
+  analytics-pipeline:
+    apiEndpoints:
+      - analytics
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"  
+      - proxy:
+          - action:
+              serviceEndpoint: analytics-service
+              changeOrigin: true
   
