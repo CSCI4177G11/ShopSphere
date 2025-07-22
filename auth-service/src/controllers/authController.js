@@ -2,7 +2,7 @@ const auth = require('../models/userModel');
 
 /* 409 */
   const emailExist = await auth.findOne({ $or: [{email}]});
-  if (exists) {
+  if (email.test(emailExist)) {
     return res.status(409).json({ error: 'Email already exists.' });
   }
 
