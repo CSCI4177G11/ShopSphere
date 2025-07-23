@@ -9,6 +9,17 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.get('/api/user/health', (req, res) => {
+  res.json({
+    service: 'user',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'user service is running smoothly.',
+  });
+});
+
 app.use('/api/user', consumerRoute);
 app.use('/api/user', vendorRoute);
 
