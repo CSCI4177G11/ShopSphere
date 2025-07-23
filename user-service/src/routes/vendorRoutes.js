@@ -30,7 +30,7 @@ router.put('/vendor/settings',
 
 router.put('/vendor/:id/approve',
     [
-    param('vendorId').isString().notEmpty(),
+    param('id').isString().notEmpty(),
     body('isApproved').isBoolean(),
     ],
     vendorCtrl.approval

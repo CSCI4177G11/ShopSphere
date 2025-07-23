@@ -28,7 +28,7 @@ router.put('/consumer/settings',
     consumerCtrl.changeTheme
 )
 
-router.post('consumer/addresses',
+router.post('/consumer/addresses',
     [
     body('label').isString(),
     body('line').isString(),
@@ -41,9 +41,9 @@ router.post('consumer/addresses',
 
 router.get('/consumer/addresses', consumerCtrl.getAddresses);
 
-router.put('consumer/addresses/id:',
+router.put('/consumer/addresses/id:',
     [
-    param('addressId').notEmpty(),
+    param('id').notEmpty(),
     body('label').isString().notEmpty(),
     body('line').isString().notEmpty(),
     body('city').isString().notEmpty(),
@@ -55,7 +55,7 @@ router.put('consumer/addresses/id:',
 
 router.delete('/consumer/addresses/id:',
     [
-        param('addressId').notEmpty()
+        param('id').notEmpty()
     ]
 ,
 consumerCtrl.deleteAddress)
