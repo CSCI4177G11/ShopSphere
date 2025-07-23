@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 
-const userAddressSchema = new mongoose.Schema(
+const consumerAddressSchema = new mongoose.Schema(
     {
         label: {type: String},
         line1: {type: String},
@@ -11,7 +11,7 @@ const userAddressSchema = new mongoose.Schema(
     }
 );
 
-const userSettingSchema = new mongoose.Schema(
+const consumerSettingSchema = new mongoose.Schema(
     {
       currency: { type: String, default: 'CAD' },
       theme:    { type: String, default: 'light' },
@@ -26,8 +26,8 @@ const userSchema = new mongoose.Schema(
         fullName: {type: String, required: true},
         email: {type: String, required: true},
         phoneNumber: {type: String, required: true},
-        addresses: [userAddressSchema],
-        settings: { type: userSettingSchema, default: () => ({}) },
+        addresses: [consumerAddressSchema],
+        settings: { type: consumerSettingSchema, default: () => ({}) },
     },
     
     {timestamps: true, versionKey: false },

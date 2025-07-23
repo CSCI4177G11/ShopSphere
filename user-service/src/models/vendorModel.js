@@ -1,5 +1,12 @@
 import mongoose from 'mongoose';
 
+const vendorSettingSchema = new mongoose.Schema(
+    {
+      theme: { type: String, default: 'light' },
+    },
+    { _id: false }               
+  );
+
 const vendorSchema = new mongoose.Schema(
     {
     vendorId: {type: String, required: true, unique: true},
@@ -8,9 +15,10 @@ const vendorSchema = new mongoose.Schema(
     phoneNumber: {type: String, required: true},
     logoUrl: {type: String, required: true},
     storeBannerUrl: {type: String, required: true},
-    rating: {type: String, required: true},
-    isApproved: {type: Boolean},
+    rating: {type: String, required: true, default: 0},
+    isApproved: { type: Boolean, default: false },
     socialLink: {type: Array},
+    settings: { type: vendorSettingSchema, default: () => ({}) },
     },
 
     {timestamps: true, versionKey: false },
