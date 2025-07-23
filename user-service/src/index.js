@@ -23,9 +23,5 @@ mongoose.connect(MONGODB_URI)
     );
   })
   .catch(err => console.error("Error:", err));
-    
-
-
-
 
 export default app;
