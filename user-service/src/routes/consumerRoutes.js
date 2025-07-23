@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import * as consumerCtrl from '../controllers/consumerController.js';
-import { requireAuth, requireRole} from '../middleware.auth.js';
+import { requireAuth, requireRole} from '../middleware/auth.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -30,11 +30,11 @@ router.put('/consumer/settings',
 
 router.post('consumer/addresses',
     [
-    body('label').isString().isRequired(),
-    body('line').isString().isRequired(),
-    body('city').isString().isRequired(),
-    body('postalCode').isString().isRequired(),
-    body('country').isString().isRequired()
+    body('label').isString(),
+    body('line').isString(),
+    body('city').isString(),
+    body('postalCode').isString(),
+    body('country').isString()
     ],
     consumerCtrl.addNewAddress
 )
@@ -43,21 +43,21 @@ router.get('/consumer/addresses', consumerCtrl.getAddresses);
 
 router.put('consumer/addresses/id:',
     [
-    param('addressId').isRequired(),
-    body('label').isString().isRequired(),
-    body('line').isString().isRequired(),
-    body('city').isString().isRequired(),
-    body('postalCode').isString().isRequired(),
-    body('country').isString().isRequired()
+    param('addressId').notEmpty(),
+    body('label').isString().notEmpty(),
+    body('line').isString().notEmpty(),
+    body('city').isString().notEmpty(),
+    body('postalCode').isString().notEmpty(),
+    body('country').isString().notEmpty()
     ],
     consumerCtrl.updateAddress
 )
 
 router.delete('/consumer/addresses/id:',
     [
-        param('addressId').isRequired()
+        param('addressId').notEmpty()
     ]
-)
-consumerCtrl.deleteAddress
+,
+consumerCtrl.deleteAddress)
 
 export default router;

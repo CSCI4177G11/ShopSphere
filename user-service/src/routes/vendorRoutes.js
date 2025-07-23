@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
 import * as vendorCtrl from '../controllers/vendorController.js';
-import { requireAuth, requireRole} from '../middleware.auth.js';
+import { requireAuth, requireRole} from '../middleware/auth.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -12,11 +12,11 @@ router.put(
   '/vendor/profile',
   [ 
     body('storeName').isString().trim().notEmpty().isLength({max:120}),
-    body('location').isString().isLength({max: 120}),
-    body('logoUrl').isString(),
-    body('storeBannerUrl').isString(),
-    body('phoneNumber').isString(),
-    body('socialLinks').isArray().isOptional(),
+    body('location').isString().notEmpty().isLength({max: 120}),
+    body('logoUrl').isString().notEmpty(),
+    body('storeBannerUrl').isString().notEmpty(),
+    body('phoneNumber').isString().notEmpty(),
+    body('socialLinks').isArray().optional(),
   ],
   vendorCtrl.updateVendorProfile
 );
