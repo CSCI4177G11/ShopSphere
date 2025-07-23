@@ -31,9 +31,14 @@ router.get('/consumer/settings',
   consumerCtrl.getSetting
 );
 
-router.put('/consumer/settings',
-    consumerCtrl.changeSetting
-)
+router.put(
+  '/consumer/settings',
+  [
+    body('currency').optional().isString(),
+    body('theme').optional().isString()
+  ],
+  consumerCtrl.changeSetting
+);
 
 router.post('/consumer/addresses',
     [

@@ -11,6 +11,15 @@ const userAddressSchema = new mongoose.Schema(
     }
 );
 
+const userSettingSchema = new mongoose.Schema(
+    {
+      currency: { type: String, default: 'CAD' },
+      theme:    { type: String, default: 'light' },
+    },
+    { _id: false }               
+  );
+
+
 const userSchema = new mongoose.Schema(
     {
         consumerId: {type: String, required: true, unique: true},
@@ -18,6 +27,7 @@ const userSchema = new mongoose.Schema(
         email: {type: String, required: true},
         phoneNumber: {type: String, required: true},
         addresses: [userAddressSchema],
+        settings: { type: userSettingSchema, default: () => ({}) },
     },
     
     {timestamps: true, versionKey: false },

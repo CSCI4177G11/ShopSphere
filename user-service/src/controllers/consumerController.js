@@ -127,13 +127,41 @@ export const updateConsumerProfile = async (req, res) => {
     }
 };
 
-    export const getSetting = async (req, res) => {
-
+export const getSetting = async (req, res) => {
+    const consumerId = requireConsumerId(req, res);
+    if (!consumerId) return;
+  
+    try {
+      const profile = await Consumer.findOne({ consumerId }, 'settings');
+      if (!profile)
+        return res.status(404).json({ error: 'Consumer not found.' });
+  
+      res.status(200).json({ settings: profile.settings });
+    } catch (err) {
+      console.error('getSetting error:', err);
+      res.status(500).json({ error: 'Server error while fetching settings.' });
     }
+  };
 
-    export const changeSetting = async (req, res) => {
-
+  export const changeSetting = async (req, res) => {
+    const consumerId = requireConsumerId(req, res);
+    if (!consumerId) return;
+    const { currency, theme } = req.body;
+    if (!currency && !theme)
+      return res.status(400).json({ error: 'Nothing to update.' });
+    try {
+      const profile = await Consumer.findOne({ consumerId });
+      if (!profile)
+        return res.status(404).json({ error: 'Consumer not found.' });
+      if (currency) profile.settings.currency = currency;
+      if (theme)    profile.settings.theme    = theme;
+      await profile.save();
+      res.status(200).json({ message: 'Settings updated.', settings: profile.settings });
+    } catch (err) {
+      console.error('changeSetting error:', err);
+      res.status(500).json({ error: 'Server error while updating settings.' });
     }
+  };
 
     export const addNewAddress = async (req, res) => {
         const consumerId = requireConsumerId(req, res);
