@@ -9,10 +9,10 @@ services:
     volumes:
       - mongo_data:/data/db
  
-  auth-service:
+  user-service:
     build:
-      context: ./auth-service
-    container_name: auth-service
+      context: ./user-service
+    container_name: user-service
     ports:
       - '4100:4100'
     depends_on:
