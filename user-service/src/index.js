@@ -20,8 +20,8 @@ app.get('/api/user/health', (req, res) => {
   });
 });
 
-app.use('/api/user', consumerRoute);
-app.use('/api/user', vendorRoute);
+app.use('/api/user/consumer', consumerRoute);
+app.use('/api/user/vendor', vendorRoute);
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT;
