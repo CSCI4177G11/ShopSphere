@@ -60,7 +60,7 @@ router.put('/consumer/addresses/:id',
     consumerCtrl.updateAddress
 )
 
-router.delete('/consumer/addresses/id:',
+router.delete('/consumer/addresses/:id',
     [
         param('id').notEmpty()
     ]

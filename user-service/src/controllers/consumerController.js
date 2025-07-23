@@ -149,7 +149,6 @@ export const updateConsumerProfile = async (req, res) => {
                 return res.status(404).json({ error: 'Consumer not found.' });
             }
             const newAddress = {
-                addressId: uuidv4(),
                 label,
                 line1,
                 city,
@@ -186,62 +185,52 @@ export const updateConsumerProfile = async (req, res) => {
 
     export const updateAddress = async (req, res) => {
         const consumerId = requireConsumerId(req, res);
-        if (!consumerId) return;   
-        const { addressId, label, line1, city, postalCode, country} = req.body;
-        const postalCodeFormat = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
-        if (!postalCodeFormat.test(postalCode)) {
-            return res.status(400).json({ error: 'Invalid postal code format.' });
-        }
-        if (!label || !line1 || !city || !postalCode || !country) {
-            return res.status(400).json({ error: 'All fields are required.' });
-        }
+        if (!consumerId) return;
+        const { id } = req.params;                         
+        const { label, line1, city, postalCode, country } = req.body;
+        if (!label || !line1 || !city || !postalCode || !country)
+          return res.status(400).json({ error: 'All fields are required.' });
+              const postalCodeFormat = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
+        if (!postalCodeFormat.test(postalCode))
+          return res.status(400).json({ error: 'Invalid postal code format.' });
         try {
-            const consumer = await Consumer.findOne({ consumerId });
-            if (!consumer) {
-                return res.status(404).json({ error: 'Consumer not found.' });
-            }
-            const address = consumer.addresses.find(a => a.addressId === addressId);
-            if (!address) {
-                return res.status(404).json({ error: 'Address not found.' });
-            }
-            address.label = label;
-            address.line1 = line1;
-            address.city = city;
-            address.postalCode = postalCode;
-            address.country = country;
-            await consumer.save();
-            res.status(200).json({
-                message: 'Address updated.',
-                address
-            });
+          const consumer = await Consumer.findOne({ consumerId });
+          if (!consumer)
+            return res.status(404).json({ error: 'Consumer not found.' });
+          const address = consumer.addresses.id(id);       // built‑in helper
+          if (!address)
+            return res.status(404).json({ error: 'Address not found.' });
+          address.label      = label;
+          address.line1      = line1;
+          address.city       = city;
+          address.postalCode = postalCode;
+          address.country    = country;
+          await consumer.save();
+          res.status(200).json({ message: 'Address updated.', address });
         } catch (err) {
-            console.error('updateAddress error:', err);
-            res.status(500).json({ error: 'Internal server error.' });
+          console.error('updateAddress error:', err);
+          res.status(500).json({ error: 'Internal server error.' });
         }
-    };
+      };
 
-    export const deleteAddress = async (req, res) => {
+      export const deleteAddress = async (req, res) => {
         const consumerId = requireConsumerId(req, res);
         if (!consumerId) return;
-        const { addressId } = req.params;
+        const { id } = req.params;            
         try {
-            const consumer = await Consumer.findOne({ consumerId });
-            if (!consumer) {
-                return res.status(404).json({ error: 'Consumer not found.' });
-            }
-            const initialLength = consumer.addresses.length;
-            consumer.addresses = consumer.addresses.filter(address => address.addressId !== addressId);
-    
-            if (consumer.addresses.length === initialLength) {
-                return res.status(404).json({ error: 'Address not found.' });
-            }
-            await consumer.save();
-            res.status(200).json({ message: 'Address deleted successfully.' });
-        } catch (error) {
-            console.error('Error deleting address:', error);
-            res.status(500).json({ error: 'Internal server error' });
+          const consumer = await Consumer.findOne({ consumerId });
+          if (!consumer)
+            return res.status(404).json({ error: 'Consumer not found.' });
+          const removed = consumer.addresses.pull({ _id: id });
+          if (!removed)
+            return res.status(404).json({ error: 'Address not found.' });
+          await consumer.save();
+          res.status(200).json({ message: 'Address deleted successfully.' });
+        } catch (err) {
+          console.error('deleteAddress error:', err);
+          res.status(500).json({ error: 'Internal server error.' });
         }
-    };
+      };
 
 
     

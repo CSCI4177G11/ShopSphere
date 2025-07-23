@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 
 const userAddressSchema = new mongoose.Schema(
     {
-        addressId: {type: String},
         label: {type: String},
         line1: {type: String},
         city: {type: String},
