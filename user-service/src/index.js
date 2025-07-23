@@ -13,13 +13,13 @@ app.use('/api/user', consumerRoute);
 app.use('/api/user', vendorRoute);
 
 const MONGODB_URI = process.env.MONGODB_URI;
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT;
 
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log("Connected");
     app.listen(PORT || 5002, () =>
-      console.log(`Useris running on port ${PORT || 5002}`)
+      console.log(`User is running on port ${PORT}`)
     );
   })
   .catch(err => console.error("Error:", err));
