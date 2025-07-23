@@ -26,6 +26,49 @@ function requireConsumerId(req, res) {
   }
   return consumerId;
 }
+
+export const addConsumerProfile = async (req, res) => {
+    const consumerId = requireConsumerId(req, res);
+    if (!consumerId) return;
+    const { fullName, email, phoneNumber } = req.body;
+    if (!fullName || !email || !phoneNumber) {
+      return res.status(400).json({ error: 'fullName, email, and phoneNumber are required.' });
+    }
+    const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+    if (!emailFormat.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format.' });
+    }
+    if (!phoneNumberFormat.test(phoneNumber)) {
+      return res.status(400).json({ error: 'Invalid phone number format.' });
+    }
+    try {
+    if (await Consumer.findOne({ consumerId })) {
+      return res.status(409).json({ error: 'Profile already exists for this consumer.' });
+    }
+    const newProfile = await Consumer.create({
+      consumerId,
+      fullName,
+      email,
+      phoneNumber,
+      addresses: [],
+    });
+    res.status(201).json({
+      message: 'Consumer profile created successfully.',
+      profile: {
+        consumerId: newProfile.consumerId,
+        fullName:   newProfile.fullName,
+        email:      newProfile.email,
+        phoneNumber:newProfile.phoneNumber,
+        createdAt:  newProfile.createdAt,   
+      },
+    });
+  } catch (err) {
+    console.error('addConsumerProfile error:', err);
+    res.status(500).json({ error: 'Server error while creating profile.' });
+  }
+};
+  
 export const getConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
     if (!consumerId) return;
@@ -39,7 +82,7 @@ export const getConsumerProfile = async (req, res) => {
             fullName: profile.fullName,
             email: profile.email,
             phoneNumber: profile.phoneNumber,
-            addresses: profile.addresses,
+            createdAt:   profile.createdAt,
         };
         res.status(200).json({ displayProfile });
     } catch (err) {
@@ -49,7 +92,8 @@ export const getConsumerProfile = async (req, res) => {
 };
 
 export const updateConsumerProfile = async (req, res) => {
-    const { consumerId, fullName, email, phoneNumber, addresses } = req.body;
+    const consumerId = requireConsumerId(req, res);
+    const {fullName, email, phoneNumber} = req.body;
     const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
     if (!emailFormat.test(email)) {
@@ -66,7 +110,6 @@ export const updateConsumerProfile = async (req, res) => {
         profile.fullName = fullName;
         profile.email = email;
         profile.phoneNumber = phoneNumber;
-        profile.addresses = addresses;
         await profile.save();
         res.status(200).json({
             message: 'Consumer profile updated successfully',
@@ -75,7 +118,7 @@ export const updateConsumerProfile = async (req, res) => {
                 fullName: profile.fullName,
                 email: profile.email,
                 phoneNumber: profile.phoneNumber,
-                addresses: profile.addresses
+                createdAt:  profile.createdAt,
             }
         });
     } catch (err) {
@@ -84,11 +127,11 @@ export const updateConsumerProfile = async (req, res) => {
     }
 };
 
-    export const getTheme = async (req, res) => {
+    export const getSetting = async (req, res) => {
 
     }
 
-    export const changeTheme = async (req, res) => {
+    export const changeSetting = async (req, res) => {
 
     }
 
@@ -144,7 +187,7 @@ export const updateConsumerProfile = async (req, res) => {
     export const updateAddress = async (req, res) => {
         const consumerId = requireConsumerId(req, res);
         if (!consumerId) return;   
-        const { addressId, label, line1, city, country, postalCode } = req.body;
+        const { addressId, label, line1, city, postalCode, country} = req.body;
         const postalCodeFormat = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
         if (!postalCodeFormat.test(postalCode)) {
             return res.status(400).json({ error: 'Invalid postal code format.' });
@@ -164,8 +207,8 @@ export const updateConsumerProfile = async (req, res) => {
             address.label = label;
             address.line1 = line1;
             address.city = city;
-            address.country = country;
             address.postalCode = postalCode;
+            address.country = country;
             await consumer.save();
             res.status(200).json({
                 message: 'Address updated.',
