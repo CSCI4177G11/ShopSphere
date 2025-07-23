@@ -29,21 +29,23 @@ export const getConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
     if (!consumerId) return;
     try {
-        const profile = await Consumer.findOne({consumerId});
-        const lines = profile ? profile.lines : [];
-        const displayProfile = lines.map(line => ({
-      consumerId: line.consumerId,
-      fullName: line.fullName,
-      email: line.email,
-      phoneNumber: line.phoneNumber,
-      addresses: line.addresses
-    }));
-    res.status(200).json({ displayProfile });
+        const profile = await Consumer.findOne({ consumerId });
+        if (!profile) {
+            return res.status(404).json({ error: 'Consumer profile not found.' });
+        }
+        const displayProfile = {
+            consumerId: profile.consumerId,
+            fullName: profile.fullName,
+            email: profile.email,
+            phoneNumber: profile.phoneNumber,
+            addresses: profile.addresses,
+        };
+        res.status(200).json({ displayProfile });
+    } catch (err) {
+        console.error('getConsumerProfile error:', err);
+        res.status(500).json({ error: 'Server error. Please try again later.' });
     }
-    catch (err) {
-         console.error('getProfile error:', err);
-    res.status(401).json({error: 'Authentication required.'});
-    }} 
+};
 
 export const updateConsumerProfile = async (req, res) => {
     const { consumerId, fullName, email, phoneNumber, addresses } = req.body;
