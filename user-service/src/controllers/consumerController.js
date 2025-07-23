@@ -15,7 +15,7 @@ function requireAddressId(req, res) {
 }
 
 function resolveConsumerId(req) {
-  return req?.consumer?.consumerId || req?.consumer?.id || null;
+  return req.user.userId ;
 }
 
 function requireConsumerId(req, res) {
