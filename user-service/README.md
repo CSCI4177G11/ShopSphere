@@ -1,113 +1,184 @@
 # 👤 **user‑service API**
 
-Manages **consumer** and **vendor** profile data for ShopSphere  
-**Authentication / token validation is handled by `auth-service`.**
+Central service for **consumer** and **vendor** profile management in **ShopSphere**.  
+All authentication & JWT validation is delegated to `auth-service`; this service enforces **role‑based authorization** on every request.
 
-**Base path:** 
-```
-/api/user
-```
-
+**Base path:** `/api/user`
 
 ---
 
-# 1. Consumer Profile
+## 0. Service Health
 
-## 1.1 **GET `/consumer/profile`**
+### **GET `/user/health`**
 
-Returns the authenticated consumer’s complete profile.
+Check if the user‑service is running.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **500** – server error |
+
+**Success Response 200**
+```json
+{
+  "service": "user",
+  "status": "up",
+  "uptime_seconds": "123.45",
+  "checked_at": "2025-07-23T12:34:56.789Z",
+  "message": "User service is running smoothly."
+}
+```
+
+---
+
+## 1. Consumer Profile
+
+### 1.1 **POST`/consumer/profile`**
+
+Create the authenticated consumer’s complete profile.
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **401 Unauthorized** – token missing / invalid |
 
-### Headers
+**Headers**
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <JWT>
 ```
-
-### Success Response
+**Request Body**
 ```json
 {
-  "consumerId": "u123",
-  "fullName": "Abdullah Al Salmi",
-  "phoneNumber": "+19021234567",
-  "addresses": [
-    {
-      "addressId": "a1",
-      "label": "Home",
-      "line1": "123 Main St",
-      "city": "Halifax",
-      "postalCode": "B3H 1Y4",
-      "country": "CA"
-    }
-  ],
-  "createdAt": "2025-06-11T17:45:00Z"
+  "fullName": "Consumer Al Consumers",
+  "email": "conusmer@domian.com",
+  "phoneNumber": "+19021234567"
 }
 ```
 
-### Error Example
+**Success Response 200**
+```json
+{
+  "message": "Consumer profile created successfully.",
+  "profile": {
+      "consumerId": "user_consumer",
+      "fullName": "Consumer Al Consumers",
+      "email": "conusmer@domian.com",
+      "phoneNumber": "+19021234567",
+      "createdAt": "2025-07-23T16:35:26.184Z"
+  }
+}
+```
+
+**Error Example**
 ```json
 { "error": "Authentication required." }
 ```
 
 ---
 
-## 1.2 **PUT `/consumer/profile`**
+### 1.2 **GET `/consumer/profile`**
 
-Update personal fields (phone, username, email).
+Return the authenticated consumer’s complete profile.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** – token missing / invalid |
+
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
+
+**Success Response 200**
+```json
+{
+  "displayProfile": {
+      "consumerId": "user_consumer",
+      "fullName": "Consumer Al Consumers",
+      "email": "conusmer@domian.com",
+      "phoneNumber": "+19021234567",
+      "createdAt": "2025-07-23T16:35:26.184Z"
+  }
+}
+```
+
+**Error Example**
+```json
+{ "error": "Authentication required." }
+```
+
+---
+
+### 1.3 **PUT `/consumer/profile`**
+
+Update personal fields (name, phone, email, etc.).
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **400 Bad Request** – invalid data<br>**404 Not Found** – consumer not found |
 
-### Request Body
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
+
+
+**Request Body**
 ```json
 {
-  "fullName": "Asaad Al Salmi",
-  "phoneNumber": "+19025556666"
+  "fullName": "Consumer Al Consumers",
+  "email": "conusmer@domian.com",
+  "phoneNumber": "+19040234567"
 }
 ```
 
-### Success Response
+**Success Response 200**
 ```json
 {
   "message": "Consumer profile updated successfully",
-  "consumer": {
-    "consumerId": "u123",
-    "fullName": "Asaad Al Salmi",
-    "phoneNumber": "+19025556666"
+  "profile": {
+      "consumerId": "user_consumer",
+      "fullName": "Consumer Al Consumers",
+      "email": "conusmer@domian.com",
+      "phoneNumber": "+19040234567",
+      "createdAt": "2025-07-23T16:35:26.184Z"
   }
 }
 ```
 
-### Error Example
+**Error Example**
 ```json
 { "error": "Invalid email format." }
 ```
 
 ---
 
-# 2. Consumer Settings
+## 2. Consumer Settings
 
-## 2.1 **GET `/consumer/settings`**
+### 2.1 **GET `/consumer/settings`**
 
-Fetch user preference flags 
+Fetch user preference flags (currency, theme, notifications, etc.).
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **401 Unauthorized** |
 
-### Success Response
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
+
+**Success Response 200**
 ```json
 {
-  "theme": "dark"
+  "settings": {
+      "currency": "CAD",
+      "theme": "light"
+  }
 }
 ```
 
 ---
 
-## 2.2 **PUT `/consumer/settings`**
+### 2.2 **PUT `/consumer/settings`**
 
 Update preference flags.
 
@@ -115,30 +186,40 @@ Update preference flags.
 |---------|----------|
 | **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
 
-### Request Body
+**Headers**
+```
+Authorization: Bearer <JWT>
+```
+
+**Request Body**
 ```json
 {
-  "theme": "light"
+    "currency": "USD",
+    "theme": "dark"
 }
 ```
 
-### Success Response
+**Success Response 200**
 ```json
 {
-  "message": "Settings updated."
+  "message": "Settings updated.",
+  "settings": {
+      "currency": "USD",
+      "theme": "dark"
+  }
 }
 ```
 
 ---
 
-# 3. Consumer Addresses
+## 3. Consumer Addresses
 
 | Method & Path | Purpose |
 |---------------|---------|
 | **POST `/consumer/addresses`** | Add a new address |
 | **GET `/consumer/addresses`** | List all addresses |
-| **PUT `/consumer/addresses/:id`** | Update existing address |
-| **DELETE `/consumer/addresses/:id`** | Remove address |
+| **PUT `/consumer/addresses/:id`** | Update an address |
+| **DELETE `/consumer/addresses/:id`** | Remove an address |
 
 ---
 
@@ -148,28 +229,27 @@ Update preference flags.
 |---------|----------|
 | **201 Created** | **400 Bad Request** |
 
-#### Request Body
+**Request Body**
 ```json
 {
-  "label": "Office",
-  "line1": "789 Work Ave",
+  "label": "Home",
+  "line1": "1234 South Street Apt 2",
   "city": "Halifax",
-  "postalCode": "B3H 3Z1",
-  "country": "CA"
+  "postalCode": "B3H1T2",
+  "country": "Canada"
 }
 ```
 
-#### Success Response
+**Success Response 201**
 ```json
 {
-  "message": "Address added.",
+  "message": "New address created successfully",
   "address": {
-    "addressId": "a2",
-    "label": "Office",
-    "line1": "789 Work Ave",
-    "city": "Halifax",
-    "postalCode": "B3H 3Z1",
-    "country": "CA"
+      "label": "Home",
+      "line1": "1234 South Street Apt 2",
+      "city": "Halifax",
+      "postalCode": "B3H1T2",
+      "country": "Canada"
   }
 }
 ```
@@ -182,26 +262,18 @@ Update preference flags.
 |---------|----------|
 | **200 OK** | **401 Unauthorized** |
 
-#### Success Response
+**Success Response 200**
 ```json
 {
   "addresses": [
-    {
-      "addressId": "a1",
-      "label": "Home",
-      "line1": "123 Main St",
-      "city": "Halifax",
-      "postalCode": "B3H 1Y4",
-      "country": "CA"
-    },
-    {
-      "addressId": "a2",
-      "label": "Office",
-      "line1": "789 Work Ave",
-      "city": "Halifax",
-      "postalCode": "B3H 3Z1",
-      "country": "CA"
-    }
+      {
+          "label": "Home",
+          "line1": "1234 South Street Apt 2",
+          "city": "Halifax",
+          "postalCode": "B3H1T2",
+          "country": "Canada",
+          "_id": "6881109d532e8c504e261584"
+      }
   ]
 }
 ```
@@ -214,28 +286,28 @@ Update preference flags.
 |---------|----------|
 | **200 OK** | **400 Bad Request**<br>**404 Not Found** – address missing |
 
-#### Request Body
+**Request Body**
 ```json
 {
-  "label": "Office",
-  "line1": "789 Work Ave",
+  "label": "Home",
+  "line1": "4321 South Street Apt 2",
   "city": "Halifax",
-  "postalCode": "B3H 3Z1",
-  "country": "CA"
+  "postalCode": "B3H1T2",
+  "country": "Canada"
 }
 ```
 
-#### Success Response
+**Success Response 200**
 ```json
 {
   "message": "Address updated.",
   "address": {
-    "addressId": "a2",
-    "label": "Office",
-    "line1": "789 Work Ave",
-    "city": "Halifax",
-    "postalCode": "B3H 3Z1",
-    "country": "CA"
+      "label": "Home",
+      "line1": "4321 South Street Apt 2",
+      "city": "Halifax",
+      "postalCode": "B3H1T2",
+      "country": "Canada",
+      "_id": "6881109d532e8c504e261584"
   }
 }
 ```
@@ -248,25 +320,30 @@ Update preference flags.
 |---------|----------|
 | **204 No Content** | **404 Not Found** |
 
-_No body on success._
+**Success Response 200**
+```json
+{
+  "message": "Address deleted successfully."
+}
+```
 
 ---
 
-# 4. Vendor Profile
+## 4. Vendor Profile
 
-## 4.1 **GET `/vendor/profile`**
+### 4.1 **GET `/vendor/profile`**
 
-Returns vendor profile (for the authenticated vendor).
+Return the authenticated vendor’s profile.
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **401 Unauthorized** |
 
-### Success Response
+**Success Response 200**
 ```json
 {
   "vendorId": "v456",
-  "storeName": "Tailor Threads",
+  "storeName": "Tailor Threads",
   "location": "Halifax",
   "phoneNumber": "+19027778888",
   "logoUrl": "https://cdn.app.com/logo.png",
@@ -281,7 +358,7 @@ Returns vendor profile (for the authenticated vendor).
 
 ---
 
-## 4.2 **PUT `/vendor/profile`**
+### 4.2 **PUT `/vendor/profile`**
 
 Update vendor public details.
 
@@ -289,10 +366,10 @@ Update vendor public details.
 |---------|----------|
 | **200 OK** | **400 Bad Request**<br>**401 Unauthorized** |
 
-### Request Body
+**Request Body**
 ```json
 {
-  "storeName": "New Tailor Threads",
+  "storeName": "New Tailor Threads",
   "location": "Dartmouth",
   "logoUrl": "https://cdn.app.com/newlogo.png",
   "storeBannerUrl": "https://cdn.app.com/newbanner.png",
@@ -303,55 +380,47 @@ Update vendor public details.
 }
 ```
 
-### Success Response
+**Success Response 200**
 ```json
-{
-  "message": "Vendor profile updated successfully."
-}
+{ "message": "Vendor profile updated successfully." }
 ```
 
 ---
 
-## 4.3 **PUT `/vendor/settings`**
+### 4.3 **PUT `/vendor/settings`**
 
-Update preference flags.
+Update vendor preference flags.
 
 | Success | Error(s) |
 |---------|----------|
 | **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
 
-### Request Body
+**Request Body**
 ```json
-{
-  "theme": "light"
-}
+{ "theme": "light" }
 ```
 
-### Success Response
+**Success Response 200**
 ```json
-{
-  "message": "Settings updated."
-}
+{ "message": "Settings updated." }
 ```
 
 ---
 
+### 4.4 **PUT `/vendor/:id/approve`** *(Admin only)*
 
-## 4.4 **PUT `/vendor/:id/approve`**
-Admin approves vendor visibility and store management.
+Approve or revoke vendor visibility & store management.
 
 | Success | Error(s) |
 |---------|----------|
-| **200 OK** | **400 Bad Request** – invalid keys <br> **401 Unauthorized** |
+| **200 OK** | **400 Bad Request** – invalid body<br>**401 Unauthorized** |
 
-### Request Body
+**Request Body**
 ```json
-{
-  "isApproved": true
-}
+{ "isApproved": true }
 ```
 
-### Success Response
+**Success Response 200**
 ```json
 {
   "message": "Vendor approval status updated.",
@@ -361,19 +430,47 @@ Admin approves vendor visibility and store management.
   }
 }
 ```
+
 ---
 
-# ❌ Unified Error Format
+## 5. Error Handling
+
+All endpoints return errors in the unified format below:
 
 ```json
-{ "error": "Human‑readable message here" }
+{ "error": "Human‑readable message here." }
 ```
+- **400**: Invalid request data or parameters  
+- **401**: Authentication required / invalid token  
+- **404**: Resource not found  
+- **500**: Internal server error  
+
 ---
-# ✅ Scope Coverage Summary
 
-- **Consumer profile & settings**
-- **Address CRUD**
-- **Vendor profile & settings** (including admin approval)
-- Consistent error handling and token‑protected routes
+## 6. Endpoint Summary
 
+| Endpoint | Method | Who Can Use | Auth? | Purpose |
+|----------|--------|-------------|-------|---------|
+| `/user/health` | GET | All | No | Service health check |
+| `/consumer/profile` | GET | Consumer | Yes | Retrieve own profile |
+| `/consumer/profile` | PUT | Consumer | Yes | Update own profile |
+| `/consumer/settings` | GET | Consumer | Yes | Fetch preference flags |
+| `/consumer/settings` | PUT | Consumer | Yes | Update preference flags |
+| `/consumer/addresses` | POST | Consumer | Yes | Add address |
+| `/consumer/addresses` | GET | Consumer | Yes | List addresses |
+| `/consumer/addresses/:id` | PUT | Consumer | Yes | Update address |
+| `/consumer/addresses/:id` | DELETE | Consumer | Yes | Delete address |
+| `/vendor/profile` | GET | Vendor | Yes | Retrieve vendor profile |
+| `/vendor/profile` | PUT | Vendor | Yes | Update vendor profile |
+| `/vendor/settings` | PUT | Vendor | Yes | Update vendor settings |
+| `/vendor/:id/approve` | PUT | Admin | Yes | Approve/revoke vendor |
+
+---
+
+## ✅ Scope Coverage Summary
+
+* **Consumer**: profile, settings, addresses CRUD  
+* **Vendor**: profile, settings, admin approval workflow  
+* **Role enforcement** via JWT in headers  
+* **Consistent error handling** across routes  
 
