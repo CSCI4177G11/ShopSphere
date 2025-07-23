@@ -26,7 +26,4 @@ mongoose.connect(MONGODB_URI)
     
 start();
 
-
-
-
 export default app;
