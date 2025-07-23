@@ -1,18 +1,21 @@
 const auth = require('../models/userModel');
+import bcrypt from 'bycrptjs';
+import { createToken } from '../utils/token.js';
 
-/* 409 */
+
   const emailExist = await auth.findOne({ $or: [{email}]});
-  if (email.test(emailExist)) {
+  if (emailExist.test(email)) {
     return res.status(409).json({ error: 'Email already exists.' });
   }
 
   const usernameExist = await auth.findOne({ $or: [{username}]});
-  if (exists) {
+  if (usernameExist.test(username)) {
     return res.status(409).json({ error: 'Username already exists.' });
   }
 
-/* Success */
+
   const user = await User.create({ username, email, password, role });
+  
   res.status(201).json({
     message: 'User registered successfully.',
     user: {
@@ -22,7 +25,7 @@ const auth = require('../models/userModel');
         role: user.role}
   });
 
-  /* 400 */
+  
   const registerEmail = async (request, res) => {
   const {email} = request.body;
   if (!email) {
