@@ -48,7 +48,7 @@ router.post('/consumer/addresses',
 
 router.get('/consumer/addresses', consumerCtrl.getAddresses);
 
-router.put('/consumer/addresses/id:',
+router.put('/consumer/addresses/:id',
     [
     param('id').notEmpty(),
     body('label').isString().notEmpty(),
