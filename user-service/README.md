@@ -331,7 +331,47 @@ Authorization: Bearer <JWT>
 
 ## 4. Vendor Profile
 
-### 4.1 **GET `/vendor/profile`**
+### 4.1 **POST `/vendor/profile`**
+
+Create the authenticated vendor’s profile.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **401 Unauthorized** |
+
+**Request Body**
+```json
+{
+  "storeName": "Tailor Threads",
+  "location": "Halifax",
+  "phoneNumber": "+19027778888",
+  "logoUrl": "https://cdn.app.com/logo.png",
+  "storeBannerUrl": "https://cdn.app.com/banner.png",
+  "socialLinks": {
+    "instagram": "@tailorthreads"
+  }
+}
+```
+
+**Success Response 200**
+```json
+{
+  "vendorId": "v456",
+  "storeName": "Tailor Threads",
+  "location": "Halifax",
+  "phoneNumber": "+19027778888",
+  "logoUrl": "https://cdn.app.com/logo.png",
+  "storeBannerUrl": "https://cdn.app.com/banner.png",
+  "rating": 4.8,
+  "socialLinks": {
+    "instagram": "@tailorthreads"
+  }
+}
+```
+
+---
+
+### 4.2 **GET `/vendor/profile`**
 
 Return the authenticated vendor’s profile.
 
@@ -349,7 +389,6 @@ Return the authenticated vendor’s profile.
   "logoUrl": "https://cdn.app.com/logo.png",
   "storeBannerUrl": "https://cdn.app.com/banner.png",
   "rating": 4.8,
-  "isApproved": true,
   "socialLinks": {
     "instagram": "@tailorthreads"
   }
@@ -358,7 +397,7 @@ Return the authenticated vendor’s profile.
 
 ---
 
-### 4.2 **PUT `/vendor/profile`**
+### 4.3 **PUT `/vendor/profile`**
 
 Update vendor public details.
 
@@ -386,8 +425,21 @@ Update vendor public details.
 ```
 
 ---
+### 4.4 **GET `/vendor/settings`**
 
-### 4.3 **PUT `/vendor/settings`**
+GET vendor preference flags.
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid keys<br>**401 Unauthorized** |
+
+
+**Success Response 200**
+```json
+{ "theme": "light" }
+```
+
+### 4.5 **PUT `/vendor/settings`**
 
 Update vendor preference flags.
 
@@ -407,7 +459,27 @@ Update vendor preference flags.
 
 ---
 
-### 4.4 **PUT `/vendor/:id/approve`** *(Admin only)*
+### 4.6 **GET `/vendor/:id/approve`** 
+
+Check vendor approval
+
+| Success | Error(s) |
+|---------|----------|
+| **200 OK** | **400 Bad Request** – invalid body<br>**401 Unauthorized** |
+
+
+
+**Success Response 200**
+```json
+{
+  "vendorId": "user_vendor",
+  "isApproved": true
+}
+```
+
+---
+
+### 4.7 **PUT `/vendor/:id/approve`** *(Admin only)*
 
 Approve or revoke vendor visibility & store management.
 
@@ -462,6 +534,7 @@ All endpoints return errors in the unified format below:
 | `/consumer/addresses/:id` | DELETE | Consumer | Yes | Delete address |
 | `/vendor/profile` | GET | Vendor | Yes | Retrieve vendor profile |
 | `/vendor/profile` | PUT | Vendor | Yes | Update vendor profile |
+| `/vendor/settings` | GET | Vendor | Yes | Get vendor settings |
 | `/vendor/settings` | PUT | Vendor | Yes | Update vendor settings |
 | `/vendor/:id/approve` | PUT | Admin | Yes | Approve/revoke vendor |
 
