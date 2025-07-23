@@ -1,6 +1,5 @@
 const auth = require('../models/userModel');
 import bcrypt from 'bycrptjs';
-import { createToken } from '../utils/token.js';
 
 
   const emailExist = await auth.findOne({ $or: [{email}]});
@@ -15,6 +14,10 @@ import { createToken } from '../utils/token.js';
 
 
   const user = await User.create({ username, email, password, role });
+
+  const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1h"
+  });
   
   res.status(201).json({
     message: 'User registered successfully.',
@@ -22,8 +25,10 @@ import { createToken } from '../utils/token.js';
         username: user.username,
         role: user.role,
         email: user.email,
-        role: user.role}
+        role: user.role}, 
+        token
   });
+
 
   
   const registerEmail = async (request, res) => {
@@ -44,5 +49,29 @@ import { createToken } from '../utils/token.js';
   const {username} = request.body;
   if (!username) {
     return res.status(400).json({ error: 'Username is required.' });
+  }
+};
+
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User cannot found" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch)
+      return res.status(400).json({ message: "Email or password is incorrect." });
+
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    res.status(200).json({
+      user: { id: user._id, name: user.name, email: user.email },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err });
   }
 };
