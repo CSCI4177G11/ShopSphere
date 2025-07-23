@@ -7,6 +7,16 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole(['consumer', 'admin']));
 
+router.post(
+  '/consumer/profile',
+  [
+    body('fullName').isString().notEmpty(),
+    body('email').isEmail().withMessage('Valid email required'),
+    body('phoneNumber').isString().notEmpty()
+  ],
+  consumerCtrl.addConsumerProfile
+);
+
 router.get('/consumer/profile', consumerCtrl.getConsumerProfile);
 router.put(
   '/consumer/profile',
@@ -18,14 +28,11 @@ router.put(
 );
 
 router.get('/consumer/settings',
-  consumerCtrl.getTheme
+  consumerCtrl.getSetting
 );
 
 router.put('/consumer/settings',
-    [
-        body('isApproved').isBoolean()
-    ],
-    consumerCtrl.changeTheme
+    consumerCtrl.changeSetting
 )
 
 router.post('/consumer/addresses',
