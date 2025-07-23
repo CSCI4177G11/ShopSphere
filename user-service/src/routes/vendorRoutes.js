@@ -7,9 +7,23 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole(['vendor', 'admin']));
 
-router.get('/vendor/profile', vendorCtrl.getVendorProfile);
+router.post(
+  '/profile',
+  [ 
+    body('storeName').isString().trim().notEmpty().isLength({max:120}),
+    body('location').isString().notEmpty().isLength({max: 120}),
+    body('logoUrl').isString().notEmpty(),
+    body('storeBannerUrl').isString().notEmpty(),
+    body('phoneNumber').isString().notEmpty(),
+    body('socialLinks').isArray().optional(),
+  ],
+  vendorCtrl.addVendorProfile
+);
+
+router.get('/profile', vendorCtrl.getVendorProfile);
+
 router.put(
-  '/vendor/profile',
+  '/profile',
   [ 
     body('storeName').isString().trim().notEmpty().isLength({max:120}),
     body('location').isString().notEmpty().isLength({max: 120}),
@@ -21,19 +35,28 @@ router.put(
   vendorCtrl.updateVendorProfile
 );
 
-router.put('/vendor/settings',
-  [
-
-  ],
-  vendorCtrl.changeTheme
+router.get('/settings',
+  vendorCtrl.getSetting
 );
 
-router.put('/vendor/:id/approve',
-    [
+router.put('/settings',
+  vendorCtrl.changeSetting
+);
+
+
+router.put(
+  '/:id/approve',
+  [
+    requireRole(['admin']),           
     param('id').isString().notEmpty(),
     body('isApproved').isBoolean(),
-    ],
-    vendorCtrl.approval
+  ],
+  vendorCtrl.approval
 )
 
+router.get(
+  '/:id/approve',
+  [ param('id').isString().notEmpty() ],
+  vendorCtrl.checkApproval
+)
 export default router;
