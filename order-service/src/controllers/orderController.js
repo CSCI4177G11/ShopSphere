@@ -69,9 +69,7 @@ export async function createOrder(req, res) {
       if (item.price !== product.price) {
         return res.status(400).json({ error: `Price mismatch for product ${item.productId}` });
       }
-      if (item.quantity > product.quantityInStock) {
-        return res.status(400).json({ error: `Insufficient stock for product ${item.productId}` });
-      }
+
       validatedOrderItems.push({ ...item, vendorId: product.vendorId });
     } catch (err) {
       return res.status(502).json({ error: `Failed to fetch product ${item.productId} from product service` });
