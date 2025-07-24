@@ -44,17 +44,22 @@ export const createSetupIntent = asyncHandler(async (req, res) => {
 export const listPaymentMethods = asyncHandler(async (req, res) => {
     const customerId = await getOrCreateStripeCustomer(req.user);
 
-    const { data } = await stripe.paymentMethods.list({
+    const { data: paymentMethods } = await stripe.paymentMethods.list({
         customer: customerId,
         type: 'card',
     });
 
-    const methods = data.map((pm) => ({
+    const customer = await stripe.customers.retrieve(customerId);
+    const defaultPaymentMethodId = customer.invoice_settings?.default_payment_method || 
+                                  customer.default_source;
+
+    const methods = paymentMethods.map((pm) => ({
         id: pm.id,
         brand: pm.card.brand,
         last4: pm.card.last4,
         exp_month: pm.card.exp_month,
         exp_year: pm.card.exp_year,
+        isDefault: pm.id === defaultPaymentMethodId,
     }));
 
     res.json({ paymentMethods: methods });
