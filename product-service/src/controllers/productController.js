@@ -107,27 +107,42 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ error: 'Invalid request data' });
-        }
-        const { id } = req.params;
-        const product = await Product.findById(id);
-        if (!product) {
-            return res.status(404).json({ error: 'Product not found' });
-        }
-        if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
-            return res.status(403).json({ error: 'You can only delete your own products' });
-        }
-        await product.deleteOne();
-        res.json({
-            message: "Product deleted successfully."
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Invalid request data' });
+      }
+  
+      const { id } = req.params;
+      const product = await Product.findById(id);
+      
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+      }
+  
+      if (req.user.role !== 'admin' && req.user.userId !== product.vendorId) {
+        return res
+          .status(403)
+          .json({ error: 'You can only delete your own products' });
+      }
+  
+      if (Array.isArray(product.images) && product.images.length) {
+        const deletePromises = product.images.map(async (url) => {
+          const matches = url.match(/\/products\/([^./]+)(?:\.[a-zA-Z]+)?$/);
+          if (matches && matches[1]) {
+            await deleteImage(`products/${matches[1]}`);
+          }
         });
+        await Promise.all(deletePromises);
+      }
+  
+      await product.deleteOne();
+  
+      return res.json({ message: 'Product deleted successfully.' });
     } catch (error) {
-        console.error('Error deleting product:', error);
-        res.status(500).json({ error: 'Internal server error' });
+      console.error('Error deleting product:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-};
+  };
 
 export const listProducts = async (req, res) => {
     try {
