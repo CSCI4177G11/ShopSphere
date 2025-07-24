@@ -6,6 +6,15 @@ import { requireAuth, requireRole } from '../middlewares/auth.js';
 
 const router = Router();
 
+router.get('/health', (req, res) => {
+  res.json({
+    service: 'cart',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Cart service is operational.',
+  });
+});
 
 router.use(requireAuth);
 router.use(requireRole(['consumer', 'admin']));
@@ -49,14 +58,5 @@ router.delete(
 
 router.get('/totals', cartCtrl.getCartTotals);
 
-router.get('/health', (req, res) => {
-  res.json({
-    service: 'cart',
-    status: 'up',
-    uptime_seconds: process.uptime().toFixed(2),
-    checked_at: new Date().toISOString(),
-    message: 'Cart service is operational.',
-  });
-});
 
 export default router;
