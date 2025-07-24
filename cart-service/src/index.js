@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 4400;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/shopsphere';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/shopsphere';
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -39,7 +39,7 @@ app.use((err, req, res, next) => {
   res.status(statusCode).json({ error: err.message || 'Internal server error' });
 });
 
-mongoose.connect(MONGO_URI, {
+mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
