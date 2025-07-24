@@ -28,14 +28,8 @@ router.post(
   consumerCtrl.addConsumerProfile
 );
 
-router.get('/profile', 
-  [
-    body('fullName').isString().notEmpty(),
-    body('email').isEmail().withMessage('Valid email required'),
-    body('phoneNumber').isString().notEmpty()
-  ],
-  consumerCtrl.getConsumerProfile);
-  
+router.get('/profile', consumerCtrl.getConsumerProfile);
+
 router.put(
   '/consumer/profile',
   [ 
