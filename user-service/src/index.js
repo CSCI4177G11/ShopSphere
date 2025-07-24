@@ -8,9 +8,8 @@ import morgan from 'morgan';
 dotenv.config();
 const app = express();
 
-const MONGO_URI = 'mongodb://127.0.0.1:27017';
-const PORT = process.env.PORT || 4100;
-const DB_NAME = process.env.DB_NAME || 'shopsphere';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/shopsphere';
+const PORT = process.env.PORT || 4200;
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -20,8 +19,18 @@ app.use(morgan(NODE_ENV === 'production' ? 'tiny' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use('/api/user', consumerRoute);
-app.use('/api/user', vendorRoute);
+app.get('/api/user/health', (req, res) => {
+  res.json({
+    service: 'user',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'User service is operational.',
+  });
+});
+
+app.use('/api/user/consumer', consumerRoute);
+app.use('/api/user/vendor', vendorRoute);
 
 app.use((req, res, next) => {
   const err = new Error(`Not found: ${req.originalUrl}`);
@@ -37,16 +46,14 @@ app.use((err, req, res, next) => {
   res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
 });
 
-console.log('Mongo URI:', process.env.MONGO_URI);
 async function start() {
   try {
-    await mongoose.connect(MONGO_URI, {
-      dbName: DB_NAME,
+    await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
     console.log('MongoDB connected');
-    if (NODE_ENV !== 'test') app.listen(PORT, () => console.log(`order-service on :${PORT}`));
+    if (NODE_ENV !== 'test') app.listen(PORT, () => console.log(`user-service on :${PORT}`));
   } catch (err) {
     console.error('Mongo connection error', err);
     process.exit(1);
