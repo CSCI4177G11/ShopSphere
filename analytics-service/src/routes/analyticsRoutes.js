@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middlewares/auth.js';
 import { getSummary, getTopProducts, getSalesTrend } from '../controllers/analyticsController.js';
+import sequelize from '../db/db.js';
 
 const router = Router();
 
-router.get('/analytics/health', async (req, res) => {
+router.get('/health', async (req, res) => {
     try {
         await sequelize.authenticate();
         res.status(200).json({
