@@ -1,30 +1,68 @@
-import {Router} from 'express';
-const controller = reauire('../controllers/authController');
+// src/routes/authRoutes.js
+import { Router } from 'express';
+import { body, validationResult } from 'express-validator';
 
-const route = Router();
+import {
+  register,
+  login,
+  logout,
+  me,
+  validateToken
+} from '../controllers/authController.js';
 
-route.post('/login', controller.login);
-router.post("/register", controller.register);
+import { requireAuth /*, requireRole */ } from '../middleware/auth.js';
 
-router.post(
-  '/login',
-  [
-    body('email').isEmail().withMessage('Valid email required'),
-    body('password').isString().notEmpty(),
-  ],
-  controller.login
+const router = Router();
+
+router.get('/health', (_req, res) =>
+  res.status(200).json({
+    service: 'auth',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Auth‑service is running smoothly.'
+  })
 );
+
+const handleValidation = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ error: errors.array()[0].msg });
+  }
+  next();
+};
 
 router.post(
   '/register',
   [
-    body('username').isEmail().notEmpty(),
-    body('email').isString().withMessage('Valid email required'),
-    body('password').isString().notEmpty(),
-    body('role').isString().notEmpty(),
-    
+    body('username')
+      .isString().trim().notEmpty()
+      .isLength({ min: 3, max: 32 })
+      .withMessage('Username must be 3‑32 characters.'),
+    body('email').isEmail().withMessage('Valid email required.'),
+    body('password').isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters.'),
+    body('role').isIn(['consumer', 'vendor', 'admin'])
+      .withMessage('Role must be consumer, vendor, or admin.')
   ],
-  controller.login
+  handleValidation,
+  register
 );
+
+router.post(
+  '/login',
+  [
+    body('email').isEmail().withMessage('Valid email required.'),
+    body('password').notEmpty().withMessage('Password is required.')
+  ],
+  handleValidation,
+  login
+);
+
+router.post('/logout', requireAuth, logout);
+
+router.get('/me', requireAuth, me);
+
+router.get('/validate', requireAuth, validateToken);
 
 export default router;
