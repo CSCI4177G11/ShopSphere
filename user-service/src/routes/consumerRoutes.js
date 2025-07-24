@@ -19,7 +19,7 @@ router.get('/health', (req, res) => {
 
 
 router.post(
-  '/profile',
+  '/consumer/profile',
   [
     body('fullName').isString().notEmpty(),
     body('email').isEmail().withMessage('Valid email required'),
@@ -28,7 +28,7 @@ router.post(
   consumerCtrl.addConsumerProfile
 );
 
-router.get('/profile', consumerCtrl.getConsumerProfile);
+router.get('consumer/profile', consumerCtrl.getConsumerProfile);
 
 router.put(
   '/consumer/profile',
@@ -39,12 +39,12 @@ router.put(
   consumerCtrl.updateConsumerProfile
 );
 
-router.get('/settings',
+router.get('/consumer/settings',
   consumerCtrl.getSetting
 );
 
 router.put(
-  '/settings',
+  '/consumer/settings',
   [
     body('currency').optional().isString(),
     body('theme').optional().isString()
@@ -52,7 +52,7 @@ router.put(
   consumerCtrl.changeSetting
 );
 
-router.post('/addresses',
+router.post('/consumer/addresses',
     [
     body('label').isString(),
     body('line').isString(),
@@ -63,9 +63,9 @@ router.post('/addresses',
     consumerCtrl.addNewAddress
 )
 
-router.get('/addresses', consumerCtrl.getAddresses);
+router.get('/consumer/addresses', consumerCtrl.getAddresses);
 
-router.put('/addresses/:id',
+router.put('/consumer/addresses/:id',
     [
     param('id').notEmpty(),
     body('label').isString().notEmpty(),
@@ -77,7 +77,7 @@ router.put('/addresses/:id',
     consumerCtrl.updateAddress
 )
 
-router.delete('/addresses/:id',
+router.delete('/consumer/addresses/:id',
     [
         param('id').notEmpty()
     ]
