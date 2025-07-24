@@ -6,6 +6,12 @@ admin:
   host: localhost
 
 apiEndpoints:
+  auth:
+    pathRegex: "/api/auth.*" 
+    host: "*"
+  user:
+    pathRegex: "/api/user.*" 
+    host: "*"
   product:
     pathRegex: "/api/product.*" 
     host: "*"
@@ -23,6 +29,10 @@ apiEndpoints:
     host: "*"
 
 serviceEndpoints:
+  auth-service:
+    url: http://auth-service:4100/ 
+  user-service:
+    url: http://user-service:4300/ 
   product-service:
     url: http://product-service:4300/ 
   cart-service:
@@ -40,6 +50,30 @@ policies:
   - proxy
 
 pipelines:
+  auth-pipeline:
+    apiEndpoints:
+      - auth
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"
+      - proxy:
+          - action:
+              serviceEndpoint: auth-service
+              changeOrigin: true
+  user-pipeline:
+    apiEndpoints:
+      - user
+    policies:
+      - cors:
+          - action:
+              origin: "*"
+              methods: "GET,POST,PUT,DELETE"
+      - proxy:
+          - action:
+              serviceEndpoint: user-service
+              changeOrigin: true
   product-pipeline:
     apiEndpoints:
       - product
