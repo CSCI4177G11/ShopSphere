@@ -16,7 +16,6 @@ services:
     ports:
       - '4100:4100'
     depends_on:
-      - mongo
     environment:
       - PORT=4100
       - MONGODB_URI=mongodb://mongo:27017/shopsphere
