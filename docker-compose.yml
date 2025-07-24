@@ -19,7 +19,7 @@ services:
       - mongo
     environment:
       - PORT=4100
-      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - MONGO_URI=mongodb://localhost:27017/shopsphere
       - NODE_ENV=development
  
 volumes:
