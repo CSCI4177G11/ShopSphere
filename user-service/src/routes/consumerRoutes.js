@@ -7,6 +7,17 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole(['consumer', 'admin']));
 
+router.get('/health', (req, res) => {
+  res.json({
+    service: 'orders',
+    status: 'up',
+    uptime_seconds: process.uptime().toFixed(2),
+    checked_at: new Date().toISOString(),
+    message: 'Order service is operational.',
+  });
+});
+
+
 router.post(
   '/profile',
   [

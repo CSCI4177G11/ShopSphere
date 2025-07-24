@@ -20,8 +20,8 @@ app.use(morgan(NODE_ENV === 'production' ? 'tiny' : 'dev'));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use('/api/user/consumer', consumerRoute);
-app.use('/api/user/vendor', vendorRoute);
+app.use('/api/user', consumerRoute);
+app.use('/api/user', vendorRoute);
 
 app.use((req, res, next) => {
   const err = new Error(`Not found: ${req.originalUrl}`);
