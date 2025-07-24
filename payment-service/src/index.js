@@ -6,25 +6,25 @@ import mongoose from 'mongoose';
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
 
-import paymentRoutes from './routes/paymentRoutes.js'; // ⇦ you’ll add these soon!
+import paymentRoutes from './routes/paymentRoutes.js'; 
 
 dotenv.config();
 
 const {
-  PORT = 5002,
-  MONGO_URI,
+  PORT = 4500,
+  MONGODB_URI,
   STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET,
   NODE_ENV = 'development',
 } = process.env;
 
-if (!MONGO_URI || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+if (!MONGODB_URI || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
   console.error('❌  Missing one or more required env vars in .env');
   process.exit(1);
 }
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-04-10', // pin to a specific Stripe API version
+  apiVersion: '2024-04-10', 
 });
 
 const app = express();
@@ -80,7 +80,7 @@ app.use((err, _req, res, _next) => {
 });
 
 mongoose
-  .connect(MONGO_URI)
+  .connect(MONGODB_URI)
   .then(() => {
     console.log('✅  MongoDB connected');
     app.listen(PORT, () =>
