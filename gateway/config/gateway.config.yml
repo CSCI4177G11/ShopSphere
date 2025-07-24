@@ -32,7 +32,7 @@ serviceEndpoints:
   auth-service:
     url: http://auth-service:4100/ 
   user-service:
-    url: http://user-service:4300/ 
+    url: http://user-service:4200/ 
   product-service:
     url: http://product-service:4300/ 
   cart-service:
