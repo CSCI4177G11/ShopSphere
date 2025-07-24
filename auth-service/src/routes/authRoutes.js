@@ -52,7 +52,13 @@ router.post(
 router.post(
   '/login',
   [
-    body('email').isEmail().withMessage('Valid email required.'),
+    body('email').optional().isEmail().withMessage('Valid email required.'),
+    body('username')
+      .optional()
+      .isString()
+      .trim()
+      .notEmpty()
+      .withMessage('Username is required.'),
     body('password').notEmpty().withMessage('Password is required.')
   ],
   handleValidation,
