@@ -10,9 +10,8 @@ dotenv.config();
 
 const app = express();
 
-const PORT = process.env.PORT || 4100;
-const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.DB_NAME || 'shopsphere';
+const PORT = process.env.PORT || 4600;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/shopsphere';
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -40,7 +39,6 @@ app.use((err, req, res, next) => {
 async function start() {
   try {
     await mongoose.connect(MONGODB_URI, {
-      dbName: DB_NAME,
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
