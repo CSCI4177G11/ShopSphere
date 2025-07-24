@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 4300;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shopsphere';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://mongo:27017/shopsphere';
 const CORS_ORIGIN = (process.env.CORS_ORIGIN || '*').split(',');
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
