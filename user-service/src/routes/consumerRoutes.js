@@ -7,19 +7,8 @@ const router = Router();
 router.use(requireAuth);
 router.use(requireRole(['consumer', 'admin']));
 
-router.get('/health', (req, res) => {
-  res.json({
-    service: 'orders',
-    status: 'up',
-    uptime_seconds: process.uptime().toFixed(2),
-    checked_at: new Date().toISOString(),
-    message: 'Order service is operational.',
-  });
-});
-
-
 router.post(
-  '/consumer/profile',
+  '/profile',
   [
     body('fullName').isString().notEmpty(),
     body('email').isEmail().withMessage('Valid email required'),
@@ -28,10 +17,10 @@ router.post(
   consumerCtrl.addConsumerProfile
 );
 
-router.get('consumer/profile', consumerCtrl.getConsumerProfile);
+router.get('/profile', consumerCtrl.getConsumerProfile);
 
 router.put(
-  '/consumer/profile',
+  '/profile',
   [ 
     body('fullName').isString().notEmpty(),
     body('phoneNumber').isString()
@@ -39,12 +28,12 @@ router.put(
   consumerCtrl.updateConsumerProfile
 );
 
-router.get('/consumer/settings',
+router.get('/settings',
   consumerCtrl.getSetting
 );
 
 router.put(
-  '/consumer/settings',
+  '/settings',
   [
     body('currency').optional().isString(),
     body('theme').optional().isString()
@@ -52,7 +41,7 @@ router.put(
   consumerCtrl.changeSetting
 );
 
-router.post('/consumer/addresses',
+router.post('/addresses',
     [
     body('label').isString(),
     body('line').isString(),
@@ -63,9 +52,9 @@ router.post('/consumer/addresses',
     consumerCtrl.addNewAddress
 )
 
-router.get('/consumer/addresses', consumerCtrl.getAddresses);
+router.get('/addresses', consumerCtrl.getAddresses);
 
-router.put('/consumer/addresses/:id',
+router.put('/addresses/:id',
     [
     param('id').notEmpty(),
     body('label').isString().notEmpty(),
@@ -77,7 +66,7 @@ router.put('/consumer/addresses/:id',
     consumerCtrl.updateAddress
 )
 
-router.delete('/consumer/addresses/:id',
+router.delete('/addresses/:id',
     [
         param('id').notEmpty()
     ]
