@@ -10,7 +10,7 @@ import {
     getPaymentById,
     savePaymentMethod,
     setDefaultPaymentMethod,
-    // refundPayment,
+    refundPayment,
 } from '../controllers/paymentController.js';
 
 import { requireAuth, requireRole } from '../middleware/auth.js';
@@ -105,16 +105,16 @@ router.put(
 );
 
 
-// router.post(
-//     '/:paymentId/refund',
-//     [
-//         param('paymentId').isMongoId().withMessage('Invalid payment id'),
-//         handleValidationErrors,
-//     ],
-//     requireAuth,
-//     getPaymentById, 
-//     refundPayment
-// );
+router.post(
+    '/:paymentId/refund',
+    [
+        param('paymentId').isMongoId().withMessage('Invalid payment id'),
+        handleValidationErrors,
+    ],
+    requireAuth,
+    getPaymentById, 
+    refundPayment
+);
 
 /**
  * (Optional) Admin-only endpoint to list all payments across consumers.
