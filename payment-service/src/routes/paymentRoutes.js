@@ -25,9 +25,6 @@ const handleValidationErrors = (req, res, next) => {
 
 const router = Router();
 
-router.use(requireAuth);
-
-
 router.get('/health', (req, res) => {
     res.json({
         service: 'payments',
@@ -37,6 +34,8 @@ router.get('/health', (req, res) => {
         message: 'Payments service is operational.',
     });
 });
+
+router.use(requireAuth);
 
 router.post('/setup-intent', createSetupIntent);
 
