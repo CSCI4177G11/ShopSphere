@@ -374,6 +374,7 @@ Create the authenticated vendor’s profile.
     }
 }
 ```
+
 ---
 
 ### 4.2 **GET `/vendor/profile`**
