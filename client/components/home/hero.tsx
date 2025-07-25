@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { useAuth } from "@/components/auth-provider"
 import { 
   ArrowRight, 
   Sparkles, 
@@ -15,7 +16,9 @@ import {
   Package,
   Globe,
   Search,
-  ChevronDown
+  ChevronDown,
+  ShoppingBag,
+  Store
 } from "lucide-react"
 
 const HERO_STATS = [
@@ -37,6 +40,8 @@ const ROTATING_TEXT = [
 
 export function Hero() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
+  const { user, loading } = useAuth()
+  const isAuthenticated = !!user
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -114,45 +119,79 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md sm:max-w-none mx-auto"
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button 
-                asChild 
-                size="lg" 
-                className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
-              >
-                <Link href="/auth/register">
-                  <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                  Get Started
-                  <motion.div
-                    className="ml-3"
-                    animate={{ x: [0, 4, 0] }}
-                    transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+            {loading ? (
+              // Show loading state while checking auth
+              <div className="h-14 w-48 bg-muted animate-pulse rounded-2xl" />
+            ) : isAuthenticated ? (
+              // Logged in user buttons
+              <>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
                   >
-                    <ArrowRight className="h-5 w-5" />
-                  </motion.div>
-                </Link>
-              </Button>
-            </motion.div>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button 
-                asChild 
-                variant="outline"
-                size="lg" 
-                className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
-              >
-                <Link href="/auth/register">
-                  <Users className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
-                  Join ShopSphere
-                </Link>
-              </Button>
-            </motion.div>
+                    <Link href="/products">
+                      <ShoppingBag className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Browse Products
+                      <motion.div
+                        className="ml-3"
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.div>
+                    </Link>
+                  </Button>
+                </motion.div>
+              </>
+            ) : (
+              // Not logged in user buttons
+              <>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/auth/register">
+                      <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Get Started
+                      <motion.div
+                        className="ml-3"
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.div>
+                    </Link>
+                  </Button>
+                </motion.div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    variant="outline"
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/auth/login">
+                      <Users className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Sign In
+                    </Link>
+                  </Button>
+                </motion.div>
+              </>
+            )}
           </motion.div>
 
           {/* Trust Indicators */}

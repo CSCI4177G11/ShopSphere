@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
+import { ArrowLeft } from "lucide-react"
 
 const registerSchema = z
   .object({
@@ -86,7 +87,13 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4 py-16">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4 py-16 relative">
+      <Link href="/" className="absolute top-4 left-4">
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
+      </Link>
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -109,35 +116,39 @@ export default function RegisterPage() {
 
         <Card className="border-0 shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <CardContent className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => handleOAuthSignIn("google")} 
-                disabled={isLoading}
-                className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
-              >
-                <Icons.google className="mr-2 h-4 w-4" />
-                Google
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => handleOAuthSignIn("github")} 
-                disabled={isLoading}
-                className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
-              >
-                <Icons.gitHub className="mr-2 h-4 w-4" />
-                GitHub
-              </Button>
-            </div>
+            {!isVendorRegistration && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleOAuthSignIn("google")} 
+                    disabled={isLoading}
+                    className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+                  >
+                    <Icons.google className="mr-2 h-4 w-4" />
+                    Google
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleOAuthSignIn("github")} 
+                    disabled={isLoading}
+                    className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+                  >
+                    <Icons.gitHub className="mr-2 h-4 w-4" />
+                    GitHub
+                  </Button>
+                </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-3 text-muted-foreground font-medium">Or create with email</span>
-              </div>
-            </div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-3 text-muted-foreground font-medium">Or create with email</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
