@@ -136,3 +136,4 @@ dist
 .pnp.*
 docker-compose.yml
 package-lock.json
+.claude/settings.local.json
