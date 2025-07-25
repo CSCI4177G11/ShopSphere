@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CurrencySelector } from "@/components/currency-selector";
 import { useMounted } from "@/hooks/use-mounted";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +144,18 @@ export function Header() {
                       </Button>
                     </motion.div>
                   )}
+
+                  {/* Currency Selector */}
+                  <motion.div
+                    className="flex-shrink-0"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                  >
+                    <div className="rounded-xl hover:bg-primary/5 transition-colors duration-200">
+                      <CurrencySelector />
+                    </div>
+                  </motion.div>
 
                   {/* Enhanced Theme Toggle */}
                   <motion.div

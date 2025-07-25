@@ -83,8 +83,9 @@ class UserService {
     )
   }
 
-  getConsumerSettings() {
-    return userApi.get<UserSettings>('/consumer/settings')
+  async getConsumerSettings() {
+    const response = await userApi.get<{ settings: UserSettings }>('/consumer/settings')
+    return response.settings
   }
 
   updateConsumerSettings(data: Partial<UserSettings>) {
@@ -142,12 +143,6 @@ class UserService {
     )
   }
 
-  updateVendorSettings(data: Partial<UserSettings>) {
-    return userApi.put<{ message: string; settings: UserSettings }>(
-      '/vendor/settings',
-      data
-    )
-  }
 
   approveVendor(vendorId: string, isApproved: boolean) {
     return userApi.put<{

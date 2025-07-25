@@ -73,6 +73,14 @@ const nextConfig = {
         destination: 'http://localhost:4500/api/user/:path*',
       },
       {
+        source: '/api/consumer/:path*',
+        destination: 'http://localhost:4500/api/consumer/:path*',
+      },
+      {
+        source: '/api/vendor/:path*',
+        destination: 'http://localhost:4500/api/vendor/:path*',
+      },
+      {
         source: '/api/analytics/:path*',
         destination: 'http://localhost:4600/api/analytics/:path*',
       },

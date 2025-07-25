@@ -4,6 +4,7 @@ import * as React from "react"
 import { Moon, Sun, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSettings } from "@/components/settings-provider"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { theme } = useTheme()
+  const { updateTheme } = useSettings()
 
   const themes = [
     { 
@@ -124,7 +126,7 @@ export function ThemeToggle() {
                 transition={{ duration: 0.2, delay: index * 0.05 }}
               >
                 <DropdownMenuItem 
-                  onClick={() => setTheme(themeOption.value)}
+                  onClick={() => updateTheme(themeOption.value)}
                   className={`
                     group relative cursor-pointer rounded-lg px-3 py-2.5 transition-all duration-200
                     hover:bg-accent/50 focus:bg-accent/50
