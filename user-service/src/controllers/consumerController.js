@@ -30,15 +30,11 @@ function requireConsumerId(req, res) {
 export const addConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
     if (!consumerId) return;
-    const { fullName, email, phoneNumber } = req.body;
-    if (!fullName || !email || !phoneNumber) {
-      return res.status(400).json({ error: 'fullName, email, and phoneNumber are required.' });
+    const { fullName, phoneNumber } = req.body;
+    if (!fullName || !phoneNumber) {
+      return res.status(400).json({ error: 'fullName and phoneNumber are required.' });
     }
-    const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!emailFormat.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format.' });
-    }
     if (!phoneNumberFormat.test(phoneNumber)) {
       return res.status(400).json({ error: 'Invalid phone number format.' });
     }
@@ -46,6 +42,7 @@ export const addConsumerProfile = async (req, res) => {
     if (await Consumer.findOne({ consumerId })) {
       return res.status(409).json({ error: 'Profile already exists for this consumer.' });
     }
+    const email = req.user.email;
     const newProfile = await Consumer.create({
       consumerId,
       fullName,

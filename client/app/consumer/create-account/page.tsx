@@ -15,7 +15,6 @@ import { toast } from "sonner"
 
 const profileSchema = z.object({
   fullName: z.string().min(2, "Name is required"),
-  email: z.string().email("Invalid email"),
   phoneNumber: z.string().min(5, "Phone number is required"),
 })
 
@@ -62,11 +61,6 @@ export default function CreateConsumerAccountPage() {
                 <Label htmlFor="fullName">Full name</Label>
                 <Input id="fullName" {...register("fullName")} disabled={submitting} />
                 {errors.fullName && <p className="text-sm text-destructive">{errors.fullName.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" {...register("email")} disabled={submitting} />
-                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone number</Label>

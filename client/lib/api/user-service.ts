@@ -37,7 +37,6 @@ export interface VendorProfile {
 
 export interface UpdateConsumerProfileRequest {
   fullName?: string
-  email?: string
   phoneNumber?: string
 }
 
@@ -65,7 +64,6 @@ class UserService {
 
   createConsumerProfile(data: {
     fullName: string
-    email: string
     phoneNumber: string
   }) {
     return userApi.post<{ message: string; consumer: ConsumerProfile }>(
