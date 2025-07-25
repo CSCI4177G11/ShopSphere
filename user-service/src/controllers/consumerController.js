@@ -90,13 +90,9 @@ export const getConsumerProfile = async (req, res) => {
 
 export const updateConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
-    const {fullName, email, phoneNumber} = req.body;
-    const emailFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const {fullName, phoneNumber} = req.body;
     const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!emailFormat.test(email)) {
-        return res.status(400).json({ error: 'Invalid email format.' });
-    }
-    if (!phoneNumberFormat.test(phoneNumber)) {
+    if (phoneNumber && !phoneNumberFormat.test(phoneNumber)) {
         return res.status(400).json({ error: 'Invalid phone number format.' });
     }
     try {
@@ -104,8 +100,10 @@ export const updateConsumerProfile = async (req, res) => {
         if (!profile) {
             return res.status(404).json({ error: 'Consumer not found.' });
         }
+        if (!phoneNumber && !fullName){
+          return res.status(400).json({ error: 'Nothing to update.' });
+        }
         profile.fullName = fullName;
-        profile.email = email;
         profile.phoneNumber = phoneNumber;
         await profile.save();
         res.status(200).json({
@@ -113,7 +111,6 @@ export const updateConsumerProfile = async (req, res) => {
             profile: {
                 consumerId: profile.consumerId,
                 fullName: profile.fullName,
-                email: profile.email,
                 phoneNumber: profile.phoneNumber,
                 createdAt:  profile.createdAt,
             }
