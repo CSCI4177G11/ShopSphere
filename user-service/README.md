@@ -373,7 +373,7 @@ Create the authenticated vendor’s profile.
         "createdAt": "2025-07-25T02:40:10.364Z"
     }
 }
-
+```
 ---
 
 ### 4.2 **GET `/vendor/profile`**
