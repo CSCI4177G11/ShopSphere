@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { useAuth } from "@/components/auth-provider"
 
 const profileSchema = z.object({
   fullName: z.string().min(2, "Name is required"),
@@ -22,7 +23,9 @@ type ProfileForm = z.infer<typeof profileSchema>
 
 export default function CreateConsumerAccountPage() {
   const router = useRouter()
+  const { user } = useAuth()
   const [submitting, setSubmitting] = useState(false)
+  const [checking, setChecking] = useState(true)
 
   const {
     register,
@@ -31,6 +34,27 @@ export default function CreateConsumerAccountPage() {
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
   })
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (!user || user.role !== 'consumer') {
+        router.push('/')
+        return
+      }
+
+      try {
+        // Try to get existing profile
+        await userService.getConsumerProfile()
+        // If successful, redirect to profile page
+        router.push('/consumer/profile')
+      } catch (error) {
+        // Profile doesn't exist, stay on this page
+        setChecking(false)
+      }
+    }
+
+    checkProfile()
+  }, [user, router])
 
   const onSubmit = async (data: ProfileForm) => {
     setSubmitting(true)
@@ -43,6 +67,17 @@ export default function CreateConsumerAccountPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
