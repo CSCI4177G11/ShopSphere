@@ -18,7 +18,11 @@ import { useAuth } from "@/components/auth-provider"
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
+    username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username may contain letters, numbers, and underscores only"),
     email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
@@ -45,7 +49,7 @@ export default function RegisterPage() {
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -58,14 +62,14 @@ export default function RegisterPage() {
     try {
       // Use the name as username for now (your API requires username)
       const role = isVendorRegistration ? 'vendor' : 'consumer'
-      await signUp(data.name, data.email, data.password, role)
+      await signUp(data.username, data.email, data.password, role)
       toast.success("Account created successfully!")
       
       // Redirect based on role
       if (isVendorRegistration) {
-        router.push("/vendor")
+        router.push("/vendor/create-account")
       } else {
-        router.push("/")
+        router.push("/consumer/create-account")
       }
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -137,16 +141,16 @@ export default function RegisterPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Full name</Label>
+                <Label htmlFor="username" className="text-sm font-medium">Username</Label>
                 <Input
                   id="name"
-                  placeholder="Enter your full name"
-                  {...register("name")}
+                  placeholder="Enter your username"
+                  {...register("username")}
                   disabled={isLoading}
                   data-testid="name-input"
                   className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
                 />
-                {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
               </div>
 
               <div className="space-y-2">
