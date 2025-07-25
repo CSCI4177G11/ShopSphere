@@ -6,10 +6,7 @@ const {
 } = process.env;
 
 export function requireAuth(req, res, next) {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)                      
-    : '';
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
 
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -22,14 +19,14 @@ export function requireAuth(req, res, next) {
 
     req.user = {
       userId: payload.sub,
-      role: payload.role,   
+      role: payload.role,
+      email: payload.email,
       ...payload,
     };
-
     return next();
   } catch (err) {
     console.error('JWT verification failed:', err.message);
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: err.message });
   }
 }
 

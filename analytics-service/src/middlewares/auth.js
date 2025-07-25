@@ -20,12 +20,13 @@ export function requireAuth(req, res, next) {
     req.user = {
       userId: payload.sub,
       role: payload.role,
+      email: payload.email,
       ...payload,
     };
     return next();
   } catch (err) {
     console.error('JWT verification failed:', err.message);
-    return res.status(401).json({ errors: err.message });
+    return res.status(401).json({ error: err.message });
   }
 }
 

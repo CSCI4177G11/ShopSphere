@@ -1,4 +1,3 @@
-// src/middleware/auth.js
 import jwt from 'jsonwebtoken';
 
 const {
@@ -21,6 +20,7 @@ export function requireAuth(req, res, next) {
     req.user = {
       userId: payload.sub,
       role: payload.role,
+      email: payload.email,
       ...payload,
     };
     return next();

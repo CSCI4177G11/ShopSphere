@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const {
-  JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',  // must match auth‑service
+  JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',
   JWT_ALGORITHM = 'HS256',
 } = process.env;
 
@@ -19,13 +19,14 @@ export function requireAuth(req, res, next) {
 
     req.user = {
       userId: payload.sub,
-      role: payload.role,   
+      role: payload.role,
+      email: payload.email,
       ...payload,
     };
     return next();
   } catch (err) {
     console.error('JWT verification failed:', err.message);
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: err.message });
   }
 }
 
