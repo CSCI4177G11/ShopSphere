@@ -95,17 +95,29 @@ export class ApiClient {
 
 // Create API clients for each service
 export const productApi = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_PRODUCT_SERVICE_URL || 'http://localhost:4300/api/product',
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/product` || 'http://gateway:8080/api/product',  
 })
 
 export const cartApi = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_CART_SERVICE_URL || 'http://localhost:4100/api/cart',
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/cart` || 'http://gateway:8080/api/cart',
 })
 
 export const orderApi = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_ORDER_SERVICE_URL || 'http://localhost:4200/api/order',
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/orders` || 'http://gateway:8080/api/order',
 })
 
 export const paymentApi = new ApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || 'http://localhost:4400/api/payment',
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/payments` || 'http://gateway:8080/api/payment',
+})
+
+export const userApi = new ApiClient({
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/user` || 'http://gateway:8080/api/user',
+})
+
+export const authApi = new ApiClient({
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/auth` || 'http://gateway:8080/api/auth',
+})
+
+export const analyticsApi = new ApiClient({
+  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/analytics` || 'http://gateway:8080/api/analytics',
 })
