@@ -1,6 +1,5 @@
-const USER_BASE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || '/api/user'
+import { userApi } from './api-client'
 
-// Types matching your API responses
 export interface Address {
   addressId: string
   label: string
@@ -10,9 +9,15 @@ export interface Address {
   country: string
 }
 
+export interface UserSettings {
+  currency: string
+  theme: 'light' | 'dark'
+}
+
 export interface ConsumerProfile {
   consumerId: string
   fullName: string
+  email: string
   phoneNumber: string
   addresses: Address[]
   createdAt: string
@@ -25,21 +30,14 @@ export interface VendorProfile {
   phoneNumber: string
   logoUrl?: string
   storeBannerUrl?: string
-  rating: number
+  rating: number | string
   isApproved: boolean
-  socialLinks?: {
-    instagram?: string
-    twitter?: string
-    facebook?: string
-  }
-}
-
-export interface UserSettings {
-  theme: 'light' | 'dark'
+  socialLinks?: string[]
 }
 
 export interface UpdateConsumerProfileRequest {
   fullName?: string
+  email?: string
   phoneNumber?: string
 }
 
@@ -49,11 +47,7 @@ export interface UpdateVendorProfileRequest {
   logoUrl?: string
   storeBannerUrl?: string
   phoneNumber?: string
-  socialLinks?: {
-    instagram?: string
-    twitter?: string
-    facebook?: string
-  }
+  socialLinks?: string[]
 }
 
 export interface CreateAddressRequest {
@@ -64,156 +58,105 @@ export interface CreateAddressRequest {
   country: string
 }
 
-export interface ApiError {
-  error: string
-}
-
 class UserService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${USER_BASE_URL}${endpoint}`
-    
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    }
-
-    // Add auth token if available
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      }
-    }
-
-    try {
-      const response = await fetch(url, config)
-      
-      if (!response.ok) {
-        const errorData: ApiError = await response.json()
-        throw new Error(errorData.error || `HTTP ${response.status}`)
-      }
-
-      // Handle 204 No Content
-      if (response.status === 204) {
-        return {} as T
-      }
-
-      return await response.json()
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error
-      }
-      throw new Error('Network error occurred')
-    }
+  health() {
+    return userApi.get<{ service: string; status: string }>('/user/health')
   }
 
-  // Consumer Profile Methods
-  async getConsumerProfile(): Promise<ConsumerProfile> {
-    return this.request('/consumer/profile')
+  createConsumerProfile(data: {
+    fullName: string
+    email: string
+    phoneNumber: string
+  }) {
+    return userApi.post<{ message: string; consumer: ConsumerProfile }>(
+      '/consumer/profile',
+      data
+    )
   }
 
-  async updateConsumerProfile(data: UpdateConsumerProfileRequest): Promise<{
-    message: string
-    consumer: {
-      consumerId: string
-      fullName: string
-      phoneNumber: string
-    }
-  }> {
-    return this.request('/consumer/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+  getConsumerProfile() {
+    return userApi.get<ConsumerProfile>('/consumer/profile')
   }
 
-  // Consumer Settings Methods
-  async getConsumerSettings(): Promise<UserSettings> {
-    return this.request('/consumer/settings')
+  updateConsumerProfile(data: UpdateConsumerProfileRequest) {
+    return userApi.put<{ message: string; consumer: ConsumerProfile }>(
+      '/consumer/profile',
+      data
+    )
   }
 
-  async updateConsumerSettings(data: Partial<UserSettings>): Promise<{
-    message: string
-  }> {
-    return this.request('/consumer/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+  getConsumerSettings() {
+    return userApi.get<UserSettings>('/consumer/settings')
   }
 
-  // Consumer Address Methods
-  async getAddresses(): Promise<{ addresses: Address[] }> {
-    return this.request('/consumer/addresses')
+  updateConsumerSettings(data: Partial<UserSettings>) {
+    return userApi.put<{ message: string; settings: UserSettings }>(
+      '/consumer/settings',
+      data
+    )
   }
 
-  async createAddress(data: CreateAddressRequest): Promise<{
-    message: string
-    address: Address
-  }> {
-    return this.request('/consumer/addresses', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+  getAddresses() {
+    return userApi.get<{ addresses: Address[] }>('/consumer/addresses')
   }
 
-  async updateAddress(addressId: string, data: CreateAddressRequest): Promise<{
-    message: string
-    address: Address
-  }> {
-    return this.request(`/consumer/addresses/${addressId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+  createAddress(data: CreateAddressRequest) {
+    return userApi.post<{ message: string; address: Address }>(
+      '/consumer/addresses',
+      data
+    )
   }
 
-  async deleteAddress(addressId: string): Promise<void> {
-    return this.request(`/consumer/addresses/${addressId}`, {
-      method: 'DELETE',
-    })
+  updateAddress(addressId: string, data: CreateAddressRequest) {
+    return userApi.put<{ message: string; address: Address }>(
+      `/consumer/addresses/${addressId}`,
+      data
+    )
   }
 
-  // Vendor Profile Methods
-  async getVendorProfile(): Promise<VendorProfile> {
-    return this.request('/vendor/profile')
+  deleteAddress(addressId: string) {
+    return userApi.delete<void>(`/consumer/addresses/${addressId}`)
   }
 
-  async updateVendorProfile(data: UpdateVendorProfileRequest): Promise<{
-    message: string
-  }> {
-    return this.request('/vendor/profile', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+  createVendorProfile(data: {
+    storeName: string
+    location: string
+    phoneNumber: string
+    logoUrl?: string
+    storeBannerUrl?: string
+    socialLinks?: string[]
+  }) {
+    return userApi.post<{ message: string; profile: VendorProfile }>(
+      '/vendor/profile',
+      data
+    )
   }
 
-  async updateVendorSettings(data: Partial<UserSettings>): Promise<{
-    message: string
-  }> {
-    return this.request('/vendor/settings', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
+
+  getVendorProfile() {
+    return userApi.get<VendorProfile>('/vendor/profile')
   }
 
-  // Admin Methods
-  async approveVendor(vendorId: string, isApproved: boolean): Promise<{
-    message: string
-    vendor: {
-      vendorId: string
-      isApproved: boolean
-    }
-  }> {
-    return this.request(`/vendor/${vendorId}/approve`, {
-      method: 'PUT',
-      body: JSON.stringify({ isApproved }),
-    })
+  updateVendorProfile(data: UpdateVendorProfileRequest) {
+    return userApi.put<{ message: string; vendor: VendorProfile }>(
+      '/vendor/profile',
+      data
+    )
+  }
+
+  updateVendorSettings(data: Partial<UserSettings>) {
+    return userApi.put<{ message: string; settings: UserSettings }>(
+      '/vendor/settings',
+      data
+    )
+  }
+
+  approveVendor(vendorId: string, isApproved: boolean) {
+    return userApi.put<{
+      message: string
+      vendor: { vendorId: string; isApproved: boolean }
+    }>(`/vendor/${vendorId}/approve`, { isApproved })
   }
 }
 
-export const userService = new UserService() 
+export const userService = new UserService()
