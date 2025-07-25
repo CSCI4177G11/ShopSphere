@@ -342,32 +342,37 @@ Create the authenticated vendor’s profile.
 **Request Body**
 ```json
 {
-  "storeName": "Tailor Threads",
-  "location": "Halifax",
-  "phoneNumber": "+19027778888",
-  "logoUrl": "https://cdn.app.com/logo.png",
-  "storeBannerUrl": "https://cdn.app.com/banner.png",
-  "socialLinks": {
-    "instagram": "@tailorthreads"
-  }
+  "storeName": "Threadle Tailors",
+  "location": "Halifax, NS",
+  "logoUrl": "https://cdn.example.com/logos/threadle.png",
+  "storeBannerUrl": "https://cdn.example.com/banners/threadle-banner.jpg",
+  "phoneNumber": "+19025551234",
+  "socialLinks": [
+    "https://instagram.com/threadle_tailors",
+    "https://facebook.com/threadle"
+  ]
 }
+
 ```
 
 **Success Response 200**
 ```json
 {
-  "vendorId": "v456",
-  "storeName": "Tailor Threads",
-  "location": "Halifax",
-  "phoneNumber": "+19027778888",
-  "logoUrl": "https://cdn.app.com/logo.png",
-  "storeBannerUrl": "https://cdn.app.com/banner.png",
-  "rating": 4.8,
-  "socialLinks": {
-    "instagram": "@tailorthreads"
-  }
+    "message": "Vendor profile created successfully.",
+    "profile": {
+        "vendorId": "68827dcf6153af08170c23a7",
+        "storeName": "Threadle Tailors",
+        "location": "Halifax, NS",
+        "phoneNumber": "+19025551234",
+        "logoUrl": "https://cdn.example.com/logos/threadle.png",
+        "storeBannerUrl": "https://cdn.example.com/banners/threadle-banner.jpg",
+        "socialLinks": [
+            "https://instagram.com/threadle_tailors",
+            "https://facebook.com/threadle"
+        ],
+        "createdAt": "2025-07-25T02:40:10.364Z"
+    }
 }
-```
 
 ---
 
@@ -382,16 +387,19 @@ Return the authenticated vendor’s profile.
 **Success Response 200**
 ```json
 {
-  "vendorId": "v456",
-  "storeName": "Tailor Threads",
-  "location": "Halifax",
-  "phoneNumber": "+19027778888",
-  "logoUrl": "https://cdn.app.com/logo.png",
-  "storeBannerUrl": "https://cdn.app.com/banner.png",
-  "rating": 4.8,
-  "socialLinks": {
-    "instagram": "@tailorthreads"
-  }
+    "displayProfile": {
+        "vendorId": "68827dcf6153af08170c23a7",
+        "storeName": "Threadle Tailors",
+        "location": "Halifax, NS",
+        "phoneNumber": "+19025551234",
+        "logoUrl": "https://cdn.example.com/logos/threadle.png",
+        "storeBannerUrl": "https://cdn.example.com/banners/threadle-banner.jpg",
+        "rating": "0",
+        "socialLinks": [
+            "https://instagram.com/threadle_tailors",
+            "https://facebook.com/threadle"
+        ]
+    }
 }
 ```
 
@@ -408,20 +416,34 @@ Update vendor public details.
 **Request Body**
 ```json
 {
-  "storeName": "New Tailor Threads",
-  "location": "Dartmouth",
-  "logoUrl": "https://cdn.app.com/newlogo.png",
-  "storeBannerUrl": "https://cdn.app.com/newbanner.png",
-  "phoneNumber": "+19028889999",
-  "socialLinks": {
-    "instagram": "@newtailor"
-  }
+    "storeName": "Threadle",
+    "location": "Halifax, NS",
+    "logoUrl": "https://cdn.example.com/logos/threadle.png",
+    "storeBannerUrl": "https://cdn.example.com/banners/threadle-banner.jpg",
+    "phoneNumber": "+19025551234",
+    "socialLinks": [
+        "https://instagram.com/threadle_tailors"
+    ]
 }
 ```
 
 **Success Response 200**
 ```json
-{ "message": "Vendor profile updated successfully." }
+{
+    "message": "Vendor profile updated successfully",
+    "profile": {
+        "vendorId": "68827dcf6153af08170c23a7",
+        "storeName": "Threadle",
+        "location": "Halifax, NS",
+        "phoneNumber": "+19025551234",
+        "logoUrl": "https://cdn.example.com/logos/threadle.png",
+        "storeBannerUrl": "https://cdn.example.com/banners/threadle-banner.jpg",
+        "rating": "0",
+        "socialLinks": [
+            "https://instagram.com/threadle_tailors"
+        ]
+    }
+}
 ```
 
 ---
@@ -436,7 +458,11 @@ GET vendor preference flags.
 
 **Success Response 200**
 ```json
-{ "theme": "light" }
+{
+    "settings": {
+        "theme": "light"
+    }
+}
 ```
 
 ### 4.5 **PUT `/vendor/settings`**
@@ -449,12 +475,19 @@ Update vendor preference flags.
 
 **Request Body**
 ```json
-{ "theme": "light" }
+{
+    "theme": "dark"
+}
 ```
 
 **Success Response 200**
 ```json
-{ "message": "Settings updated." }
+{
+    "message": "Settings updated.",
+    "settings": {
+        "theme": "dark"
+    }
+}
 ```
 
 ---
@@ -472,8 +505,8 @@ Check vendor approval
 **Success Response 200**
 ```json
 {
-  "vendorId": "user_vendor",
-  "isApproved": true
+    "vendorId": "68827dcf6153af08170c23a7",
+    "isApproved": false
 }
 ```
 
@@ -489,17 +522,17 @@ Approve or revoke vendor visibility & store management.
 
 **Request Body**
 ```json
-{ "isApproved": true }
+{
+    "isApproved": true
+}
 ```
 
 **Success Response 200**
 ```json
 {
-  "message": "Vendor approval status updated.",
-  "vendor": {
-    "vendorId": "v456",
+    "message": "Vendor approval status updated.",
+    "vendorId": "68827dcf6153af08170c23a7",
     "isApproved": true
-  }
 }
 ```
 
