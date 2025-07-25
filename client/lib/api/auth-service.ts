@@ -41,7 +41,7 @@ class AuthService {
     try {
       return await authApi.post<{ message: string; user: User }>('/register', data)
     } catch (err: any) {
-      if (err?.error) throw err
+      if (err?.message) throw err
       throw { error: 'Registration failed.' }
     }
   }
