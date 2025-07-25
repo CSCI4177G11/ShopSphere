@@ -6,9 +6,14 @@ Centralized authentication & authorization microservice for **ShopSphere**
 ```
 /api/auth
 ```
-
 ---
 
+## 0. Health Check
+
+### GET `/health`
+Returns the health status of the payments service.
+
+---
 
 ## 1. POST `/register`
 
@@ -21,10 +26,10 @@ Registers a new account and immediately returns the freshly created profile.
 ### Request Body
 ```json
 {
-  "username": "abdullah123",
-  "email": "abdullah@example.com",
-  "password": "StrongPassword!",
-  "role": "consumer"           // "consumer" | "vendor" | "admin"
+  "username": "user_vendor",
+  "email": "vendor@example.com",
+  "password": "StrongPassword!123",
+  "role": "vendor"           // "consumer" | "vendor" | "admin"
 }
 ```
 
@@ -63,8 +68,8 @@ Authenticates credentials and returns a signed JWT plus essential profile data.
 ### Request Body
 ```json
 {
-  "email": "abdullah@example.com",
-  "password": "StrongPassword!"
+  "email": "vendor@example.com",
+  "password": "StrongPassword!123"
 }
 ```
 
@@ -73,10 +78,11 @@ Authenticates credentials and returns a signed JWT plus essential profile data.
 {
   "token": "jwt.token.here",
   "user": {
-    "userId": "u123",
-    "username": "abdullah123",
-    "role": "consumer"
-  }
+          "userId": "68827dcf6153af08170c23a7",
+          "username": "user_vendor",
+          "email": "vendor@example.com",
+          "role": "vendor"
+      }
 }
 ```
 
@@ -127,11 +133,12 @@ Authorization: Bearer <token>
 ### Success Response
 ```json
 {
-  "userId": "u123",
-  "username": "abdullah123",
-  "email": "abdullah@example.com",
-  "role": "consumer",
-  "createdAt": "2025‑06‑11T17:32:00Z"
+    "userId": "68827dcf6153af08170c23a7",
+    "username": "user_vendor",
+    "email": "vendor@example.com",
+    "role": "vendor",
+    "createdAt": "2025-07-24T18:39:11.296Z",
+    "updatedAt": "2025-07-24T18:39:11.296Z"
 }
 ```
 
@@ -158,10 +165,10 @@ Authorization: Bearer <token>
 ### Success Response
 ```json
 {
-  "valid": true,
-  "userId": "u123",
-  "role": "vendor",
-  "exp": 1750000000
+    "valid": true,
+    "userId": "68827dcf6153af08170c23a7",
+    "role": "vendor",
+    "exp": 1753496306
 }
 ```
 
