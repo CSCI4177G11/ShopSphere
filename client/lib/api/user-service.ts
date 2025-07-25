@@ -1,4 +1,4 @@
-const USER_BASE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || 'http://localhost:3002/api/user'
+const USER_BASE_URL = process.env.NEXT_PUBLIC_USER_SERVICE_URL || '/api/user'
 
 // Types matching your API responses
 export interface Address {

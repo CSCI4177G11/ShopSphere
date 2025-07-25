@@ -45,6 +45,39 @@ const nextConfig = {
       },
     ]
   },
+  // API Proxy to handle CORS
+  async rewrites() {
+    return [
+      {
+        source: '/api/product/:path*',
+        destination: 'http://localhost:4300/api/product/:path*',
+      },
+      {
+        source: '/api/cart/:path*',
+        destination: 'http://localhost:4100/api/cart/:path*',
+      },
+      {
+        source: '/api/orders/:path*',
+        destination: 'http://localhost:4200/api/order/:path*',
+      },
+      {
+        source: '/api/payments/:path*',
+        destination: 'http://localhost:4400/api/payment/:path*',
+      },
+      {
+        source: '/api/auth/:path*',
+        destination: 'http://localhost:4000/api/auth/:path*',
+      },
+      {
+        source: '/api/user/:path*',
+        destination: 'http://localhost:4500/api/user/:path*',
+      },
+      {
+        source: '/api/analytics/:path*',
+        destination: 'http://localhost:4600/api/analytics/:path*',
+      },
+    ]
+  },
 }
 
 export default nextConfig

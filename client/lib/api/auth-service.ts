@@ -1,4 +1,4 @@
-const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || 'http://localhost:3001/api/auth'
+const AUTH_BASE_URL = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || '/api/auth'
 
 // Types matching your API responses
 export interface User {
