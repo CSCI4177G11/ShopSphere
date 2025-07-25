@@ -134,5 +134,5 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-product-service/docker-compose.yml
-order-service/docker-compose.yml
+docker-compose.yml
+
