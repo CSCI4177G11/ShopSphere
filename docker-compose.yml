@@ -1,0 +1,26 @@
+version: '3.9'
+ 
+services:
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo_data:/data/db
+ 
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - '4100:4100'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4100
+      - MONGO_URI=mongodb://localhost:27017/shopsphere
+      - NODE_ENV=development
+ 
+volumes:
+  mongo_data:
