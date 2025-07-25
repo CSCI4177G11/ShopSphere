@@ -56,7 +56,7 @@ class AuthService {
       }
       return response
     } catch (err: any) {
-      if (err?.error) throw err
+      if (err?.message) throw err
       throw { error: 'Login failed.' }
     }
   }
