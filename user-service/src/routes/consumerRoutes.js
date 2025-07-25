@@ -23,7 +23,7 @@ router.put(
   '/profile',
   [ 
     body('fullName').optional().isString().notEmpty(),
-    body('phoneNumber').optional().opisString()
+    body('phoneNumber').optional().isString()
   ],
   consumerCtrl.updateConsumerProfile
 );
