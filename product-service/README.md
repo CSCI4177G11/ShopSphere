@@ -43,25 +43,35 @@ Create a new product.
 |---------|----------|
 | **201 Created** | **400 Bad Request** – invalid fields<br>**401 Unauthorized** – not logged in<br>**403 Forbidden** – not vendor/admin |
 
+**Headers:**
+- `Authorization: Bearer <JWT>`
+  
 #### Request Body
 ```json
 {
-  "vendorId": "v123",
-  "name": "Custom Cotton Shirt",
-  "description": "100% cotton shirt in multiple sizes",
-  "price": 39.99,
-  "quantityInStock": 100,
-  "images": ["https://cdn.app.com/images/product1.jpg"],
-  "tags": ["shirt", "cotton", "clothing"],
-  "isPublished": false
+    "vendorId": "68827dcf6153af08170c23a7",
+    "name": "Wireless Bluetooth Headphones 3",
+    "description": "High-quality wireless headphones with noise cancellation and 30-hour battery life. Perfect for music lovers and professionals.",
+    "price": 300.99,
+    "quantityInStock": 50,
+    "images": [
+        "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/MQTP3?wid=2000&hei=2000&fmt=jpeg&qlt=90&.v=MVJhVmI0YmhYQVJ5Y0VDdzF1YWp3MmorYzFkTG5HaE9wejd5WUxYZjRMOHoveDdpQVpwS0ltY2w2UW05aU90TzVtaW9peGdOaitwV1Nxb1VublZoTVE"
+    ],
+    "tags": [
+        "electronics",
+        "audio",
+        "wireless",
+        "bluetooth"
+    ],
+    "isPublished": true
 }
 ```
 
 #### Success Response 201
 ```json
 {
-  "message": "Product created successfully.",
-  "productId": "p001"
+    "message": "Product created successfully.",
+    "productId": "6882cc083b79b350694e5d33"
 }
 ```
 
@@ -75,6 +85,9 @@ Update **any** product field.
 |---------|----------|
 | **200 OK** | **400** – malformed body<br>**401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
 
+**Headers:**
+- `Authorization: Bearer <JWT>`
+  
 #### Example Request Body (all fields except images)
 ```json
 {
@@ -104,7 +117,9 @@ Update **any** product field.
 
 #### Success Response 200
 ```json
-{ "message": "Product updated successfully." }
+{
+    "message": "Product updated successfully."
+}
 ```
 
 ---
@@ -117,9 +132,14 @@ Remove a product.
 |---------|----------|
 | **200 OK** | **401** – unauthenticated<br>**403** – not owner / not admin<br>**404** – product not found |
 
+**Headers:**
+- `Authorization: Bearer <JWT>`
+
 #### Success Response 200
 ```json
-{ "message": "Product deleted successfully." }
+{
+    "message": "Product deleted successfully."
+}
 ```
 
 ---
@@ -145,9 +165,9 @@ Decrement product stock (e.g., after a purchase). Vendor/Admin only.
 **Success Response 200**
 ```json
 {
-  "message": "Stock decremented",
-  "productId": "p001",
-  "newQuantity": 8
+    "message": "Stock decremented",
+    "productId": "6882cc083b79b350694e5d33",
+    "newQuantity": 76
 }
 ```
 
@@ -171,30 +191,27 @@ Paginated catalogue with optional filters.
 #### Success Response 200
 ```json
 {
-  "page": 1,
-  "limit": 20,
-  "total": 137,
-  "products": [
-    {
-      "productId": "p001",
-      "name": "Custom Cotton Shirt",
-      "price": 39.99,
-      "thumbnail": "https://cdn.app.com/images/product1-thumb.jpg",
-      "averageRating": 4.3,
-      "reviewCount": 12
-    }
-  ]
-}
-```
-
-**_links** fields are included for each product:
-```json
-{
-  "_links": {
-    "self": "/product/p001",
-    "reviews": "/product/p001/reviews",
-    "vendor": "/vendors/v123"
-  }
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "products": [
+        {
+            "productId": "6882cc083b79b350694e5d33",
+            "name": "Premium Cotton Shirt",
+            "price": 44.99,
+            "thumbnail": "https://res.cloudinary.com/dnmljbyos/image/upload/products/c63ee52b-60c0-4d5f-81bf-c2450df630fb",
+            "averageRating": 0,
+            "reviewCount": 0,
+            "images": [
+                "https://res.cloudinary.com/dnmljbyos/image/upload/products/c63ee52b-60c0-4d5f-81bf-c2450df630fb"
+            ],
+            "_links": {
+                "self": "api/product/6882cc083b79b350694e5d33",
+                "reviews": "api/product/6882cc083b79b350694e5d33/reviews",
+                "vendor": "api/product/vendor/68827dcf6153af08170c23a7"
+            }
+        }
+    ]
 }
 ```
 
@@ -211,18 +228,29 @@ Full product details (includes aggregated rating & review count).
 #### Success Response 200
 ```json
 {
-  "productId": "p001",
-  "vendorId": "v123",
-  "name": "Custom Cotton Shirt",
-  "description": "100% cotton shirt in multiple sizes",
-  "price": 39.99,
-  "quantityInStock": 100,
-  "images": ["https://cdn.app.com/images/product1.jpg"],
-  "tags": ["shirt", "cotton"],
-  "averageRating": 4.3,
-  "reviewCount": 12,
-  "isPublished": true,
-  "createdAt": "2025-06-11T18:00:00Z"
+    "productId": "6882cc083b79b350694e5d33",
+    "vendorId": "68827dcf6153af08170c23a7",
+    "name": "Premium Cotton Shirt",
+    "description": "Softer, thicker 100 % cotton shirt in all sizes",
+    "price": 44.99,
+    "quantityInStock": 76,
+    "images": [
+        "https://res.cloudinary.com/dnmljbyos/image/upload/products/c63ee52b-60c0-4d5f-81bf-c2450df630fb"
+    ],
+    "tags": [
+        "shirt",
+        "cotton",
+        "premium"
+    ],
+    "averageRating": 0,
+    "reviewCount": 0,
+    "isPublished": true,
+    "createdAt": "2025-07-25T00:12:56.173Z",
+    "_links": {
+        "self": "api/product/6882cc083b79b350694e5d33",
+        "reviews": "api/product/6882cc083b79b350694e5d33/reviews",
+        "vendor": "api/product/vendor/68827dcf6153af08170c23a7"
+    }
 }
 ```
 
@@ -256,20 +284,28 @@ Supports the same pagination & filter query params as the general catalogue endp
 #### Success Response 200
 ```json
 {
-  "vendorId": "v123",
-  "page": 1,
-  "limit": 30,
-  "total": 42,
-  "products": [
-    {
-      "productId": "p001",
-      "name": "Premium Cotton Shirt",
-      "price": 44.99,
-      "thumbnail": "https://cdn.app.com/images/product1-thumb.jpg",
-      "averageRating": 4.2,
-      "reviewCount": 13
-    }
-  ]
+    "vendorId": "68827dcf6153af08170c23a7",
+    "page": 1,
+    "limit": 30,
+    "total": 1,
+    "products": [
+        {
+            "productId": "6882cc083b79b350694e5d33",
+            "name": "Premium Cotton Shirt",
+            "price": 44.99,
+            "thumbnail": "https://res.cloudinary.com/dnmljbyos/image/upload/products/c63ee52b-60c0-4d5f-81bf-c2450df630fb",
+            "averageRating": 0,
+            "reviewCount": 0,
+            "images": [
+                "https://res.cloudinary.com/dnmljbyos/image/upload/products/c63ee52b-60c0-4d5f-81bf-c2450df630fb"
+            ],
+            "_links": {
+                "self": "api/product/6882cc083b79b350694e5d33",
+                "reviews": "api/product/6882cc083b79b350694e5d33/reviews",
+                "vendor": "api/product/vendor/68827dcf6153af08170c23a7"
+            }
+        }
+    ]
 }
 ```
 
