@@ -22,8 +22,8 @@ router.get('/profile', consumerCtrl.getConsumerProfile);
 router.put(
   '/profile',
   [ 
-    body('fullName').isString().notEmpty(),
-    body('phoneNumber').isString()
+    body('fullName').optional().isString().notEmpty(),
+    body('phoneNumber').optional().opisString()
   ],
   consumerCtrl.updateConsumerProfile
 );
