@@ -61,11 +61,11 @@ export default function RegisterPage() {
       await signUp(data.name, data.email, data.password, role)
       toast.success("Account created successfully!")
       
-      // Redirect based on role
+      // Redirect to complete profile based on role
       if (isVendorRegistration) {
-        router.push("/vendor")
+        router.push("/vendor/create-account")
       } else {
-        router.push("/")
+        router.push("/consumer/create-account")
       }
     } catch (error: any) {
       console.error('Registration error:', error)

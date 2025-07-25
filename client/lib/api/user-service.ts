@@ -56,6 +56,21 @@ export interface UpdateVendorProfileRequest {
   }
 }
 
+export interface CreateConsumerProfileRequest {
+  fullName: string
+  email: string
+  phoneNumber: string
+}
+
+export interface CreateVendorProfileRequest {
+  storeName: string
+  location: string
+  phoneNumber: string
+  logoUrl?: string
+  storeBannerUrl?: string
+  socialLinks?: string[]
+}
+
 export interface CreateAddressRequest {
   label: string
   line1: string
@@ -117,6 +132,16 @@ class UserService {
   // Consumer Profile Methods
   async getConsumerProfile(): Promise<ConsumerProfile> {
     return this.request('/consumer/profile')
+  }
+
+  async createConsumerProfile(data: CreateConsumerProfileRequest): Promise<{
+    message: string
+    profile: ConsumerProfile
+  }> {
+    return this.request('/consumer/profile', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   }
 
   async updateConsumerProfile(data: UpdateConsumerProfileRequest): Promise<{
@@ -181,6 +206,16 @@ class UserService {
   // Vendor Profile Methods
   async getVendorProfile(): Promise<VendorProfile> {
     return this.request('/vendor/profile')
+  }
+
+  async createVendorProfile(data: CreateVendorProfileRequest): Promise<{
+    message: string
+    profile: VendorProfile
+  }> {
+    return this.request('/vendor/profile', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   }
 
   async updateVendorProfile(data: UpdateVendorProfileRequest): Promise<{
