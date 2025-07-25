@@ -1,5 +1,3 @@
-import { authService } from './auth-service'
-
 export interface ApiConfig {
   baseUrl: string
   headers?: Record<string, string>
@@ -24,7 +22,7 @@ export class ApiClient {
     const url = `${this.baseUrl}${endpoint}`
     
     // Get auth token
-    const token = authService.getToken()
+    const token = localStorage.getItem('token')
     
     const headers: Record<string, string> = {
       ...this.defaultHeaders,
