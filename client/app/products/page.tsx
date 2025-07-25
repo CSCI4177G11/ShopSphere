@@ -242,8 +242,8 @@ export default function ProductsPage() {
                 animate="visible"
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {products.map((product) => (
-                  <motion.div key={product._id} variants={itemVariants}>
+                {products.map((product, index) => (
+                  <motion.div key={product._id || `product-${index}`} variants={itemVariants}>
                     <ProductCard product={product} />
                   </motion.div>
                 ))}

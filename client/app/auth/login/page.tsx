@@ -157,15 +157,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <p className="text-sm font-medium text-center mb-2">Test Credentials</p>
-          <div className="space-y-1 text-xs text-muted-foreground text-center">
-            <p><strong>Consumer:</strong> consumer@test.com / password</p>
-            <p><strong>Vendor:</strong> vendor@test.com / password</p>
-            <p><strong>Admin:</strong> admin@test.com / password</p>
-          </div>
-        </div>
-
         <div className="mt-8 space-y-4 text-center">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
