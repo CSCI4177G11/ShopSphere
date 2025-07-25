@@ -1,5 +1,5 @@
 version: '3.9'
- 
+
 services:
   mongo:
     image: mongo:6
@@ -8,19 +8,193 @@ services:
       - '27017:27017'
     volumes:
       - mongo_data:/data/db
- 
-  user-service:
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: analytics
+      MYSQL_USER: analytics_user
+      MYSQL_PASSWORD: analytics_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  metabase:
+    image: metabase/metabase
+    container_name: metabase
+    ports:
+      - "3500:3500"
+    environment:
+      - MB_DB_TYPE=mysql
+      - MB_DB_DBNAME=analytics
+      - MB_DB_PORT=3306
+      - MB_DB_USER=analytics_user
+      - MB_DB_PASS=analytics_pass
+      - MB_DB_HOST=mysql
+    depends_on:
+      - mysql
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  auth-service:
     build:
-      context: ./user-service
-    container_name: user-service
+      context: ./auth-service
+    container_name: auth-service
     ports:
       - '4100:4100'
     depends_on:
       - mongo
     environment:
       - PORT=4100
-      - MONGO_URI=mongodb://localhost:27017/shopsphere
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
       - NODE_ENV=development
- 
+
+  user-service:
+    build:
+      context: ./user-service
+    container_name: user-service
+    ports:
+      - '4200:4200'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4200
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - NODE_ENV=development
+      - CORS_ORIGIN=*
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - JWT_ALGORITHM=HS256
+  product-service:
+    build:
+      context: ./product-service
+    container_name: product-service
+    ports:
+      - '4300:4300'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4300
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - CORS_ORIGIN=*
+      - NODE_ENV=development
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - JWT_ALGORITHM=HS256
+      - CLOUDINARY_CLOUD_NAME=dnmljbyos
+      - CLOUDINARY_API_KEY=379147473616829
+      - CLOUDINARY_API_SECRET=K988riYB-3Ev87DTXwaH3YOr89A
+
+  cart-service:
+    build:
+      context: ./cart-service
+    container_name: cart-service
+    ports:
+      - '4400:4400'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4400
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - CORS_ORIGIN=*
+      - NODE_ENV=development
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - JWT_ALGORITHM=HS256
+      - TAX_RATE=0.15
+
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: payment-service
+    ports:
+      - '4500:4500'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4500
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - STRIPE_SECRET_KEY=sk_test_51RjQIMB1YdP77BFBqXxLpjBghKuCfla4CUNJ8V70TWM5hKK2SOFvJVroYI2RszxPJ6EuqxJwooKvrgs7JWAsZ4ZQ00S8poH2DC
+      - STRIPE_WEBHOOK_SECRET=whsec_2a2f75a339834530819ebcbab82565170e6726176a6eb840ea996f79cd07009f
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - JWT_ALGORITHM=HS256
+      - NODE_ENV=development
+      - TAX_RATE=0.15
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - '4600:4600'
+    depends_on:
+      - mongo
+    environment:
+      - PORT=4600
+      - MONGODB_URI=mongodb://mongo:27017/shopsphere
+      - CORS_ORIGIN=*
+      - NODE_ENV=development
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - JWT_ALGORITHM=HS256
+
+  analytics-service:
+    build:
+      context: ./analytics-service
+    container_name: analytics-service
+    ports:
+      - '4700:4700'
+    depends_on:
+      - order-service
+      - mysql
+    environment:
+      - PORT=4700
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=analytics_user
+      - MYSQL_PASSWORD=analytics_pass
+      - MYSQL_DB=analytics
+      - ORDERS_API_URL=http://order-service:4600
+      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
+      - ORDER_SERVICE_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2FkbWluIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTcxODAwMDAwMCwiZXhwIjoxODE4NjA0ODAwfQ.k65qQatHJmIPKLwcTJrZSE78_b6rBJ52yykN_3icikM
+  gateway:
+    build:
+      context: ./gateway
+    container_name: gateway
+    ports:
+      - '8080:8080'
+    depends_on:
+      - auth-service
+      - user-service
+      - product-service
+      - cart-service
+      - payment-service
+      - order-service
+      - analytics-service
+    environment:
+      - NODE_ENV=development
+
+  # client:
+  #   build:
+  #     context: ./client
+  #   container_name: client
+  #   ports:
+  #     - '3000:3000'
+  #   depends_on:
+  #     - gateway
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://localhost:8080
+  #   volumes:
+  #     - ./client:/app
+  #     - /app/node_modules
+
 volumes:
   mongo_data:
+  mysql_data:
+  redis_data:
