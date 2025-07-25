@@ -1,7 +1,8 @@
 import { userApi } from './api-client'
 
 export interface Address {
-  addressId: string
+  addressId?: string
+  _id?: string
   label: string
   line1: string
   city: string
@@ -72,15 +73,17 @@ class UserService {
     )
   }
 
-  getConsumerProfile() {
-    return userApi.get<ConsumerProfile>('/consumer/profile')
+  async getConsumerProfile() {
+    const response = await userApi.get<{ displayProfile: ConsumerProfile }>('/consumer/profile')
+    return response.displayProfile
   }
 
-  updateConsumerProfile(data: UpdateConsumerProfileRequest) {
-    return userApi.put<{ message: string; consumer: ConsumerProfile }>(
+  async updateConsumerProfile(data: UpdateConsumerProfileRequest) {
+    const response = await userApi.put<{ message: string; profile: ConsumerProfile }>(
       '/consumer/profile',
       data
     )
+    return { message: response.message, consumer: response.profile }
   }
 
   async getConsumerSettings() {

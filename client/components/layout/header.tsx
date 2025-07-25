@@ -221,6 +221,12 @@ export function Header() {
                           {session.user?.role === 'consumer' && (
                             <>
                               <DropdownMenuItem asChild>
+                                <Link href="/consumer/profile">
+                                  <User className="mr-2 h-4 w-4" />
+                                  My Profile
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
                                 <Link href="/orders">
                                   <Package className="mr-2 h-4 w-4" />
                                   My Orders
@@ -390,6 +396,13 @@ export function Header() {
                 </Link>
                 {session?.user?.role === 'consumer' && (
                   <>
+                    <Link 
+                      href="/consumer/profile" 
+                      className="text-base font-medium hover:text-primary transition-colors py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
                     <Link 
                       href="/cart" 
                       className="text-base font-medium hover:text-primary transition-colors py-2"
