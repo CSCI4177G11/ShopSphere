@@ -32,6 +32,11 @@ export interface LoginRequest {
   password: string
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface ApiError {
   error: string
 }
@@ -96,6 +101,27 @@ class AuthService {
     }
   }
 
+
+  async changePassword(
+    data: ChangePasswordRequest
+  ): Promise<{ message: string; token: string }> {
+    try {
+      const response = await authApi.patch<{ message: string; token: string }>(
+        '/password',
+        data
+      )
+      // Rotate token if backend returns a new one
+      if (response.token) {
+        localStorage.setItem('token', response.token)
+      }
+      return response
+    } catch (err: any) {
+      if (err?.error) throw err
+      throw { error: 'Password change failed.' }
+    }
+  }
+
+
   // Utility methods
   getToken(): string | null {
     if (typeof window === 'undefined') return null
@@ -119,5 +145,7 @@ class AuthService {
     return userStr ? JSON.parse(userStr) : null
   }
 }
+
+
 
 export const authService = new AuthService()
