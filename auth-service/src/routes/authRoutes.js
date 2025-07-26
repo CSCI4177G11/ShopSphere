@@ -72,7 +72,7 @@ router.get('/me', requireAuth, me);
 
 router.get('/validate', requireAuth, validateToken);
 
-router.patch(
+router.put(
   '/password',
   requireAuth,
   [
