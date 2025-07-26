@@ -34,6 +34,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
+  
+  const isVendor = user?.role === 'vendor'
+  const isConsumer = user?.role === 'consumer'
+  const isOwnProduct = isVendor && product?.vendorId === user?.userId
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -129,6 +133,16 @@ export default function ProductDetailPage() {
             <span className="text-foreground">{product.name}</span>
           </nav>
 
+          {/* Vendor viewing own product notice */}
+          {isOwnProduct && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <Store className="inline h-4 w-4 mr-2" />
+                You are viewing your own product. Consumer features like purchasing and reviews are disabled in vendor mode.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Product Images */}
             <div className="space-y-4">
@@ -219,51 +233,59 @@ export default function ProductDetailPage() {
               {/* Description */}
               <p className="text-muted-foreground">{product.description}</p>
 
-              {/* Add to Cart */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center border rounded-lg">
+              {/* Add to Cart - Only show for consumers */}
+              {!isVendor ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center border rounded-lg">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                        disabled={isOutOfStock}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-16 text-center border-0 focus-visible:ring-0"
+                        disabled={isOutOfStock}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setQuantity(prev => Math.min(product.stock, prev + 1))}
+                        disabled={isOutOfStock || quantity >= product.stock}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
+                      size="lg"
+                      className="flex-1"
+                      onClick={handleAddToCart}
                       disabled={isOutOfStock}
                     >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-16 text-center border-0 focus-visible:ring-0"
-                      disabled={isOutOfStock}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setQuantity(prev => Math.min(product.stock, prev + 1))}
-                      disabled={isOutOfStock || quantity >= product.stock}
-                    >
-                      <Plus className="h-4 w-4" />
+                      <ShoppingCart className="mr-2 h-5 w-5" />
+                      Add to Cart
                     </Button>
                   </div>
                   
-                  <Button
-                    size="lg"
-                    className="flex-1"
-                    onClick={handleAddToCart}
-                    disabled={isOutOfStock}
-                  >
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    Add to Cart
-                  </Button>
+                  {product.stock > 0 && product.stock <= 5 && (
+                    <p className="text-sm text-orange-600 font-medium">
+                      Only {product.stock} left in stock - order soon!
+                    </p>
+                  )}
                 </div>
-                
-                {product.stock > 0 && product.stock <= 5 && (
-                  <p className="text-sm text-orange-600 font-medium">
-                    Only {product.stock} left in stock - order soon!
+              ) : (
+                <div className="border rounded-lg p-4 bg-muted/50">
+                  <p className="text-sm text-muted-foreground">
+                    As a vendor, you cannot purchase products. Switch to a consumer account to shop.
                   </p>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Features */}
               <div className="grid grid-cols-3 gap-4 pt-6 border-t">
@@ -299,7 +321,11 @@ export default function ProductDetailPage() {
                   {reviews.length === 0 ? (
                     <Card>
                       <CardContent className="py-8 text-center">
-                        <p className="text-muted-foreground">No reviews yet. Be the first to review!</p>
+                        <p className="text-muted-foreground">
+                          {isVendor 
+                            ? "No reviews yet for this product." 
+                            : "No reviews yet. Be the first to review!"}
+                        </p>
                       </CardContent>
                     </Card>
                   ) : (

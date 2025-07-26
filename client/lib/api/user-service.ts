@@ -15,6 +15,10 @@ export interface UserSettings {
   theme: 'light' | 'dark'
 }
 
+export interface VendorSettings {
+  theme: 'light' | 'dark'
+}
+
 export interface ConsumerProfile {
   consumerId: string
   fullName: string
@@ -135,8 +139,9 @@ class UserService {
   }
 
 
-  getVendorProfile() {
-    return userApi.get<VendorProfile>('/vendor/profile')
+  async getVendorProfile() {
+    const response = await userApi.get<{ displayProfile: VendorProfile }>('/vendor/profile')
+    return response.displayProfile
   }
 
   updateVendorProfile(data: UpdateVendorProfileRequest) {
@@ -152,6 +157,18 @@ class UserService {
       message: string
       vendor: { vendorId: string; isApproved: boolean }
     }>(`/vendor/${vendorId}/approve`, { isApproved })
+  }
+
+  async getVendorSettings() {
+    const response = await userApi.get<{ settings: VendorSettings }>('/vendor/settings')
+    return response.settings
+  }
+
+  updateVendorSettings(data: Partial<VendorSettings>) {
+    return userApi.put<{ message: string; settings: VendorSettings }>(
+      '/vendor/settings',
+      data
+    )
   }
 }
 

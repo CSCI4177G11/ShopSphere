@@ -42,6 +42,8 @@ export function Hero() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const { user, loading } = useAuth()
   const isAuthenticated = !!user
+  const isVendor = user?.role === 'vendor'
+  const isConsumer = user?.role === 'consumer'
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -106,9 +108,18 @@ export function Hero() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              Connect with verified independent sellers from around the world. 
-              Experience premium quality, authentic products, and exceptional service 
-              in one revolutionary marketplace.
+              {isVendor ? (
+                <>
+                  Welcome back to your marketplace! Manage your store, track orders, 
+                  and grow your business with powerful tools designed for success.
+                </>
+              ) : (
+                <>
+                  Connect with verified independent sellers from around the world. 
+                  Experience premium quality, authentic products, and exceptional service 
+                  in one revolutionary marketplace.
+                </>
+              )}
             </motion.p>
           </motion.div>
 
@@ -122,8 +133,51 @@ export function Hero() {
             {loading ? (
               // Show loading state while checking auth
               <div className="h-14 w-48 bg-muted animate-pulse rounded-2xl" />
-            ) : isAuthenticated ? (
-              // Logged in user buttons
+            ) : isVendor ? (
+              // Vendor-specific buttons
+              <>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/vendor">
+                      <Store className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Go to Dashboard
+                      <motion.div
+                        className="ml-3"
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.div>
+                    </Link>
+                  </Button>
+                </motion.div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    variant="outline"
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/products">
+                      <ShoppingBag className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Browse Marketplace
+                    </Link>
+                  </Button>
+                </motion.div>
+              </>
+            ) : isConsumer ? (
+              // Consumer-specific buttons
               <>
                 <motion.div
                   whileHover={{ scale: 1.05 }}

@@ -19,7 +19,8 @@ import {
   BarChart3,
   Users,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Eye
 } from "lucide-react"
 import type { Order } from "@/lib/api/order-service"
 import type { Product } from "@/lib/api/product-service"
@@ -234,6 +235,14 @@ export default function VendorDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => window.open(`/vendor/${user?.userId}/products`, '_blank')}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View My Store
+                </Button>
                 <Link href="/vendor/products" className="block">
                   <Button variant="outline" className="w-full justify-start">
                     <Package className="mr-2 h-4 w-4" />

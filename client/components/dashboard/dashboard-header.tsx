@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Store,
   BarChart3,
+  Home,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { motion } from "framer-motion";
@@ -97,6 +98,18 @@ export function DashboardHeader({
 
           {/* Right side - Actions and user menu */}
           <div className="flex items-center space-x-4">
+            {/* Visit Marketplace button for vendors */}
+            {type === "vendor" && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/'}
+              >
+                <Home className="h-4 w-4 mr-2" />
+                Visit Marketplace
+              </Button>
+            )}
+            
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -130,6 +143,15 @@ export function DashboardHeader({
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {type === "vendor" && (
+                  <>
+                    <DropdownMenuItem onClick={() => window.location.href = '/vendor/profile'}>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Store Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>

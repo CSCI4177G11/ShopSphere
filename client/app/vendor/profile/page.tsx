@@ -3,25 +3,32 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
-import { userService, type ConsumerProfile, type Address } from "@/lib/api/user-service"
+import { userService, type VendorProfile } from "@/lib/api/user-service"
 import { authService } from "@/lib/api/auth-service"
 import { motion } from "framer-motion"
 import { 
-  User, 
+  Store, 
   Mail, 
   Phone, 
   MapPin, 
   Settings, 
-  Package,
   Edit,
-  Plus,
-  Trash2,
   Save,
   X,
   Loader2,
   Shield,
-  CreditCard,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Plus,
+  Trash2,
+  Globe,
+  Facebook,
+  Instagram,
+  Twitter,
   ChevronRight,
+  DollarSign,
+  Users,
+  Eye,
   ArrowLeft
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -41,43 +48,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Helper function to get address ID
-const getAddressId = (address: Address): string => {
-  return address._id || address.addressId || ''
-}
-
-// Canadian postal code validation (e.g., K1A 0B1, k1a0b1)
-const isValidCanadianPostalCode = (postalCode: string): boolean => {
-  const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
-  return postalCodeRegex.test(postalCode)
-}
-
-// Canadian phone number validation (e.g., (416) 555-0123, 416-555-0123, 4165550123)
+// Canadian phone number validation
 const isValidCanadianPhoneNumber = (phoneNumber: string): boolean => {
   const phoneRegex = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/
   return phoneRegex.test(phoneNumber)
-}
-
-// Format postal code to standard format
-const formatPostalCode = (postalCode: string): string => {
-  const cleaned = postalCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  if (cleaned.length >= 6) {
-    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)}`
-  }
-  return postalCode.toUpperCase()
 }
 
 // Format phone number to standard format
@@ -91,29 +67,33 @@ const formatPhoneNumber = (phoneNumber: string): string => {
   return phoneNumber
 }
 
-export default function ConsumerProfilePage() {
+// Get social media icon
+const getSocialIcon = (url: string) => {
+  if (url.includes('facebook')) return <Facebook className="h-4 w-4" />
+  if (url.includes('instagram')) return <Instagram className="h-4 w-4" />
+  if (url.includes('twitter') || url.includes('x.com')) return <Twitter className="h-4 w-4" />
+  return <Globe className="h-4 w-4" />
+}
+
+export default function VendorProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
-  const [profile, setProfile] = useState<ConsumerProfile | null>(null)
-  const [addresses, setAddresses] = useState<Address[]>([])
+  const [profile, setProfile] = useState<VendorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [editedProfile, setEditedProfile] = useState({
-    fullName: "",
-    phoneNumber: ""
+    storeName: "",
+    location: "",
+    phoneNumber: "",
+    logoUrl: "",
+    storeBannerUrl: "",
+    socialLinks: [] as string[]
   })
 
-  // Address management states
-  const [isAddingAddress, setIsAddingAddress] = useState(false)
-  const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
-  const [addressForm, setAddressForm] = useState({
-    label: "",
-    line1: "",
-    city: "",
-    postalCode: "",
-    country: ""
-  })
+  // Social link management
+  const [newSocialLink, setNewSocialLink] = useState("")
+  const [isAddingSocialLink, setIsAddingSocialLink] = useState(false)
 
   // Password change states
   const [isChangingPassword, setIsChangingPassword] = useState(false)
@@ -129,7 +109,7 @@ export default function ConsumerProfilePage() {
   }>({})
 
   useEffect(() => {
-    if (!user || user.role !== 'consumer') {
+    if (!user || user.role !== 'vendor') {
       router.push('/')
       return
     }
@@ -139,19 +119,15 @@ export default function ConsumerProfilePage() {
   const fetchProfile = async () => {
     try {
       setLoading(true)
-      const [profileData, addressesData] = await Promise.all([
-        userService.getConsumerProfile(),
-        userService.getAddresses()
-      ])
-      
-      setProfile({
-        ...profileData,
-        addresses: addressesData.addresses
-      })
-      setAddresses(addressesData.addresses)
+      const profileData = await userService.getVendorProfile()
+      setProfile(profileData)
       setEditedProfile({
-        fullName: profileData.fullName,
-        phoneNumber: profileData.phoneNumber
+        storeName: profileData.storeName,
+        location: profileData.location,
+        phoneNumber: profileData.phoneNumber,
+        logoUrl: profileData.logoUrl || "",
+        storeBannerUrl: profileData.storeBannerUrl || "",
+        socialLinks: profileData.socialLinks || []
       })
     } catch (error) {
       console.error('Failed to fetch profile:', error)
@@ -174,13 +150,8 @@ export default function ConsumerProfilePage() {
         ...editedProfile,
         phoneNumber: formatPhoneNumber(editedProfile.phoneNumber)
       }
-      const response = await userService.updateConsumerProfile(formattedProfile)
-      if (profile) {
-        setProfile({
-          ...profile,
-          ...response.consumer
-        })
-      }
+      const response = await userService.updateVendorProfile(formattedProfile)
+      setProfile(response.vendor)
       setIsEditing(false)
       toast.success('Profile updated successfully')
     } catch (error) {
@@ -191,80 +162,30 @@ export default function ConsumerProfilePage() {
     }
   }
 
-  const handleAddAddress = async () => {
-    // Validate postal code
-    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
-      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
+  const handleAddSocialLink = () => {
+    if (!newSocialLink.trim()) {
+      toast.error('Please enter a valid URL')
       return
     }
 
     try {
-      setIsSaving(true)
-      const formattedAddress = {
-        ...addressForm,
-        postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'Canada' // Default to Canada
-      }
-      const response = await userService.createAddress(formattedAddress)
-      // Refetch addresses to get the proper _id from MongoDB
-      const addressesData = await userService.getAddresses()
-      setAddresses(addressesData.addresses)
-      setIsAddingAddress(false)
-      setAddressForm({
-        label: "",
-        line1: "",
-        city: "",
-        postalCode: "",
-        country: ""
+      new URL(newSocialLink)
+      setEditedProfile({
+        ...editedProfile,
+        socialLinks: [...editedProfile.socialLinks, newSocialLink]
       })
-      toast.success('Address added successfully')
-    } catch (error) {
-      console.error('Failed to add address:', error)
-      toast.error('Failed to add address')
-    } finally {
-      setIsSaving(false)
+      setNewSocialLink("")
+      setIsAddingSocialLink(false)
+    } catch {
+      toast.error('Please enter a valid URL')
     }
   }
 
-  const handleUpdateAddress = async (addressId: string) => {
-    // Validate postal code
-    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
-      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
-      return
-    }
-
-    try {
-      setIsSaving(true)
-      const formattedAddress = {
-        ...addressForm,
-        postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'Canada' // Default to Canada
-      }
-      const response = await userService.updateAddress(addressId, formattedAddress)
-      setAddresses(addresses.map(addr => 
-        getAddressId(addr) === addressId ? response.address : addr
-      ))
-      setEditingAddressId(null)
-      toast.success('Address updated successfully')
-    } catch (error) {
-      console.error('Failed to update address:', error)
-      toast.error('Failed to update address')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleDeleteAddress = async (addressId: string) => {
-    try {
-      await userService.deleteAddress(addressId)
-      setAddresses(addresses.filter(addr => 
-        getAddressId(addr) !== addressId
-      ))
-      toast.success('Address deleted successfully')
-    } catch (error) {
-      console.error('Failed to delete address:', error)
-      toast.error('Failed to delete address')
-    }
+  const handleRemoveSocialLink = (index: number) => {
+    setEditedProfile({
+      ...editedProfile,
+      socialLinks: editedProfile.socialLinks.filter((_, i) => i !== index)
+    })
   }
 
   const validatePasswordForm = (): boolean => {
@@ -331,7 +252,7 @@ export default function ConsumerProfilePage() {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -343,35 +264,46 @@ export default function ConsumerProfilePage() {
             variant="ghost" 
             size="sm" 
             className="mb-4"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/vendor')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Home
+            Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-bold mb-2">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account information and preferences</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Store Profile</h1>
+              <p className="text-muted-foreground">Manage your store information and settings</p>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={() => window.open(`/vendor/${profile.vendorId}/products`, '_blank')}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Preview Store
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="addresses">Addresses</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="profile">Store Info</TabsTrigger>
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+            <TabsTrigger value="social">Social Links</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
-          {/* Profile Tab */}
+          {/* Store Info Tab */}
           <TabsContent value="profile" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-8 w-8 text-primary" />
+                    <div className="h-16 w-16 rounded-full bg-blue-600/10 flex items-center justify-center">
+                      <Store className="h-8 w-8 text-blue-600" />
                     </div>
                     <div>
-                      <CardTitle>Personal Information</CardTitle>
-                      <CardDescription>Update your personal details</CardDescription>
+                      <CardTitle>Business Information</CardTitle>
+                      <CardDescription>Update your store details</CardDescription>
                     </div>
                   </div>
                   {!isEditing && (
@@ -391,13 +323,24 @@ export default function ConsumerProfilePage() {
                   <>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="fullName">Full Name</Label>
+                        <Label htmlFor="storeName">Store Name</Label>
                         <Input
-                          id="fullName"
-                          value={editedProfile.fullName}
+                          id="storeName"
+                          value={editedProfile.storeName}
                           onChange={(e) => setEditedProfile({
                             ...editedProfile,
-                            fullName: e.target.value
+                            storeName: e.target.value
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="location">Location</Label>
+                        <Input
+                          id="location"
+                          value={editedProfile.location}
+                          onChange={(e) => setEditedProfile({
+                            ...editedProfile,
+                            location: e.target.value
                           })}
                         />
                       </div>
@@ -429,8 +372,12 @@ export default function ConsumerProfilePage() {
                         onClick={() => {
                           setIsEditing(false)
                           setEditedProfile({
-                            fullName: profile.fullName,
-                            phoneNumber: profile.phoneNumber
+                            storeName: profile.storeName,
+                            location: profile.location,
+                            phoneNumber: profile.phoneNumber,
+                            logoUrl: profile.logoUrl || "",
+                            storeBannerUrl: profile.storeBannerUrl || "",
+                            socialLinks: profile.socialLinks || []
                           })
                         }}
                       >
@@ -441,26 +388,30 @@ export default function ConsumerProfilePage() {
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Full Name</p>
-                      <p className="font-medium">{profile.fullName}</p>
+                      <p className="text-sm text-muted-foreground">Store Name</p>
+                      <p className="font-medium">{profile.storeName}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{profile.email}</p>
+                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="font-medium">{profile.location}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Phone Number</p>
                       <p className="font-medium">{profile.phoneNumber}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Member Since</p>
-                      <p className="font-medium">
-                        {new Date(profile.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Store Rating</p>
+                      <p className="font-medium">{profile.rating || "No ratings yet"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Approval Status</p>
+                      <Badge variant={profile.isApproved ? "default" : "secondary"}>
+                        {profile.isApproved ? "Approved" : "Pending Approval"}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Vendor ID</p>
+                      <p className="font-medium">{profile.vendorId}</p>
                     </div>
                   </div>
                 )}
@@ -469,26 +420,26 @@ export default function ConsumerProfilePage() {
 
             {/* Quick Links */}
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/orders')}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/vendor/products')}>
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
-                    <Package className="h-8 w-8 text-primary" />
+                    <DollarSign className="h-8 w-8 text-blue-600" />
                     <div>
-                      <p className="font-semibold">My Orders</p>
-                      <p className="text-sm text-muted-foreground">View order history</p>
+                      <p className="font-semibold">Products</p>
+                      <p className="text-sm text-muted-foreground">Manage inventory</p>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/wishlist')}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/vendor/analytics')}>
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
-                    <CreditCard className="h-8 w-8 text-primary" />
+                    <Users className="h-8 w-8 text-blue-600" />
                     <div>
-                      <p className="font-semibold">Payment Methods</p>
-                      <p className="text-sm text-muted-foreground">Manage payments</p>
+                      <p className="font-semibold">Analytics</p>
+                      <p className="text-sm text-muted-foreground">View insights</p>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -497,122 +448,146 @@ export default function ConsumerProfilePage() {
             </div>
           </TabsContent>
 
-          {/* Addresses Tab */}
-          <TabsContent value="addresses" className="space-y-6">
+          {/* Branding Tab */}
+          <TabsContent value="branding" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Branding</CardTitle>
+                <CardDescription>Customize your store's visual identity</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label>Store Logo</Label>
+                    <div className="mt-2 flex items-center gap-4">
+                      {profile.logoUrl ? (
+                        <img 
+                          src={profile.logoUrl} 
+                          alt="Store logo" 
+                          className="h-20 w-20 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
+                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <Button variant="outline" size="sm">
+                        Change Logo
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <Label>Store Banner</Label>
+                    <div className="mt-2 space-y-4">
+                      {profile.storeBannerUrl ? (
+                        <img 
+                          src={profile.storeBannerUrl} 
+                          alt="Store banner" 
+                          className="w-full h-48 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-48 rounded-lg bg-muted flex items-center justify-center">
+                          <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      <Button variant="outline" size="sm">
+                        Change Banner
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Social Links Tab */}
+          <TabsContent value="social" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Saved Addresses</CardTitle>
-                    <CardDescription>Manage your delivery addresses</CardDescription>
+                    <CardTitle>Social Media Links</CardTitle>
+                    <CardDescription>Connect your social media accounts</CardDescription>
                   </div>
-                  <Dialog open={isAddingAddress} onOpenChange={setIsAddingAddress}>
+                  <Dialog open={isAddingSocialLink} onOpenChange={setIsAddingSocialLink}>
                     <DialogTrigger asChild>
                       <Button size="sm">
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Address
+                        Add Link
                       </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Add New Address</DialogTitle>
+                        <DialogTitle>Add Social Media Link</DialogTitle>
                         <DialogDescription>
-                          Enter your delivery address details
+                          Enter the URL of your social media profile
                         </DialogDescription>
                       </DialogHeader>
-                      <AddressForm 
-                        form={addressForm}
-                        onChange={setAddressForm}
-                        onSubmit={handleAddAddress}
-                        onCancel={() => {
-                          setIsAddingAddress(false)
-                          setAddressForm({
-                            label: "",
-                            line1: "",
-                            city: "",
-                            postalCode: "",
-                            country: ""
-                          })
-                        }}
-                        isSaving={isSaving}
-                      />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="socialLink">URL</Label>
+                          <Input
+                            id="socialLink"
+                            type="url"
+                            value={newSocialLink}
+                            onChange={(e) => setNewSocialLink(e.target.value)}
+                            placeholder="https://facebook.com/yourstore"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setIsAddingSocialLink(false)
+                            setNewSocialLink("")
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={handleAddSocialLink}>
+                          Add Link
+                        </Button>
+                      </DialogFooter>
                     </DialogContent>
                   </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
-                {addresses.length === 0 ? (
+                {editedProfile.socialLinks.length === 0 ? (
                   <div className="text-center py-8">
-                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No addresses saved yet</p>
+                    <LinkIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No social media links added yet</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {addresses.map((address) => {
-                      const id = getAddressId(address)
-                      return (
-                        <AddressCard
-                          key={id}
-                          address={address}
-                          onEdit={() => {
-                            setEditingAddressId(id)
-                            setAddressForm({
-                              label: address.label,
-                              line1: address.line1,
-                              city: address.city,
-                              postalCode: address.postalCode,
-                              country: address.country
-                            })
-                          }}
-                          onDelete={() => handleDeleteAddress(id)}
-                          isEditing={editingAddressId === id}
-                          form={addressForm}
-                          onFormChange={setAddressForm}
-                          onSave={() => handleUpdateAddress(id)}
-                          onCancel={() => setEditingAddressId(null)}
-                          isSaving={isSaving}
-                        />
-                      )
-                    })}
+                  <div className="space-y-3">
+                    {editedProfile.socialLinks.map((link, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getSocialIcon(link)}
+                          <a 
+                            href={link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm hover:underline"
+                          >
+                            {link}
+                          </a>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveSocialLink(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Preferences Tab */}
-          <TabsContent value="preferences" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Preferences</CardTitle>
-                <CardDescription>Customize your shopping experience</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive updates about orders and promotions</p>
-                    </div>
-                    <Badge variant="outline">Coming Soon</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Language</p>
-                      <p className="text-sm text-muted-foreground">Choose your preferred language</p>
-                    </div>
-                    <Badge variant="outline">English</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Currency & Theme</p>
-                      <p className="text-sm text-muted-foreground">Set from the header menu</p>
-                    </div>
-                    <Badge variant="secondary">Configured</Badge>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -622,7 +597,7 @@ export default function ConsumerProfilePage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-4">
-                  <Shield className="h-8 w-8 text-primary" />
+                  <Shield className="h-8 w-8 text-blue-600" />
                   <div>
                     <CardTitle>Security Settings</CardTitle>
                     <CardDescription>Keep your account secure</CardDescription>
@@ -730,182 +705,10 @@ export default function ConsumerProfilePage() {
   )
 }
 
-// Address Form Component
-function AddressForm({ 
-  form, 
-  onChange, 
-  onSubmit, 
-  onCancel, 
-  isSaving 
-}: {
-  form: any
-  onChange: (form: any) => void
-  onSubmit: () => void
-  onCancel: () => void
-  isSaving: boolean
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="label">Label (e.g., Home, Office)</Label>
-        <Input
-          id="label"
-          value={form.label}
-          onChange={(e) => onChange({ ...form, label: e.target.value })}
-          placeholder="Home"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="line1">Address</Label>
-        <Input
-          id="line1"
-          value={form.line1}
-          onChange={(e) => onChange({ ...form, line1: e.target.value })}
-          placeholder="123 Main Street"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="city">City</Label>
-          <Input
-            id="city"
-            value={form.city}
-            onChange={(e) => onChange({ ...form, city: e.target.value })}
-            placeholder="Halifax"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="postalCode">Postal Code</Label>
-          <Input
-            id="postalCode"
-            value={form.postalCode}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase()
-              onChange({ ...form, postalCode: value })
-            }}
-            placeholder="K1A 0B1"
-            maxLength={7}
-          />
-          <p className="text-xs text-muted-foreground">Canadian postal code format</p>
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="country">Country</Label>
-        <Input
-          id="country"
-          value="Canada"
-          readOnly
-          disabled
-          className="bg-muted"
-        />
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button onClick={onSubmit} disabled={isSaving}>
-          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Save Address
-        </Button>
-      </DialogFooter>
-    </div>
-  )
-}
-
-// Address Card Component
-function AddressCard({ 
-  address, 
-  onEdit, 
-  onDelete,
-  isEditing,
-  form,
-  onFormChange,
-  onSave,
-  onCancel,
-  isSaving
-}: {
-  address: Address
-  onEdit: () => void
-  onDelete: () => void
-  isEditing: boolean
-  form: any
-  onFormChange: (form: any) => void
-  onSave: () => void
-  onCancel: () => void
-  isSaving: boolean
-}) {
-  if (isEditing) {
-    return (
-      <Card>
-        <CardContent className="p-4">
-          <AddressForm
-            form={form}
-            onChange={onFormChange}
-            onSubmit={onSave}
-            onCancel={onCancel}
-            isSaving={isSaving}
-          />
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <p className="font-semibold">{address.label}</p>
-            </div>
-            <p className="text-sm">{address.line1}</p>
-            <p className="text-sm">
-              {address.city}, {address.postalCode}
-            </p>
-            <p className="text-sm">{address.country}</p>
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onEdit}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Address</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this address? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 // Loading Skeleton
 function ProfileSkeleton() {
   return (
-    <div className="container max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
