@@ -1,5 +1,23 @@
 import Vendor from '../models/vendorModel.js';
 
+// Format phone number for display
+function formatPhoneNumber(phoneNumber) {
+  if (!phoneNumber) return phoneNumber;
+  // Ensure it's a string and has only digits
+  const cleaned = String(phoneNumber).replace(/\D/g, '');
+  
+  // Format as (XXX) XXX-XXXX
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+  } else if (cleaned.length === 11 && cleaned[0] === '1') {
+    // Handle numbers with country code
+    return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`;
+  }
+  
+  // Return as-is if format doesn't match expected length
+  return phoneNumber;
+}
+
 function resolveVendorId(req) {
     return req.user.userId ;
 }
@@ -31,6 +49,10 @@ export const addVendorProfile = async (req, res) => {
     if (!phoneRegex.test(phoneNumber)) {
       return res.status(400).json({ error: 'Invalid phone number format.' });
     }
+    
+    // Clean phone number - remove all non-digit characters
+    const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
+    
     try {
       const existing = await Vendor.findOne({ vendorId });
       if (existing) {
@@ -42,7 +64,7 @@ export const addVendorProfile = async (req, res) => {
         location,
         logoUrl,
         storeBannerUrl,
-        phoneNumber,
+        phoneNumber: cleanedPhoneNumber,
         socialLink: Array.isArray(socialLinks) ? socialLinks : [],
       });
   
@@ -52,7 +74,7 @@ export const addVendorProfile = async (req, res) => {
           vendorId:       newVendor.vendorId,
           storeName:      newVendor.storeName,
           location:       newVendor.location,
-          phoneNumber:    newVendor.phoneNumber,
+          phoneNumber:    formatPhoneNumber(newVendor.phoneNumber),
           logoUrl:        newVendor.logoUrl,
           storeBannerUrl: newVendor.storeBannerUrl,
           socialLinks:    newVendor.socialLink,
@@ -76,7 +98,7 @@ export const getVendorProfile = async (req, res) => {
         vendorId:       profile.vendorId,
         storeName:      profile.storeName,
         location:       profile.location,
-        phoneNumber:    profile.phoneNumber,
+        phoneNumber:    formatPhoneNumber(profile.phoneNumber),
         logoUrl:        profile.logoUrl,
         storeBannerUrl: profile.storeBannerUrl,
         rating:         profile.rating,
@@ -117,7 +139,11 @@ export const getVendorProfile = async (req, res) => {
       if (location        !== undefined) profile.location       = location;
       if (logoUrl         !== undefined) profile.logoUrl        = logoUrl;
       if (storeBannerUrl  !== undefined) profile.storeBannerUrl = storeBannerUrl;
-      if (phoneNumber     !== undefined) profile.phoneNumber    = phoneNumber;
+      if (phoneNumber     !== undefined) {
+        // Clean phone number - remove all non-digit characters
+        const cleanedPhoneNumber = phoneNumber.replace(/\D/g, '');
+        profile.phoneNumber = cleanedPhoneNumber;
+      }
       if (socialLinks     !== undefined && Array.isArray(socialLinks)) {
         profile.socialLinks = socialLinks;
       }
@@ -130,7 +156,7 @@ export const getVendorProfile = async (req, res) => {
           vendorId:       profile.vendorId,
           storeName:      profile.storeName,
           location:       profile.location,
-          phoneNumber:    profile.phoneNumber,
+          phoneNumber:    formatPhoneNumber(profile.phoneNumber),
           logoUrl:        profile.logoUrl,
           storeBannerUrl: profile.storeBannerUrl,
           rating:         profile.rating,

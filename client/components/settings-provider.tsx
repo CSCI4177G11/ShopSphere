@@ -77,8 +77,20 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           }
         }
       } else if (user.role === 'vendor') {
-        // Vendors might have different settings endpoint
-        // For now, use localStorage
+        try {
+          const settings = await userService.getVendorSettings()
+          if (settings && settings.theme) {
+            setTheme(settings.theme)
+          }
+        } catch (error: any) {
+          console.error('Failed to load vendor settings, using localStorage:', error)
+          // Fallback to localStorage if API fails
+          const savedTheme = localStorage.getItem('theme')
+          if (savedTheme) {
+            setTheme(savedTheme)
+          }
+        }
+        // Vendors don't have currency settings, just use localStorage
         const savedCurrency = localStorage.getItem('currency') as Currency
         if (savedCurrency && ['USD', 'CAD', 'GBP', 'EUR'].includes(savedCurrency)) {
           setCurrencyState(savedCurrency)
@@ -132,8 +144,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           await userService.updateConsumerSettings({ theme: themeValue })
           toast.success('Theme preference saved')
         } else if (user.role === 'vendor') {
-          // For now, vendors don't have settings endpoint, just use localStorage
-          localStorage.setItem('theme', themeValue)
+          await userService.updateVendorSettings({ theme: themeValue })
+          toast.success('Theme preference saved')
         }
       } catch (error) {
         console.error('Failed to update theme:', error)

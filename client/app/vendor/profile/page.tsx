@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { userService, type VendorProfile } from "@/lib/api/user-service"
@@ -153,7 +153,7 @@ export default function VendorProfilePage() {
       const formattedProfile = {
         storeName: editedProfile.storeName,
         location: editedProfile.location,
-        phoneNumber: formatPhoneNumber(editedProfile.phoneNumber),
+        phoneNumber: editedProfile.phoneNumber, // Send raw phone number, backend will clean it
         logoUrl: editedProfile.logoUrl,
         storeBannerUrl: editedProfile.storeBannerUrl,
         socialLinks: editedProfile.socialLinks
