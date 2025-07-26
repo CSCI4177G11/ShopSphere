@@ -92,25 +92,39 @@ export const getVendorProfile = async (req, res) => {
   export const updateVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
-    const { storeName, location, logoUrl, storeBannerUrl, phoneNumber, socialLinks } = req.body;
-    const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!phoneNumberFormat.test(phoneNumber)) {
-      return res.status(400).json({ error: 'Invalid phone number format.' });
+  
+    const {
+      storeName,
+      location,
+      logoUrl,
+      storeBannerUrl,
+      phoneNumber,
+      socialLinks,
+    } = req.body;
+  
+    if (phoneNumber !== undefined) {
+      const phoneRe = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
+      if (!phoneRe.test(phoneNumber)) {
+        return res.status(400).json({ error: 'Invalid phone number format.' });
+      }
     }
+  
     try {
       const profile = await Vendor.findOne({ vendorId });
-      if (!profile)
-        return res.status(404).json({ error: 'Vendor not found.' });
-      profile.storeName      = storeName;
-      profile.location       = location;
-      profile.logoUrl        = logoUrl;
-      profile.storeBannerUrl = storeBannerUrl;
-      profile.phoneNumber    = phoneNumber;
-      if (Array.isArray(socialLinks)) {
-        profile.socialLink = socialLinks;
+      if (!profile) return res.status(404).json({ error: 'Vendor not found.' });
+  
+      if (storeName       !== undefined) profile.storeName      = storeName;
+      if (location        !== undefined) profile.location       = location;
+      if (logoUrl         !== undefined) profile.logoUrl        = logoUrl;
+      if (storeBannerUrl  !== undefined) profile.storeBannerUrl = storeBannerUrl;
+      if (phoneNumber     !== undefined) profile.phoneNumber    = phoneNumber;
+      if (socialLinks     !== undefined && Array.isArray(socialLinks)) {
+        profile.socialLinks = socialLinks;
       }
+  
       await profile.save();
-      res.status(200).json({
+  
+      return res.status(200).json({
         message: 'Vendor profile updated successfully',
         profile: {
           vendorId:       profile.vendorId,
@@ -120,14 +134,15 @@ export const getVendorProfile = async (req, res) => {
           logoUrl:        profile.logoUrl,
           storeBannerUrl: profile.storeBannerUrl,
           rating:         profile.rating,
-          socialLinks:    profile.socialLink,
+          socialLinks:    profile.socialLinks,
         },
       });
     } catch (err) {
       console.error('updateVendorProfile error:', err);
-      res.status(500).json({ error: 'Server error while modifying profile' });
+      return res.status(500).json({ error: 'Server error while modifying profile' });
     }
   };
+  
 
     export const getSetting = async (req, res) => {
         const vendorId = requireVendorId(req, res);
