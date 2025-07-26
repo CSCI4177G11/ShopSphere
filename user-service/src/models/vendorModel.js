@@ -15,7 +15,7 @@ const vendorSchema = new mongoose.Schema(
     phoneNumber: {type: String, required: true},
     logoUrl: {type: String, required: true},
     storeBannerUrl: {type: String, required: true},
-    rating: {type: String, required: true, default: 0},
+    rating: {type: Number, required: true, default: 0},
     isApproved: { type: Boolean, default: false },
     socialLink: {type: Array},
     settings: { type: vendorSettingSchema, default: () => ({}) },
