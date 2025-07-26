@@ -29,7 +29,15 @@ import {
   DollarSign,
   Users,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  Upload,
+  Github,
+  Linkedin,
+  Youtube,
+  MessageCircle,
+  Hash,
+  Video,
+  Camera
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -67,11 +75,66 @@ const formatPhoneNumber = (phoneNumber: string): string => {
   return phoneNumber
 }
 
+// Compress image to reduce file size
+const compressImage = (file: File, maxSize: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height / width) * maxSize
+            width = maxSize
+          } else {
+            width = (width / height) * maxSize
+            height = maxSize
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        // Convert to data URL with compression
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        resolve(dataUrl)
+      }
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 // Get social media icon
 const getSocialIcon = (url: string) => {
-  if (url.includes('facebook')) return <Facebook className="h-4 w-4" />
-  if (url.includes('instagram')) return <Instagram className="h-4 w-4" />
-  if (url.includes('twitter') || url.includes('x.com')) return <Twitter className="h-4 w-4" />
+  const lowerUrl = url.toLowerCase()
+  
+  // Major social media with specific icons
+  if (lowerUrl.includes('facebook.com')) return <Facebook className="h-4 w-4" />
+  if (lowerUrl.includes('instagram.com')) return <Instagram className="h-4 w-4" />
+  if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) return <Twitter className="h-4 w-4" />
+  if (lowerUrl.includes('github.com')) return <Github className="h-4 w-4" />
+  if (lowerUrl.includes('linkedin.com')) return <Linkedin className="h-4 w-4" />
+  if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return <Youtube className="h-4 w-4" />
+  
+  // Use alternative icons for platforms without specific icons
+  if (lowerUrl.includes('threads.net')) return <Hash className="h-4 w-4" /> // Threads (using Hash as it's text-based)
+  if (lowerUrl.includes('tiktok.com')) return <Video className="h-4 w-4" /> // TikTok (video platform)
+  if (lowerUrl.includes('whatsapp.com') || lowerUrl.includes('wa.me')) return <MessageCircle className="h-4 w-4" /> // WhatsApp
+  if (lowerUrl.includes('telegram.org') || lowerUrl.includes('t.me')) return <MessageCircle className="h-4 w-4" /> // Telegram
+  if (lowerUrl.includes('discord.com') || lowerUrl.includes('discord.gg')) return <MessageCircle className="h-4 w-4" /> // Discord
+  if (lowerUrl.includes('snapchat.com')) return <Camera className="h-4 w-4" /> // Snapchat
+  if (lowerUrl.includes('twitch.tv')) return <Video className="h-4 w-4" /> // Twitch
+  
+  // Default
   return <Globe className="h-4 w-4" />
 }
 
@@ -94,6 +157,12 @@ export default function VendorProfilePage() {
   // Social link management
   const [newSocialLink, setNewSocialLink] = useState("")
   const [isAddingSocialLink, setIsAddingSocialLink] = useState(false)
+  
+  // Image upload refs and states
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false)
 
   // Password change states
   const [isChangingPassword, setIsChangingPassword] = useState(false)
@@ -120,9 +189,6 @@ export default function VendorProfilePage() {
     try {
       setLoading(true)
       const profileData = await userService.getVendorProfile()
-      
-      console.log('Fetched profile data:', profileData)
-      console.log('Social links from API:', profileData.socialLinks)
       
       setProfile(profileData)
       setEditedProfile({
@@ -159,14 +225,7 @@ export default function VendorProfilePage() {
         socialLinks: editedProfile.socialLinks
       }
       
-      console.log('Updating profile with data:', formattedProfile)
-      console.log('Social links being sent:', formattedProfile.socialLinks)
-      
       const response = await userService.updateVendorProfile(formattedProfile)
-      
-      console.log('Update response received:', response)
-      console.log('Updated profile from response:', response.vendor)
-      console.log('Social links in updated profile:', response.vendor?.socialLinks)
       
       // The response has profile data in response.profile
       const updatedProfile = response.profile
@@ -199,7 +258,7 @@ export default function VendorProfilePage() {
     }
   }
 
-  const handleAddSocialLink = () => {
+  const handleAddSocialLink = async () => {
     if (!newSocialLink.trim()) {
       toast.error('Please enter a valid URL')
       return
@@ -207,10 +266,43 @@ export default function VendorProfilePage() {
 
     try {
       new URL(newSocialLink)
+      const updatedLinks = [...editedProfile.socialLinks, newSocialLink]
+      
+      // Update local state
       setEditedProfile({
         ...editedProfile,
-        socialLinks: [...editedProfile.socialLinks, newSocialLink]
+        socialLinks: updatedLinks
       })
+      
+      // Save to backend
+      setIsSaving(true)
+      try {
+        const response = await userService.updateVendorProfile({
+          ...editedProfile,
+          socialLinks: updatedLinks
+        })
+        
+        if (response.profile) {
+          setProfile(response.profile)
+          // Update editedProfile with the response to ensure consistency
+          setEditedProfile({
+            ...editedProfile,
+            socialLinks: response.profile.socialLinks || []
+          })
+          toast.success('Social media link added successfully')
+        }
+      } catch (error) {
+        console.error('Failed to save social link:', error)
+        toast.error('Failed to save social media link')
+        // Revert the change on error
+        setEditedProfile({
+          ...editedProfile,
+          socialLinks: editedProfile.socialLinks
+        })
+      } finally {
+        setIsSaving(false)
+      }
+      
       setNewSocialLink("")
       setIsAddingSocialLink(false)
     } catch {
@@ -218,11 +310,43 @@ export default function VendorProfilePage() {
     }
   }
 
-  const handleRemoveSocialLink = (index: number) => {
+  const handleRemoveSocialLink = async (index: number) => {
+    const updatedLinks = editedProfile.socialLinks.filter((_, i) => i !== index)
+    
+    // Update local state
     setEditedProfile({
       ...editedProfile,
-      socialLinks: editedProfile.socialLinks.filter((_, i) => i !== index)
+      socialLinks: updatedLinks
     })
+    
+    // Save to backend
+    setIsSaving(true)
+    try {
+      const response = await userService.updateVendorProfile({
+        ...editedProfile,
+        socialLinks: updatedLinks
+      })
+      
+      if (response.profile) {
+        setProfile(response.profile)
+        // Update editedProfile with the response to ensure consistency
+        setEditedProfile({
+          ...editedProfile,
+          socialLinks: response.profile.socialLinks || []
+        })
+        toast.success('Social media link removed successfully')
+      }
+    } catch (error) {
+      console.error('Failed to remove social link:', error)
+      toast.error('Failed to remove social media link')
+      // Revert the change on error
+      setEditedProfile({
+        ...editedProfile,
+        socialLinks: editedProfile.socialLinks
+      })
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const validatePasswordForm = (): boolean => {
@@ -277,6 +401,60 @@ export default function VendorProfilePage() {
       }
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setIsUploadingLogo(true)
+      const compressedImage = await compressImage(file, 400) // 400px max for logo
+      setEditedProfile({ ...editedProfile, logoUrl: compressedImage })
+      
+      // Auto-save the logo
+      const response = await userService.updateVendorProfile({
+        ...editedProfile,
+        logoUrl: compressedImage
+      })
+      
+      if (response.profile) {
+        setProfile(response.profile)
+        toast.success('Logo updated successfully')
+      }
+    } catch (error) {
+      console.error('Failed to upload logo:', error)
+      toast.error('Failed to upload logo')
+    } finally {
+      setIsUploadingLogo(false)
+    }
+  }
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setIsUploadingBanner(true)
+      const compressedImage = await compressImage(file, 1200) // 1200px max for banner
+      setEditedProfile({ ...editedProfile, storeBannerUrl: compressedImage })
+      
+      // Auto-save the banner
+      const response = await userService.updateVendorProfile({
+        ...editedProfile,
+        storeBannerUrl: compressedImage
+      })
+      
+      if (response.profile) {
+        setProfile(response.profile)
+        toast.success('Banner updated successfully')
+      }
+    } catch (error) {
+      console.error('Failed to upload banner:', error)
+      toast.error('Failed to upload banner')
+    } finally {
+      setIsUploadingBanner(false)
     }
   }
 
@@ -499,8 +677,30 @@ export default function VendorProfilePage() {
                           <ImageIcon className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
-                      <Button variant="outline" size="sm">
-                        Change Logo
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={isUploadingLogo}
+                      >
+                        {isUploadingLogo ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Change Logo
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -521,8 +721,30 @@ export default function VendorProfilePage() {
                           <ImageIcon className="h-12 w-12 text-muted-foreground" />
                         </div>
                       )}
-                      <Button variant="outline" size="sm">
-                        Change Banner
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleBannerUpload}
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => bannerInputRef.current?.click()}
+                        disabled={isUploadingBanner}
+                      >
+                        {isUploadingBanner ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Change Banner
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>

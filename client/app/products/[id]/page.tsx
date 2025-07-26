@@ -22,9 +22,11 @@ import {
   Store,
   Package,
   Shield,
-  Truck
+  Truck,
+  ChevronRight
 } from "lucide-react"
 import type { Product, Review } from "@/lib/api/product-service"
+import { vendorService } from "@/lib/api/vendor-service"
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -35,6 +37,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
+  const [vendorName, setVendorName] = useState<string>("")
   
   const isVendor = user?.role === 'vendor'
   const isConsumer = user?.role === 'consumer'
@@ -49,6 +52,20 @@ export default function ProductDetailPage() {
         ])
         setProduct(productData)
         setReviews(reviewsData)
+        
+        // Fetch vendor info if vendorName is not available
+        if (productData.vendorName) {
+          setVendorName(productData.vendorName)
+        } else if (productData.vendorId) {
+          try {
+            const vendorData = await vendorService.getVendorById(productData.vendorId)
+            if (vendorData) {
+              setVendorName(vendorData.storeName)
+            }
+          } catch (error) {
+            console.error('Failed to fetch vendor info:', error)
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch product:', error)
         toast.error("Failed to load product")
@@ -197,8 +214,17 @@ export default function ProductDetailPage() {
           <nav className="mb-8 text-sm text-muted-foreground">
             <Link href="/" className="hover:text-primary">Home</Link>
             <span className="mx-2">/</span>
-            <Link href="/shop" className="hover:text-primary">Shop</Link>
-            <span className="mx-2">/</span>
+            {vendorName && product.vendorId ? (
+              <>
+                <Link href={`/shop/${product.vendorId}`} className="hover:text-primary">{vendorName}</Link>
+                <span className="mx-2">/</span>
+              </>
+            ) : (
+              <>
+                <Link href="/shop" className="hover:text-primary">Shop</Link>
+                <span className="mx-2">/</span>
+              </>
+            )}
             <span className="text-foreground">{product.name}</span>
           </nav>
 
@@ -260,13 +286,13 @@ export default function ProductDetailPage() {
               <div>
                 <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
                 <div className="flex items-center gap-4 text-sm">
-                  {product.vendorName && (
+                  {(vendorName || product.vendorName) && (
                     <Link 
-                      href={`/vendors/${product.vendorId}`}
+                      href={`/shop/${product.vendorId}`}
                       className="flex items-center gap-1 text-muted-foreground hover:text-primary"
                     >
                       <Store className="h-4 w-4" />
-                      {product.vendorName}
+                      {vendorName || product.vendorName}
                     </Link>
                   )}
                   <Badge variant="secondary" className="capitalize">
@@ -354,6 +380,29 @@ export default function ProductDetailPage() {
                     As a vendor, you cannot purchase products. Switch to a consumer account to shop.
                   </p>
                 </div>
+              )}
+
+              {/* Vendor Info Card */}
+              {(vendorName || product.vendorName) && (
+                <Card className="mb-6">
+                  <CardContent className="p-4">
+                    <Link 
+                      href={`/shop/${product.vendorId}`}
+                      className="flex items-center justify-between hover:opacity-80 transition-opacity"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Store className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{vendorName || product.vendorName}</p>
+                          <p className="text-sm text-muted-foreground">Visit Store</p>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </Link>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Features */}

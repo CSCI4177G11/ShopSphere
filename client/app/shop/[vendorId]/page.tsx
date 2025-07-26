@@ -47,7 +47,13 @@ import {
   Twitter,
   Globe,
   Phone,
-  ExternalLink
+  ExternalLink,
+  Github,
+  Linkedin,
+  Youtube,
+  Hash,
+  Video,
+  Camera
 } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 import type { Vendor } from "@/lib/api/vendor-service"
@@ -106,7 +112,8 @@ export default function VendorProductsPage() {
           createdAt: new Date().toISOString()
         }
         
-        // Get vendor data from session storage
+        // Try to get vendor data from session storage first
+        let vendorDataFound = false
         if (typeof window !== 'undefined') {
           const vendorInfo = sessionStorage.getItem(`vendor_${vendorId}`)
           if (vendorInfo) {
@@ -118,6 +125,26 @@ export default function VendorProductsPage() {
             tempVendor.rating = parsedVendor.rating || tempVendor.rating
             tempVendor.phoneNumber = parsedVendor.phoneNumber
             tempVendor.socialLinks = parsedVendor.socialLinks
+            vendorDataFound = true
+          }
+        }
+        
+        // If no vendor data in session storage, fetch from API
+        if (!vendorDataFound) {
+          try {
+            const vendorData = await vendorService.getVendorById(vendorId)
+            
+            if (vendorData) {
+              tempVendor.storeName = vendorData.storeName
+              tempVendor.location = vendorData.location
+              tempVendor.logoUrl = vendorData.logoUrl
+              tempVendor.bannerUrl = vendorData.bannerUrl || vendorData.storeBannerUrl
+              tempVendor.rating = vendorData.rating || 4.5
+              tempVendor.phoneNumber = vendorData.phoneNumber
+              tempVendor.socialLinks = vendorData.socialLinks
+            }
+          } catch (error) {
+            console.error('Failed to fetch vendor profile:', error)
           }
         }
         
@@ -142,10 +169,31 @@ export default function VendorProductsPage() {
 
   // Helper function to get social media icon and type
   const getSocialIcon = (url: string) => {
-    if (url.includes('facebook')) return { icon: Facebook, type: 'facebook' }
-    if (url.includes('instagram')) return { icon: Instagram, type: 'instagram' }
-    if (url.includes('twitter') || url.includes('x.com')) return { icon: Twitter, type: 'twitter' }
-    return { icon: Globe, type: 'website' }
+    const lowerUrl = url.toLowerCase()
+    
+    // Major social media platforms with specific icons
+    if (lowerUrl.includes('facebook.com')) return { icon: Facebook, type: 'Facebook' }
+    if (lowerUrl.includes('instagram.com')) return { icon: Instagram, type: 'Instagram' }
+    if (lowerUrl.includes('twitter.com') || lowerUrl.includes('x.com')) return { icon: Twitter, type: 'X (Twitter)' }
+    if (lowerUrl.includes('github.com')) return { icon: Github, type: 'GitHub' }
+    if (lowerUrl.includes('linkedin.com')) return { icon: Linkedin, type: 'LinkedIn' }
+    if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) return { icon: Youtube, type: 'YouTube' }
+    
+    // Use alternative icons for platforms without specific Lucide icons
+    if (lowerUrl.includes('threads.net')) return { icon: Hash, type: 'Threads' }
+    if (lowerUrl.includes('tiktok.com')) return { icon: Video, type: 'TikTok' }
+    if (lowerUrl.includes('twitch.tv')) return { icon: Video, type: 'Twitch' }
+    if (lowerUrl.includes('snapchat.com')) return { icon: Camera, type: 'Snapchat' }
+    if (lowerUrl.includes('whatsapp.com') || lowerUrl.includes('wa.me')) return { icon: MessageCircle, type: 'WhatsApp' }
+    if (lowerUrl.includes('telegram.org') || lowerUrl.includes('t.me')) return { icon: MessageCircle, type: 'Telegram' }
+    if (lowerUrl.includes('discord.com') || lowerUrl.includes('discord.gg')) return { icon: MessageCircle, type: 'Discord' }
+    
+    // Other platforms
+    if (lowerUrl.includes('pinterest.com')) return { icon: Globe, type: 'Pinterest' }
+    if (lowerUrl.includes('reddit.com')) return { icon: Globe, type: 'Reddit' }
+    
+    // Default
+    return { icon: Globe, type: 'Website' }
   }
 
   const handleReportSubmit = async () => {
@@ -280,7 +328,7 @@ export default function VendorProductsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{vendor.rating.toFixed(1)}</span>
+                      <span className="font-medium">{(Number(vendor.rating) || 0).toFixed(1)}</span>
                       <span className="text-muted-foreground">rating</span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -382,7 +430,7 @@ export default function VendorProductsPage() {
         </div>
 
         {/* Products Section with Tabs */}
-        <Tabs defaultValue="products" className="space-y-6">
+        <Tabs defaultValue="products" className="space-y-6 pb-16">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>

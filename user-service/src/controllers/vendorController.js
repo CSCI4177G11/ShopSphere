@@ -145,7 +145,7 @@ export const getVendorProfile = async (req, res) => {
         profile.phoneNumber = cleanedPhoneNumber;
       }
       if (socialLinks     !== undefined && Array.isArray(socialLinks)) {
-        profile.socialLinks = socialLinks;
+        profile.socialLink = socialLinks;
       }
   
       await profile.save();
@@ -160,7 +160,7 @@ export const getVendorProfile = async (req, res) => {
           logoUrl:        profile.logoUrl,
           storeBannerUrl: profile.storeBannerUrl,
           rating:         profile.rating,
-          socialLinks:    profile.socialLinks,
+          socialLinks:    profile.socialLink,
         },
       });
     } catch (err) {
@@ -344,5 +344,38 @@ export const listPublicVendors = async (req, res) => {
   } catch (error) {
     console.error('listPublicVendors error:', error);
     res.status(500).json({ error: 'Failed to fetch vendors' });
+  }
+};
+
+// Get single vendor profile for public view
+export const getPublicVendorProfile = async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    
+    const vendor = await Vendor.findOne({ vendorId })
+      .select('-payoutSettings'); // Exclude only payment settings, keep phone and social for display
+    
+    if (!vendor) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+    
+    // Transform vendor data for public consumption
+    const publicProfile = {
+      vendorId: vendor.vendorId,
+      storeName: vendor.storeName,
+      location: vendor.location,
+      phoneNumber: formatPhoneNumber(vendor.phoneNumber),
+      logoUrl: vendor.logoUrl,
+      bannerUrl: vendor.storeBannerUrl,
+      socialLinks: vendor.socialLink,
+      rating: vendor.rating || 4.5,
+      isApproved: vendor.isApproved,
+      createdAt: vendor.createdAt,
+    };
+    
+    res.json({ vendor: publicProfile });
+  } catch (error) {
+    console.error('getPublicVendorProfile error:', error);
+    res.status(500).json({ error: 'Failed to fetch vendor profile' });
   }
 };

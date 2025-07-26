@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { query } from 'express-validator';
+import { query, param } from 'express-validator';
 import * as vendorCtrl from '../controllers/vendorController.js';
 
 const router = Router();
@@ -14,6 +14,15 @@ router.get(
     query('sort').optional().isIn(['name:asc', 'name:desc', 'createdAt:asc', 'createdAt:desc']),
   ],
   vendorCtrl.listPublicVendors
+);
+
+// Get single vendor profile - public endpoint
+router.get(
+  '/:vendorId',
+  [
+    param('vendorId').isString().notEmpty(),
+  ],
+  vendorCtrl.getPublicVendorProfile
 );
 
 export default router;

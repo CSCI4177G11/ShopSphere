@@ -10,10 +10,12 @@ export interface Vendor {
   totalProducts: number
   logoUrl?: string
   bannerUrl?: string
+  storeBannerUrl?: string
   categories?: string[]
   createdAt: string
   phoneNumber?: string
   socialLinks?: string[]
+  isApproved?: boolean
 }
 
 export interface VendorQuery {
@@ -59,8 +61,8 @@ class VendorService {
 
   async getVendorById(vendorId: string): Promise<Vendor | null> {
     try {
-      const response = await userApi.get<Vendor>(`/vendor/${vendorId}/profile`)
-      return response
+      const response = await userApi.get<{ vendor: Vendor }>(`/vendors/public/${vendorId}`)
+      return response.vendor
     } catch (error) {
       console.error('Failed to fetch vendor:', error)
       return null
