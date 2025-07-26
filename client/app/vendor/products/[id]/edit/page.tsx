@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, ImageIcon, Loader2 } from "lucide-react"
+import { ArrowLeft, Upload, X, Loader2, Save } from "lucide-react"
+import type { Product } from "@/lib/api/product-service"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -45,45 +47,72 @@ const categories = [
   "other"
 ]
 
-export default function NewProductPage() {
+export default function EditProductPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const params = useParams()
+  const productId = params.id as string
+  
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [product, setProduct] = useState<Product | null>(null)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      price: "",
-      stock: "",
-      category: "",
-    }
   })
 
   const selectedCategory = watch("category")
+
+  useEffect(() => {
+    fetchProduct()
+  }, [productId])
+
+  const fetchProduct = async () => {
+    try {
+      const productData = await productService.getProduct(productId)
+      setProduct(productData)
+      setExistingImages(productData.images || [])
+      
+      // Set form values
+      reset({
+        name: productData.name,
+        description: productData.description,
+        price: productData.price.toString(),
+        stock: productData.quantityInStock.toString(),
+        category: productData.category || "",
+      })
+    } catch (error) {
+      console.error('Failed to fetch product:', error)
+      toast.error('Failed to load product')
+      router.push('/vendor/products')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (!files) return
 
     const newFiles = Array.from(files)
-    const totalFiles = selectedImages.length + newFiles.length
+    const totalImages = existingImages.length - imagesToDelete.length + selectedImages.length + newFiles.length
 
-    if (totalFiles > 5) {
-      toast.error("You can upload maximum 5 images")
+    if (totalImages > 5) {
+      toast.error("Maximum 5 images allowed")
       return
     }
 
-    // Validate file types
     const validFiles = newFiles.filter(file => {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not an image file`)
@@ -98,19 +127,24 @@ export default function NewProductPage() {
 
     if (validFiles.length === 0) return
 
-    // Create preview URLs
     const newPreviews = validFiles.map(file => URL.createObjectURL(file))
     
     setSelectedImages([...selectedImages, ...validFiles])
     setImagePreviews([...imagePreviews, ...newPreviews])
   }
 
-  const removeImage = (index: number) => {
-    // Revoke the object URL to free memory
+  const removeNewImage = (index: number) => {
     URL.revokeObjectURL(imagePreviews[index])
-    
     setSelectedImages(selectedImages.filter((_, i) => i !== index))
     setImagePreviews(imagePreviews.filter((_, i) => i !== index))
+  }
+
+  const toggleDeleteExistingImage = (imageUrl: string) => {
+    if (imagesToDelete.includes(imageUrl)) {
+      setImagesToDelete(imagesToDelete.filter(url => url !== imageUrl))
+    } else {
+      setImagesToDelete([...imagesToDelete, imageUrl])
+    }
   }
 
   const compressImage = async (file: File): Promise<string> => {
@@ -119,11 +153,9 @@ export default function NewProductPage() {
       reader.onload = (e) => {
         const img = document.createElement('img')
         img.onload = () => {
-          // Create canvas for compression
           const canvas = document.createElement('canvas')
           const ctx = canvas.getContext('2d')!
           
-          // Calculate new dimensions (max 800px width/height)
           const maxSize = 800
           let width = img.width
           let height = img.height
@@ -138,11 +170,8 @@ export default function NewProductPage() {
           
           canvas.width = width
           canvas.height = height
-          
-          // Draw and compress
           ctx.drawImage(img, 0, 0, width, height)
           
-          // Convert to base64 with compression
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7)
           resolve(compressedBase64)
         }
@@ -154,48 +183,74 @@ export default function NewProductPage() {
   }
 
   const onSubmit = async (data: ProductForm) => {
-    if (!user) {
-      toast.error("You must be logged in to create products")
-      return
-    }
+    if (!user || !product) return
 
-    if (selectedImages.length === 0) {
-      toast.error("Please upload at least one product image")
+    const remainingImages = existingImages.filter(img => !imagesToDelete.includes(img))
+    if (remainingImages.length + selectedImages.length === 0) {
+      toast.error("At least one image is required")
       return
     }
 
     setIsSubmitting(true)
     try {
-      // Compress images before sending
-      toast.info("Compressing images...")
-      const compressedImages = await Promise.all(
-        selectedImages.map(file => compressImage(file))
-      )
-
-      const createProductPayload = {
+      // Prepare update data
+      const updateData: any = {
         name: data.name,
         description: data.description,
         price: parseFloat(data.price),
         quantityInStock: parseInt(data.stock),
         category: data.category,
-        vendorId: user.userId,
-        vendorName: user.username,
-        images: compressedImages,
-        tags: [data.category], // Add category as a tag
-        isPublished: true
       }
-      
-      console.log('Creating product with payload:', createProductPayload)
-      await productService.createProduct(createProductPayload)
 
-      toast.success("Product created successfully!")
+      // Add new images if any
+      if (selectedImages.length > 0) {
+        toast.info("Compressing images...")
+        const compressedImages = await Promise.all(
+          selectedImages.map(file => compressImage(file))
+        )
+        updateData.addImages = compressedImages
+      }
+
+      // Add images to delete if any
+      if (imagesToDelete.length > 0) {
+        updateData.deleteImages = imagesToDelete
+      }
+
+      await productService.updateProduct(productId, updateData)
+      toast.success("Product updated successfully!")
       router.push("/vendor/products")
     } catch (error: any) {
-      console.error('Failed to create product:', error)
-      toast.error(error.message || "Failed to create product. Please try again.")
+      console.error('Failed to update product:', error)
+      toast.error(error.message || "Failed to update product")
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-48" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <Skeleton className="h-64" />
+                <Skeleton className="h-48" />
+              </div>
+              <div className="space-y-6">
+                <Skeleton className="h-48" />
+                <Skeleton className="h-32" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return null
   }
 
   return (
@@ -214,8 +269,8 @@ export default function NewProductPage() {
                 Back to Products
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold">Add New Product</h1>
-            <p className="text-muted-foreground">Fill in the details to list a new product</p>
+            <h1 className="text-3xl font-bold">Edit Product</h1>
+            <p className="text-muted-foreground">Update product information</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)}>
@@ -329,72 +384,114 @@ export default function NewProductPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {/* Image Upload Area */}
-                      <div className="relative">
-                        <input
-                          type="file"
-                          id="image-upload"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageSelect}
-                          disabled={isSubmitting || selectedImages.length >= 5}
-                          className="hidden"
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className={`block border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                            isSubmitting || selectedImages.length >= 5
-                              ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                              : 'border-gray-300 hover:border-primary hover:bg-primary/5'
-                          }`}
-                        >
-                          <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                          <p className="text-sm font-medium">
-                            {selectedImages.length >= 5
-                              ? 'Maximum 5 images allowed'
-                              : 'Click to upload images'
-                            }
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            PNG, JPG up to 5MB each
-                          </p>
-                        </label>
-                      </div>
-
-                      {/* Image Previews */}
-                      {imagePreviews.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                          {imagePreviews.map((preview, index) => (
-                            <div key={index} className="relative group">
-                              <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
-                                <Image
-                                  src={preview}
-                                  alt={`Product image ${index + 1}`}
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeImage(index)}
-                                className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                disabled={isSubmitting}
+                      {/* Existing Images */}
+                      {existingImages.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium mb-2">Current Images</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {existingImages.map((image, index) => (
+                              <div 
+                                key={image} 
+                                className={`relative group ${imagesToDelete.includes(image) ? 'opacity-50' : ''}`}
                               >
-                                <X className="h-4 w-4" />
-                              </button>
-                              {index === 0 && (
-                                <span className="absolute bottom-1 left-1 text-xs bg-black/70 text-white px-2 py-1 rounded">
-                                  Main
-                                </span>
-                              )}
-                            </div>
-                          ))}
+                                <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                  <Image
+                                    src={image}
+                                    alt={`Product image ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleDeleteExistingImage(image)}
+                                  className={`absolute top-1 right-1 p-1 rounded-full transition-opacity ${
+                                    imagesToDelete.includes(image) 
+                                      ? 'bg-green-500 opacity-100' 
+                                      : 'bg-red-500 opacity-0 group-hover:opacity-100'
+                                  }`}
+                                  disabled={isSubmitting}
+                                >
+                                  {imagesToDelete.includes(image) ? (
+                                    <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+                                    </svg>
+                                  ) : (
+                                    <X className="h-4 w-4 text-white" />
+                                  )}
+                                </button>
+                                {index === 0 && !imagesToDelete.includes(image) && (
+                                  <span className="absolute bottom-1 left-1 text-xs bg-black/70 text-white px-2 py-1 rounded">
+                                    Main
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {imagesToDelete.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {imagesToDelete.length} image(s) will be deleted
+                            </p>
+                          )}
                         </div>
                       )}
 
-                      <p className="text-xs text-muted-foreground">
-                        First image will be used as the main product image
-                      </p>
+                      {/* New Image Upload */}
+                      <div>
+                        <p className="text-sm font-medium mb-2">Add New Images</p>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="image-upload"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageSelect}
+                            disabled={isSubmitting || (existingImages.length - imagesToDelete.length + selectedImages.length >= 5)}
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="image-upload"
+                            className={`block border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                              isSubmitting || (existingImages.length - imagesToDelete.length + selectedImages.length >= 5)
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'border-gray-300 hover:border-primary hover:bg-primary/5'
+                            }`}
+                          >
+                            <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs font-medium">
+                              {existingImages.length - imagesToDelete.length + selectedImages.length >= 5
+                                ? 'Maximum 5 images'
+                                : 'Click to upload'}
+                            </p>
+                          </label>
+                        </div>
+
+                        {/* New Image Previews */}
+                        {imagePreviews.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            {imagePreviews.map((preview, index) => (
+                              <div key={index} className="relative group">
+                                <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                  <Image
+                                    src={preview}
+                                    alt={`New image ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeNewImage(index)}
+                                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  disabled={isSubmitting}
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -410,10 +507,13 @@ export default function NewProductPage() {
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
+                          Updating...
                         </>
                       ) : (
-                        "Create Product"
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Update Product
+                        </>
                       )}
                     </Button>
                     <Button

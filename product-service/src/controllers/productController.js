@@ -16,6 +16,7 @@ export const createProduct = async (req, res) => {
             description,
             price,
             quantityInStock,
+            category,
             tags,
             isPublished = false,
             images = [], // array of paths/urls
@@ -33,16 +34,30 @@ export const createProduct = async (req, res) => {
             });
             imageUrls = await Promise.all(uploadPromises);
         }
+        console.log('Creating product with data:', {
+            vendorId,
+            name,
+            description,
+            price,
+            quantityInStock,
+            category,
+            images: imageUrls,
+            tags: tags || [],
+            isPublished,
+        });
+        
         const product = await Product.create({
             vendorId,
             name,
             description,
             price,
             quantityInStock,
+            category,
             images: imageUrls,
             tags: tags || [],
             isPublished,
         });
+        console.log('Created product:', product.toObject());
         res.status(201).json({
             message: "Product created successfully.",
             productId: product._id
@@ -182,10 +197,10 @@ export const listProducts = async (req, res) => {
                 productId: product._id,
                 name: product.name,
                 price: product.price,
+                category: product.category || 'other',
                 thumbnail: images.length > 0 ? images[0] : null,
                 averageRating: product.averageRating,
                 reviewCount: product.reviewCount,
-                images,
                 _links: {
                     self: `api/product/${product._id}`,
                     reviews: `api/product/${product._id}/reviews`,
@@ -236,16 +251,25 @@ export const listProductsByVendor = async (req, res) => {
             .skip((page - 1) * limit)
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
+        
+        console.log('Raw product from DB (vendor):', products[0]?.toObject());
+        
         const transformedProducts = products.map(product => {
             const images = product.images || [];
             return {
                 productId: product._id,
                 name: product.name,
+                description: product.description,
                 price: product.price,
+                quantityInStock: product.quantityInStock,
+                category: product.category || 'other',
                 thumbnail: images.length > 0 ? images[0] : null,
                 averageRating: product.averageRating,
                 reviewCount: product.reviewCount,
                 images,
+                tags: product.tags,
+                isPublished: product.isPublished,
+                vendorId: product.vendorId,
                 _links: {
                     self: `api/product/${product._id}`,
                     reviews: `api/product/${product._id}/reviews`,
@@ -285,12 +309,14 @@ export const getProductById = async (req, res) => {
             description: product.description,
             price: product.price,
             quantityInStock: product.quantityInStock,
+            category: product.category || 'other',
             images,
             tags: product.tags,
             averageRating: product.averageRating,
             reviewCount: product.reviewCount,
             isPublished: product.isPublished,
             createdAt: product.createdAt,
+            updatedAt: product.updatedAt,
             _links: {
                 self: `api/product/${product._id}`,
                 reviews: `api/product/${product._id}/reviews`,

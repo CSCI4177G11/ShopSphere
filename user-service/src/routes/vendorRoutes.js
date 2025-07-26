@@ -59,4 +59,17 @@ router.get(
   [ param('id').isString().notEmpty() ],
   vendorCtrl.checkApproval
 )
+
+// Admin only - get all vendors
+router.get(
+  '/all',
+  [
+    requireRole(['admin']),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('isApproved').optional().isBoolean(),
+  ],
+  vendorCtrl.getAllVendors
+);
+
 export default router;

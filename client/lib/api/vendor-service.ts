@@ -1,4 +1,4 @@
-// Vendor service uses mock data for now
+import { userApi } from './api-client'
 
 export interface Vendor {
   _id: string
@@ -19,7 +19,7 @@ export interface VendorQuery {
   limit?: number
   search?: string
   category?: string
-  sort?: 'name' | '-name' | 'rating' | '-rating' | 'products' | '-products'
+  sort?: 'name:asc' | 'name:desc' | 'createdAt:asc' | 'createdAt:desc'
 }
 
 interface VendorResponse {
@@ -30,21 +30,39 @@ interface VendorResponse {
 }
 
 class VendorService {
-  // Returns empty data since vendor listing endpoint is not implemented yet
   async getVendors(query: VendorQuery = {}): Promise<VendorResponse> {
-    // TODO: Implement when vendor listing API endpoint is available
-    // For now, return empty response
-    return {
-      vendors: [],
-      total: 0,
-      page: query.page || 1,
-      pages: 0
+    try {
+      const params = new URLSearchParams()
+      
+      if (query.page) params.append('page', query.page.toString())
+      if (query.limit) params.append('limit', query.limit.toString())
+      if (query.search) params.append('search', query.search)
+      if (query.sort) params.append('sort', query.sort)
+      
+      const queryString = params.toString()
+      const endpoint = queryString ? `/vendors/public?${queryString}` : '/vendors/public'
+      
+      const response = await userApi.get<VendorResponse>(endpoint)
+      return response
+    } catch (error) {
+      console.error('Failed to fetch vendors:', error)
+      return {
+        vendors: [],
+        total: 0,
+        page: query.page || 1,
+        pages: 0
+      }
     }
   }
 
   async getVendorById(vendorId: string): Promise<Vendor | null> {
-    // TODO: Implement when vendor API endpoint is available
-    return null
+    try {
+      const response = await userApi.get<Vendor>(`/vendor/${vendorId}/profile`)
+      return response
+    } catch (error) {
+      console.error('Failed to fetch vendor:', error)
+      return null
+    }
   }
 }
 

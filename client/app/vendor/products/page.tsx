@@ -25,6 +25,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { 
   Plus, 
@@ -34,7 +43,10 @@ import {
   Trash2,
   Package,
   DollarSign,
-  BarChart3
+  BarChart3,
+  RefreshCw,
+  PlusCircle,
+  Eye
 } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 
@@ -45,6 +57,12 @@ export default function VendorProductsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [stockUpdateDialog, setStockUpdateDialog] = useState<{
+    open: boolean
+    product: Product | null
+  }>({ open: false, product: null })
+  const [stockQuantity, setStockQuantity] = useState<string>("")
+  const [isUpdatingStock, setIsUpdatingStock] = useState(false)
 
   useEffect(() => {
     if (!user) {
@@ -63,11 +81,14 @@ export default function VendorProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const vendorProducts = await productService.getVendorProducts(user!.userId)
-      setProducts(vendorProducts)
+      const response = await productService.getVendorProducts(user!.userId)
+      // console.log('Vendor products response:', response)
+      // console.log('First product data:', JSON.stringify(response.products?.[0], null, 2))
+      setProducts(response.products || [])
     } catch (error) {
       console.error('Failed to fetch products:', error)
       toast.error('Failed to load products')
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -77,7 +98,7 @@ export default function VendorProductsPage() {
     setDeletingId(productId)
     try {
       await productService.deleteProduct(productId)
-      setProducts(products.filter(p => p._id !== productId))
+      setProducts(products.filter(p => p.productId !== productId))
       toast.success('Product deleted successfully')
     } catch (error) {
       toast.error('Failed to delete product')
@@ -86,13 +107,58 @@ export default function VendorProductsPage() {
     }
   }
 
+  const handleUpdateStock = async () => {
+    if (!stockUpdateDialog.product || !stockQuantity) return
+
+    const newQuantity = parseInt(stockQuantity)
+    if (isNaN(newQuantity) || newQuantity < 0) {
+      toast.error('Please enter a valid quantity')
+      return
+    }
+
+    setIsUpdatingStock(true)
+    try {
+      await productService.updateProduct(stockUpdateDialog.product.productId, {
+        quantityInStock: newQuantity
+      })
+      
+      setProducts(products.map(p => 
+        p.productId === stockUpdateDialog.product!.productId 
+          ? { ...p, quantityInStock: newQuantity }
+          : p
+      ))
+      
+      toast.success('Stock updated successfully')
+      setStockUpdateDialog({ open: false, product: null })
+      setStockQuantity("")
+    } catch (error) {
+      console.error('Failed to update stock:', error)
+      toast.error('Failed to update stock')
+    } finally {
+      setIsUpdatingStock(false)
+    }
+  }
+
+  const openStockUpdateDialog = (product: Product) => {
+    setStockUpdateDialog({ open: true, product })
+    setStockQuantity(product.quantityInStock.toString())
+  }
+
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (product.category && product.category.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const totalValue = products.reduce((sum, product) => sum + (product.price * product.stock), 0)
-  const totalStock = products.reduce((sum, product) => sum + product.stock, 0)
+  const totalValue = products.reduce((sum, product) => {
+    const price = Number(product.price) || 0
+    const stock = Number(product.quantityInStock) || 0
+    return sum + (price * stock)
+  }, 0)
+  
+  const totalStock = products.reduce((sum, product) => {
+    const stock = Number(product.quantityInStock) || 0
+    return sum + stock
+  }, 0)
 
   if (loading) {
     return (
@@ -119,12 +185,25 @@ export default function VendorProductsPage() {
               <h1 className="text-3xl font-bold">Products</h1>
               <p className="text-muted-foreground">Manage your product catalog</p>
             </div>
-            <Link href="/vendor/products/new">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  setLoading(true)
+                  fetchProducts()
+                }}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
-            </Link>
+              <Link href="/vendor/products/new">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Product
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Stats */}
@@ -204,7 +283,7 @@ export default function VendorProductsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredProducts.map((product) => (
-                      <TableRow key={product._id}>
+                      <TableRow key={product.productId}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-100">
@@ -212,60 +291,96 @@ export default function VendorProductsPage() {
                                 src={product.images?.[0] || "/placeholder-product.jpg"}
                                 alt={product.name}
                                 fill
+                                sizes="48px"
                                 className="object-cover"
                               />
                             </div>
                             <div>
                               <p className="font-medium">{product.name}</p>
                               <p className="text-sm text-muted-foreground">
-                                {product.rating ? `★ ${product.rating.toFixed(1)}` : 'No ratings'}
+                                {product.averageRating ? `★ ${product.averageRating.toFixed(1)}` : 'No ratings'}
                               </p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="capitalize">
-                            {product.category}
-                          </Badge>
+                          {product.category ? (
+                            <Badge variant="secondary" className="capitalize">
+                              {product.category}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Uncategorized</span>
+                          )}
                         </TableCell>
                         <TableCell>${product.price.toFixed(2)}</TableCell>
                         <TableCell>
-                          <span className={product.stock === 0 ? 'text-red-600 font-medium' : ''}>
-                            {product.stock}
+                          <span className={product.quantityInStock === 0 ? 'text-red-600 font-medium' : ''}>
+                            {product.quantityInStock}
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={product.stock > 0 ? "default" : "destructive"}>
-                            {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                          <Badge variant={product.quantityInStock > 0 ? "default" : "destructive"}>
+                            {product.quantityInStock > 0 ? 'In Stock' : 'Out of Stock'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                variant="ghost" 
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/vendor/products/${product.productId}`}>
+                              <Button
+                                variant="ghost"
                                 size="icon"
-                                disabled={deletingId === product._id}
+                                title="View product details"
                               >
-                                <MoreVertical className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/vendor/products/${product._id}/edit`}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDeleteProduct(product._id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openStockUpdateDialog(product)}
+                              title="Quick stock update"
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  disabled={deletingId === product.productId}
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/vendor/products/${product.productId}`}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Details
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/vendor/products/${product.productId}/edit`}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => openStockUpdateDialog(product)}
+                                >
+                                  <PlusCircle className="mr-2 h-4 w-4" />
+                                  Update Stock
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteProduct(product.productId)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -275,6 +390,71 @@ export default function VendorProductsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Stock Update Dialog */}
+        <Dialog 
+          open={stockUpdateDialog.open} 
+          onOpenChange={(open) => {
+            if (!open) {
+              setStockUpdateDialog({ open: false, product: null })
+              setStockQuantity("")
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Stock Quantity</DialogTitle>
+              <DialogDescription>
+                {stockUpdateDialog.product && (
+                  <>
+                    Update stock for <strong>{stockUpdateDialog.product.name}</strong>
+                    <br />
+                    Current stock: {stockUpdateDialog.product.quantityInStock} units
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="stock-quantity">New Stock Quantity</Label>
+                <Input
+                  id="stock-quantity"
+                  type="number"
+                  min="0"
+                  value={stockQuantity}
+                  onChange={(e) => setStockQuantity(e.target.value)}
+                  placeholder="Enter new stock quantity"
+                  disabled={isUpdatingStock}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStockUpdateDialog({ open: false, product: null })
+                  setStockQuantity("")
+                }}
+                disabled={isUpdatingStock}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateStock}
+                disabled={isUpdatingStock || !stockQuantity}
+              >
+                {isUpdatingStock ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Stock'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

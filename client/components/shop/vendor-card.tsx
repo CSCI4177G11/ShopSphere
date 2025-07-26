@@ -12,8 +12,21 @@ interface VendorCardProps {
 }
 
 export function VendorCard({ vendor }: VendorCardProps) {
+  const handleClick = () => {
+    // Store vendor info in sessionStorage for the product page
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`vendor_${vendor.vendorId}`, JSON.stringify({
+        storeName: vendor.storeName,
+        location: vendor.location,
+        logoUrl: vendor.logoUrl,
+        bannerUrl: vendor.bannerUrl,
+        rating: vendor.rating
+      }))
+    }
+  }
+
   return (
-    <Link href={`/vendor/${vendor.vendorId}/products`} className="h-full">
+    <Link href={`/shop/${vendor.vendorId}`} className="h-full" onClick={handleClick}>
       <Card className="group h-full flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300">
         {/* Banner Image */}
         <div className="relative h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex-shrink-0">

@@ -25,6 +25,8 @@ export interface Product {
   tags?: string[]
   averageRating?: number
   reviewCount?: number
+  rating?: number
+  isPublished?: boolean
   createdAt?: string
   updatedAt?: string
   stock?: number
@@ -78,6 +80,7 @@ export interface CreateProductDto {
   vendorName?: string
   images?: string[]
   tags?: string[]
+  isPublished?: boolean
 }
 
 export interface UpdateProductDto extends Partial<CreateProductDto> {
@@ -143,6 +146,28 @@ class ProductService {
 
   async createProduct(data: CreateProductDto): Promise<Product> {
     return productApi.post<Product>('/', data)
+  }
+
+  async createProductWithImages(formData: FormData): Promise<any> {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      throw new Error('No authentication token found')
+    }
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/product`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || error.message || 'Failed to create product')
+    }
+
+    return response.json()
   }
 
   async updateProduct(id: string, data: UpdateProductDto): Promise<Product> {

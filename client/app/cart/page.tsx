@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
+import { productService } from "@/lib/api/product-service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +20,8 @@ export default function CartPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const { cart, totals, loading, updateQuantity: updateCartQuantity, removeItem: removeCartItem, clearCart: clearCartItems } = useCart()
+  const [enrichedItems, setEnrichedItems] = useState<CartItem[]>([])
+  const [loadingImages, setLoadingImages] = useState(true)
 
   useEffect(() => {
     // Wait for auth to load before redirecting
@@ -34,6 +38,44 @@ export default function CartPage() {
       return
     }
   }, [user, authLoading, router])
+
+  // Fetch product images for cart items
+  useEffect(() => {
+    const fetchProductImages = async () => {
+      if (!cart?.items || cart.items.length === 0) {
+        setLoadingImages(false)
+        return
+      }
+
+      try {
+        // Fetch product details for all items in parallel
+        const productPromises = cart.items.map(item => 
+          productService.getProduct(item.productId).catch(() => null)
+        )
+        
+        const products = await Promise.all(productPromises)
+        
+        // Enrich cart items with product images
+        const enriched = cart.items.map((item, index) => {
+          const product = products[index]
+          return {
+            ...item,
+            productImage: product?.thumbnail || product?.images?.[0] || null
+          }
+        })
+        
+        setEnrichedItems(enriched)
+      } catch (error) {
+        console.error('Failed to fetch product images:', error)
+        // Use original cart items without images
+        setEnrichedItems(cart.items)
+      } finally {
+        setLoadingImages(false)
+      }
+    }
+
+    fetchProductImages()
+  }, [cart?.items])
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -64,7 +106,7 @@ export default function CartPage() {
   }
 
   // Show loading state while auth is loading
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4">
@@ -79,6 +121,67 @@ export default function CartPage() {
   // Don't render cart content until auth check is complete
   if (!user || user.role !== 'consumer') {
     return null
+  }
+
+  // Show loading state while cart is loading
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="h-8 bg-muted rounded w-48" />
+              <div className="h-10 bg-muted rounded w-24" />
+            </div>
+            
+            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+              {/* Cart items skeleton */}
+              <div className="lg:col-span-2 space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-card border rounded-lg p-6">
+                    <div className="flex gap-4">
+                      <div className="h-24 w-24 bg-muted rounded-lg animate-pulse" />
+                      <div className="flex-1 space-y-3">
+                        <div className="h-5 bg-muted rounded w-3/4" />
+                        <div className="h-4 bg-muted rounded w-1/2" />
+                        <div className="flex justify-between items-end">
+                          <div className="h-10 bg-muted rounded w-32" />
+                          <div className="h-6 bg-muted rounded w-20" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Summary skeleton */}
+              <div className="mt-8 lg:mt-0">
+                <div className="bg-card border rounded-lg p-6 space-y-4">
+                  <div className="h-6 bg-muted rounded w-32" />
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-muted rounded w-20" />
+                      <div className="h-4 bg-muted rounded w-16" />
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 bg-muted rounded w-24" />
+                      <div className="h-4 bg-muted rounded w-16" />
+                    </div>
+                  </div>
+                  <div className="h-px bg-muted" />
+                  <div className="flex justify-between">
+                    <div className="h-5 bg-muted rounded w-16" />
+                    <div className="h-5 bg-muted rounded w-20" />
+                  </div>
+                  <div className="h-12 bg-muted rounded w-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!cart || !cart.items || cart.items.length === 0) {
@@ -120,21 +223,33 @@ export default function CartPage() {
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cart.items.map((item) => (
-                <Card key={item.itemId}>
-                  <CardContent className="p-6">
-                    <div className="flex gap-4">
-                      <div className="relative h-24 w-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        {/* TODO: Add product image when available from cart API */}
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                          <ShoppingBag className="h-8 w-8 text-gray-400" />
-                        </div>
-                      </div>
+              {(loadingImages ? cart.items : enrichedItems).map((item) => {
+                const enrichedItem = enrichedItems.find(ei => ei.itemId === item.itemId) || item
+                return (
+                  <Card key={item.itemId}>
+                    <CardContent className="p-6">
+                      <div className="flex gap-4">
+                        <Link href={`/products/${item.productId}`} className="relative h-24 w-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 hover:opacity-80 transition-opacity">
+                          {enrichedItem.productImage ? (
+                            <Image
+                              src={enrichedItem.productImage}
+                              alt={item.productName}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <ShoppingBag className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                        </Link>
                       
                       <div className="flex-1">
                         <div className="flex justify-between">
                           <div>
-                            <h3 className="font-semibold">{item.productName}</h3>
+                            <Link href={`/products/${item.productId}`} className="hover:underline">
+                              <h3 className="font-semibold">{item.productName}</h3>
+                            </Link>
                             {item.vendorName && (
                               <p className="text-sm text-muted-foreground">by {item.vendorName}</p>
                             )}
@@ -186,7 +301,8 @@ export default function CartPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                )
+              })}
             </div>
 
             {/* Order Summary */}

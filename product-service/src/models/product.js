@@ -29,6 +29,12 @@ const productSchema = new Schema(
       required: true,
       min: 0,
     },
+    category: {
+      type: String,
+      required: false,
+      enum: ['electronics', 'fashion', 'home', 'books', 'sports', 'accessories', 'gaming', 'art', 'other'],
+      default: 'other',
+    },
     images: {
       type: [String],
       validate: arr => arr.length > 0,

@@ -201,3 +201,107 @@ export const getVendorProfile = async (req, res) => {
           res.status(500).json({ error: 'Server error while checking approval.' });
         }
       };
+
+// Get all vendors (admin only)
+export const getAllVendors = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      isApproved,
+    } = req.query;
+
+    const query = {};
+    if (isApproved !== undefined) {
+      query.isApproved = isApproved === 'true';
+    }
+
+    const vendors = await Vendor.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await Vendor.countDocuments(query);
+
+    res.json({
+      vendors: vendors.map(v => ({
+        _id: v._id,
+        vendorId: v.vendorId,
+        storeName: v.storeName,
+        location: v.location,
+        isApproved: v.isApproved,
+        createdAt: v.createdAt,
+      })),
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('getAllVendors error:', error);
+    res.status(500).json({ error: 'Failed to fetch vendors' });
+  }
+};
+
+// Public endpoint to list approved vendors (no auth required)
+export const listPublicVendors = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      sort = 'createdAt:desc',
+    } = req.query;
+
+    // Temporarily show all vendors for development
+    // TODO: Change back to { isApproved: true } for production
+    const query = {};
+    
+    // Add search functionality
+    if (search) {
+      query.$or = [
+        { storeName: { $regex: search, $options: 'i' } },
+        { location: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Parse sort parameter
+    let sortOption = { createdAt: -1 };
+    if (sort === 'name:asc') sortOption = { storeName: 1 };
+    if (sort === 'name:desc') sortOption = { storeName: -1 };
+    if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
+    if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+
+    const vendors = await Vendor.find(query)
+      .sort(sortOption)
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .select('-phoneNumber -socialLink -payoutSettings'); // Exclude sensitive data
+
+    const total = await Vendor.countDocuments(query);
+
+    // Transform vendor data for public consumption
+    const transformedVendors = vendors.map(vendor => ({
+      vendorId: vendor.vendorId,
+      storeName: vendor.storeName,
+      location: vendor.location,
+      logoUrl: vendor.logoUrl,
+      bannerUrl: vendor.storeBannerUrl,
+      rating: 4.5, // TODO: Calculate from product reviews
+      totalProducts: 0, // TODO: Get from product service
+      createdAt: vendor.createdAt,
+      _id: vendor._id,
+    }));
+
+    res.json({
+      vendors: transformedVendors,
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    console.error('listPublicVendors error:', error);
+    res.status(500).json({ error: 'Failed to fetch vendors' });
+  }
+};

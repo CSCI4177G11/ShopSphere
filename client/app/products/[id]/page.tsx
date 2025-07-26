@@ -83,13 +83,88 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="h-96 bg-muted animate-pulse rounded-lg" />
-          <div className="space-y-4">
-            <div className="h-8 bg-muted animate-pulse rounded w-3/4" />
-            <div className="h-6 bg-muted animate-pulse rounded w-1/2" />
-            <div className="h-32 bg-muted animate-pulse rounded" />
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Breadcrumb skeleton */}
+          <div className="mb-8 flex items-center gap-2">
+            <div className="h-4 bg-muted animate-pulse rounded w-16" />
+            <div className="h-4 bg-muted animate-pulse rounded w-4" />
+            <div className="h-4 bg-muted animate-pulse rounded w-16" />
+            <div className="h-4 bg-muted animate-pulse rounded w-4" />
+            <div className="h-4 bg-muted animate-pulse rounded w-32" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Image gallery skeleton */}
+            <div className="space-y-4">
+              <div className="aspect-square bg-muted animate-pulse rounded-lg" />
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="aspect-square bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            </div>
+
+            {/* Product info skeleton */}
+            <div className="space-y-6">
+              <div>
+                <div className="h-8 bg-muted animate-pulse rounded w-3/4 mb-2" />
+                <div className="flex items-center gap-4">
+                  <div className="h-4 bg-muted animate-pulse rounded w-24" />
+                  <div className="h-6 bg-muted animate-pulse rounded w-20" />
+                </div>
+              </div>
+
+              {/* Rating skeleton */}
+              <div className="flex items-center gap-2">
+                <div className="h-5 bg-muted animate-pulse rounded w-28" />
+                <div className="h-4 bg-muted animate-pulse rounded w-20" />
+              </div>
+
+              {/* Price skeleton */}
+              <div className="h-8 bg-muted animate-pulse rounded w-24" />
+
+              {/* Description skeleton */}
+              <div className="space-y-2">
+                <div className="h-4 bg-muted animate-pulse rounded" />
+                <div className="h-4 bg-muted animate-pulse rounded" />
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+              </div>
+
+              {/* Add to cart skeleton */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-12 bg-muted animate-pulse rounded w-32" />
+                  <div className="h-12 bg-muted animate-pulse rounded flex-1" />
+                </div>
+              </div>
+
+              {/* Features skeleton */}
+              <div className="grid grid-cols-3 gap-4 pt-6 border-t">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="text-center">
+                    <div className="h-6 w-6 bg-muted animate-pulse rounded mx-auto mb-2" />
+                    <div className="h-4 bg-muted animate-pulse rounded w-20 mx-auto" />
+                    <div className="h-3 bg-muted animate-pulse rounded w-16 mx-auto mt-1" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs skeleton */}
+          <div className="mt-16">
+            <div className="flex gap-4 mb-6">
+              <div className="h-10 bg-muted animate-pulse rounded w-32" />
+              <div className="h-10 bg-muted animate-pulse rounded w-40" />
+            </div>
+            <div className="bg-card border rounded-lg p-6">
+              <div className="space-y-3">
+                <div className="h-4 bg-muted animate-pulse rounded w-full" />
+                <div className="h-4 bg-muted animate-pulse rounded w-full" />
+                <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
