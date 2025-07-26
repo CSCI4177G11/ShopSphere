@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef  } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -19,9 +19,14 @@ import type { CartItemsResponse, CartItem, CartTotals } from "@/lib/api/cart-ser
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+
   const { cart, totals, loading, updateQuantity: updateCartQuantity, removeItem: removeCartItem, clearCart: clearCartItems } = useCart()
   const [enrichedItems, setEnrichedItems] = useState<CartItem[]>([])
   const [loadingImages, setLoadingImages] = useState(true)
+
+  const [tempQuantities, setTempQuantities] = useState<Record<string, number>>({})
+  const updateTimers = useRef<Record<string, NodeJS.Timeout>>({})
+
 
   useEffect(() => {
     // Wait for auth to load before redirecting
@@ -77,15 +82,28 @@ export default function CartPage() {
     fetchProductImages()
   }, [cart?.items])
 
-  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return
+  useEffect(() => {
+    const initial = Object.fromEntries(
+      cart?.items.map(i => [i.itemId, i.quantity]) ?? []
+    )
+    setTempQuantities(initial)
+  }, [cart?.items])
+
+  const handleQuantityChange = (itemId: string, newQty: number) => {
+  if (newQty < 1) return
+  setTempQuantities(q => ({ ...q, [itemId]: newQty }))
+
+  if (updateTimers.current[itemId]) clearTimeout(updateTimers.current[itemId])
+
+  updateTimers.current[itemId] = setTimeout(async () => {
     try {
-      await updateCartQuantity(itemId, newQuantity)
+      await updateCartQuantity(itemId, newQty)
       toast.success('Cart updated')
-    } catch (error) {
+    } catch {
       toast.error('Failed to update quantity')
     }
-  }
+  }, 800)
+}
 
   const handleRemoveItem = async (itemId: string) => {
     try {
@@ -265,31 +283,31 @@ export default function CartPage() {
                         
                         <div className="flex items-end justify-between mt-4">
                           <div className="flex items-center border rounded-lg">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUpdateQuantity(item.itemId, item.quantity - 1)}
-                              disabled={item.quantity <= 1}
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                            <Input
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value)
-                                if (!isNaN(val) && val > 0) {
-                                  handleUpdateQuantity(item.itemId, val)
-                                }
-                              }}
-                              className="w-16 text-center border-0 focus-visible:ring-0"
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleUpdateQuantity(item.itemId, item.quantity + 1)}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleQuantityChange(item.itemId, (tempQuantities[item.itemId] ?? item.quantity) - 1)}
+                            disabled={(tempQuantities[item.itemId] ?? item.quantity) <= 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            value={tempQuantities[item.itemId] ?? item.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value)
+                              if (!isNaN(val) && val > 0) {
+                                handleQuantityChange(item.itemId, val)
+                              }
+                            }}
+                            className="w-16 text-center border-0 focus-visible:ring-0"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleQuantityChange(item.itemId, (tempQuantities[item.itemId] ?? item.quantity) + 1)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                           </div>
                           
                           <div className="text-right">
