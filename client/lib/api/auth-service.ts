@@ -101,26 +101,24 @@ class AuthService {
     }
   }
 
-
-  async changePassword(
-    data: ChangePasswordRequest
-  ): Promise<{ message: string; token: string }> {
+  async changePassword(data: { oldPassword: string; newPassword: string }) {
     try {
-      const response = await authApi.patch<{ message: string; token: string }>(
-        '/password',
-        data
-      )
-      // Rotate token if backend returns a new one
+      const response = await authApi.put<{ message: string; token: string }>('/password', {
+        currentPassword: data.oldPassword,
+        newPassword: data.newPassword
+      })
+      
+      // Update token if provided
       if (response.token) {
         localStorage.setItem('token', response.token)
       }
+      
       return response
     } catch (err: any) {
-      if (err?.error) throw err
+      if (err?.message) throw err
       throw { error: 'Password change failed.' }
     }
   }
-
 
   // Utility methods
   getToken(): string | null {

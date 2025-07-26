@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { userService, type ConsumerProfile, type Address } from "@/lib/api/user-service"
+import { authService } from "@/lib/api/auth-service"
 import { motion } from "framer-motion"
 import { 
   User, 
@@ -112,6 +113,19 @@ export default function ConsumerProfilePage() {
     postalCode: "",
     country: ""
   })
+
+  // Password change states
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    oldPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  })
+  const [passwordErrors, setPasswordErrors] = useState<{
+    oldPassword?: string
+    newPassword?: string
+    confirmPassword?: string
+  }>({})
 
   useEffect(() => {
     if (!user || user.role !== 'consumer') {
@@ -249,6 +263,61 @@ export default function ConsumerProfilePage() {
     } catch (error) {
       console.error('Failed to delete address:', error)
       toast.error('Failed to delete address')
+    }
+  }
+
+  const validatePasswordForm = (): boolean => {
+    const errors: typeof passwordErrors = {}
+    
+    if (!passwordForm.oldPassword) {
+      errors.oldPassword = "Current password is required"
+    }
+    
+    if (!passwordForm.newPassword) {
+      errors.newPassword = "New password is required"
+    } else if (passwordForm.newPassword.length < 8) {
+      errors.newPassword = "Password must be at least 8 characters"
+    }
+    
+    if (!passwordForm.confirmPassword) {
+      errors.confirmPassword = "Please confirm your new password"
+    } else if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      errors.confirmPassword = "Passwords do not match"
+    }
+    
+    setPasswordErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleChangePassword = async () => {
+    if (!validatePasswordForm()) {
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      await authService.changePassword({
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      })
+      
+      toast.success('Password changed successfully')
+      setIsChangingPassword(false)
+      setPasswordForm({
+        oldPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      })
+      setPasswordErrors({})
+    } catch (error: any) {
+      console.error('Failed to change password:', error)
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        setPasswordErrors({ oldPassword: 'Current password is incorrect' })
+      } else {
+        toast.error('Failed to change password')
+      }
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -551,10 +620,92 @@ export default function ConsumerProfilePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Change Password
-                </Button>
+                <Dialog open={isChangingPassword} onOpenChange={setIsChangingPassword}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Change Password
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                      <DialogDescription>
+                        Enter your current password and choose a new one
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="oldPassword">Current Password</Label>
+                        <Input
+                          id="oldPassword"
+                          type="password"
+                          value={passwordForm.oldPassword}
+                          onChange={(e) => {
+                            setPasswordForm({ ...passwordForm, oldPassword: e.target.value })
+                            setPasswordErrors({ ...passwordErrors, oldPassword: undefined })
+                          }}
+                          placeholder="Enter current password"
+                        />
+                        {passwordErrors.oldPassword && (
+                          <p className="text-sm text-destructive">{passwordErrors.oldPassword}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={passwordForm.newPassword}
+                          onChange={(e) => {
+                            setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                            setPasswordErrors({ ...passwordErrors, newPassword: undefined })
+                          }}
+                          placeholder="Enter new password"
+                        />
+                        {passwordErrors.newPassword && (
+                          <p className="text-sm text-destructive">{passwordErrors.newPassword}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => {
+                            setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                            setPasswordErrors({ ...passwordErrors, confirmPassword: undefined })
+                          }}
+                          placeholder="Confirm new password"
+                        />
+                        {passwordErrors.confirmPassword && (
+                          <p className="text-sm text-destructive">{passwordErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setIsChangingPassword(false)
+                          setPasswordForm({
+                            oldPassword: "",
+                            newPassword: "",
+                            confirmPassword: ""
+                          })
+                          setPasswordErrors({})
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleChangePassword} disabled={isSaving}>
+                        {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Change Password
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <Button variant="outline" className="w-full justify-start">
                   <Shield className="h-4 w-4 mr-2" />
                   Two-Factor Authentication
