@@ -89,14 +89,12 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="flex items-center justify-between mt-auto pt-2">
               <div className="space-y-1">
                 <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
-                {product.rating !== undefined && product.rating > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm text-muted-foreground">
-                      {product.rating.toFixed(1)} ({product.reviewCount || 0})
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1">
+                  <Star className={`h-4 w-4 ${product.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                  <span className="text-sm text-muted-foreground">
+                    {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} ({product.reviewCount || 0})
+                  </span>
+                </div>
               </div>
               
               <Badge variant="secondary" className="capitalize shrink-0">

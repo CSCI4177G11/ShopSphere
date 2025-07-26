@@ -145,7 +145,7 @@ class UserService {
   }
 
   updateVendorProfile(data: UpdateVendorProfileRequest) {
-    return userApi.put<{ message: string; vendor: VendorProfile }>(
+    return userApi.put<{ message: string; profile: VendorProfile }>(
       '/vendor/profile',
       data
     )

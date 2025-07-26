@@ -65,6 +65,8 @@ export default function ProductsPage() {
       if (vendor) query.vendorId = vendor
 
       const response = await productService.getProducts(query)
+      console.log('Products response:', response)
+      console.log('First product:', response.products[0])
       setProducts(response.products)
       setTotalPages(response.pages)
     } catch (error) {

@@ -20,7 +20,9 @@ export function VendorCard({ vendor }: VendorCardProps) {
         location: vendor.location,
         logoUrl: vendor.logoUrl,
         bannerUrl: vendor.bannerUrl,
-        rating: vendor.rating
+        rating: vendor.rating,
+        phoneNumber: vendor.phoneNumber,
+        socialLinks: vendor.socialLinks
       }))
     }
   }

@@ -17,10 +17,12 @@ import {
   TrendingUp,
   Plus,
   BarChart3,
-  Users,
   ArrowUpRight,
   ArrowDownRight,
-  Eye
+  Eye,
+  Store,
+  Home,
+  Settings
 } from "lucide-react"
 import type { Order } from "@/lib/api/order-service"
 import type { Product } from "@/lib/api/product-service"
@@ -121,12 +123,26 @@ export default function VendorDashboard() {
               <h1 className="text-3xl font-bold">Vendor Dashboard</h1>
               <p className="text-muted-foreground">Welcome back, {user?.username}</p>
             </div>
-            <Link href="/vendor/products/new">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/">
+                <Button variant="outline">
+                  <Home className="mr-2 h-4 w-4" />
+                  Marketplace
+                </Button>
+              </Link>
+              <Link href={`/shop/${user?.userId}`} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline">
+                  <Eye className="mr-2 h-4 w-4" />
+                  My Store
+                </Button>
+              </Link>
+              <Link href="/vendor/products/new">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Product
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Stats Grid */}
@@ -229,44 +245,74 @@ export default function VendorDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Navigation */}
             <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => window.open(`/vendor/${user?.userId}/products`, '_blank')}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  View My Store
-                </Button>
-                <Link href="/vendor/products" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Package className="mr-2 h-4 w-4" />
-                    Manage Products
-                  </Button>
-                </Link>
-                <Link href="/vendor/orders" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    View Orders
-                  </Button>
-                </Link>
-                <Link href="/vendor/analytics" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    View Analytics
-                  </Button>
-                </Link>
-                <Link href="/vendor/customers" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="mr-2 h-4 w-4" />
-                    Customer Insights
-                  </Button>
-                </Link>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link href="/vendor/products" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Manage Products</p>
+                            <p className="text-sm text-muted-foreground mt-1">Add, edit, or remove items</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/vendor/orders" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <ShoppingCart className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">View Orders</p>
+                            <p className="text-sm text-muted-foreground mt-1">Process customer orders</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/vendor/analytics" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <BarChart3 className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">View Analytics</p>
+                            <p className="text-sm text-muted-foreground mt-1">Track performance metrics</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/vendor/profile" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Settings className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Store Profile</p>
+                            <p className="text-sm text-muted-foreground mt-1">Manage store settings</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>

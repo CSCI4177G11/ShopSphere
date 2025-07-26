@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { vendorService } from "@/lib/api/vendor-service"
+import { productService } from "@/lib/api/product-service"
 import { VendorCard } from "@/components/shop/vendor-card"
 import { VendorFilters } from "@/components/shop/vendor-filters"
 import { VendorSort } from "@/components/shop/vendor-sort"
@@ -62,7 +63,24 @@ export default function ShopPage() {
       if (search) query.search = search
 
       const response = await vendorService.getVendors(query)
-      setVendors(response.vendors)
+      
+      // Fetch product counts for each vendor
+      const vendorsWithCounts = await Promise.all(
+        response.vendors.map(async (vendor) => {
+          try {
+            const productData = await productService.getVendorProducts(vendor.vendorId, { limit: 1 })
+            return {
+              ...vendor,
+              totalProducts: productData.total || 0
+            }
+          } catch (error) {
+            console.error(`Failed to fetch products for vendor ${vendor.vendorId}:`, error)
+            return vendor
+          }
+        })
+      )
+      
+      setVendors(vendorsWithCounts)
       setTotalPages(response.pages)
     } catch (error) {
       console.error('Failed to fetch vendors:', error)

@@ -12,6 +12,8 @@ export interface Vendor {
   bannerUrl?: string
   categories?: string[]
   createdAt: string
+  phoneNumber?: string
+  socialLinks?: string[]
 }
 
 export interface VendorQuery {
@@ -64,6 +66,7 @@ class VendorService {
       return null
     }
   }
+
 }
 
 export const vendorService = new VendorService()

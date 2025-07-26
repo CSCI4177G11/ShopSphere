@@ -3,13 +3,52 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { vendorService } from "@/lib/api/vendor-service"
 import { ProductCard } from "@/components/product/product-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, MapPin, Star, Package } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { toast } from "sonner"
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Star, 
+  Package, 
+  Store,
+  Calendar,
+  ShoppingBag,
+  MessageCircle,
+  Shield,
+  Mail,
+  AlertTriangle,
+  Facebook,
+  Instagram,
+  Twitter,
+  Globe,
+  Phone,
+  ExternalLink
+} from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 import type { Vendor } from "@/lib/api/vendor-service"
 
@@ -40,6 +79,14 @@ export default function VendorProductsPage() {
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [reportDialogOpen, setReportDialogOpen] = useState(false)
+  const [reportForm, setReportForm] = useState({
+    reason: "",
+    description: "",
+    email: ""
+  })
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,19 +95,18 @@ export default function VendorProductsPage() {
         const productData = await productService.getVendorProducts(vendorId)
         setProducts(productData.products)
         
-        // Create a temporary vendor object for display
-        // In production, this would come from a public vendor API
+        // Create a vendor object for display
         const tempVendor: Vendor = {
           _id: vendorId,
           vendorId: vendorId,
-          storeName: "Vendor Shop", // This will be updated if we can get it from localStorage
+          storeName: "Vendor Shop",
           location: "Online",
           rating: 4.5,
           totalProducts: productData.total || productData.products.length,
           createdAt: new Date().toISOString()
         }
         
-        // Check if vendor info was passed from the shop listing page
+        // Get vendor data from session storage
         if (typeof window !== 'undefined') {
           const vendorInfo = sessionStorage.getItem(`vendor_${vendorId}`)
           if (vendorInfo) {
@@ -69,6 +115,9 @@ export default function VendorProductsPage() {
             tempVendor.location = parsedVendor.location || tempVendor.location
             tempVendor.logoUrl = parsedVendor.logoUrl
             tempVendor.bannerUrl = parsedVendor.bannerUrl
+            tempVendor.rating = parsedVendor.rating || tempVendor.rating
+            tempVendor.phoneNumber = parsedVendor.phoneNumber
+            tempVendor.socialLinks = parsedVendor.socialLinks
           }
         }
         
@@ -83,14 +132,62 @@ export default function VendorProductsPage() {
     fetchData()
   }, [vendorId])
 
+  // Get unique categories from products
+  const categories = ["all", ...new Set(products.map(p => p.category).filter(Boolean))]
+  
+  // Filter products by category
+  const filteredProducts = selectedCategory === "all" 
+    ? products 
+    : products.filter(p => p.category === selectedCategory)
+
+  // Helper function to get social media icon and type
+  const getSocialIcon = (url: string) => {
+    if (url.includes('facebook')) return { icon: Facebook, type: 'facebook' }
+    if (url.includes('instagram')) return { icon: Instagram, type: 'instagram' }
+    if (url.includes('twitter') || url.includes('x.com')) return { icon: Twitter, type: 'twitter' }
+    return { icon: Globe, type: 'website' }
+  }
+
+  const handleReportSubmit = async () => {
+    if (!reportForm.reason || !reportForm.description || !reportForm.email) {
+      toast.error("Please fill in all required fields")
+      return
+    }
+
+    setIsSubmittingReport(true)
+    try {
+      // In production, this would call an API to submit the report
+      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      
+      toast.success("Report submitted successfully. We'll review it within 24-48 hours.")
+      setReportDialogOpen(false)
+      setReportForm({ reason: "", description: "", email: "" })
+    } catch (error) {
+      toast.error("Failed to submit report. Please try again.")
+    } finally {
+      setIsSubmittingReport(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen">
-        <div className="bg-muted/50 h-48" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Banner Skeleton */}
+        <Skeleton className="h-64 w-full" />
+        
+        {/* Content Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20">
+          <div className="flex items-end gap-6 mb-8">
+            <Skeleton className="h-32 w-32 rounded-xl" />
+            <div className="flex-1 pb-4">
+              <Skeleton className="h-8 w-64 mb-2" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-96 bg-muted animate-pulse rounded-lg" />
+              <Skeleton key={i} className="h-96 rounded-lg" />
             ))}
           </div>
         </div>
@@ -102,8 +199,9 @@ export default function VendorProductsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
+          <Store className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-2xl font-bold mb-2">Shop not found</h2>
-          <p className="text-muted-foreground mb-4">This shop doesn't exist or has been removed.</p>
+          <p className="text-muted-foreground mb-6">This shop doesn't exist or has been removed.</p>
           <Link href="/shop">
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -116,79 +214,339 @@ export default function VendorProductsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Shop Header */}
-      <div className="bg-gradient-to-b from-muted/50 to-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Link href="/shop" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to all shops
+    <div className="min-h-screen bg-background">
+      {/* Shop Banner */}
+      <div className="relative h-64 md:h-80 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+        {vendor.bannerUrl ? (
+          <Image
+            src={vendor.bannerUrl}
+            alt={`${vendor.storeName} banner`}
+            fill
+            className="object-cover"
+            priority
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
+        )}
+        
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
+        
+        {/* Back button */}
+        <div className="absolute top-4 left-4">
+          <Link href="/shop">
+            <Button variant="secondary" size="sm" className="shadow-lg">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Shops
+            </Button>
           </Link>
-
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{vendor.storeName}</h1>
-              {vendor.description && (
-                <p className="text-muted-foreground mb-4 max-w-2xl">{vendor.description}</p>
-              )}
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{vendor.location}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{vendor.rating.toFixed(1)}</span>
-                  <span className="text-muted-foreground">rating</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span>{vendor.totalProducts} products</span>
-                </div>
-              </div>
-
-              {vendor.categories && vendor.categories.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-4">
-                  {vendor.categories.map((category) => (
-                    <Badge key={category} variant="secondary" className="capitalize">
-                      {category}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Products Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="text-2xl font-bold mb-6">Products ({products.length})</h2>
-        
-        {products.length === 0 ? (
-          <div className="text-center py-16">
-            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-lg">No products available</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              This shop hasn't added any products yet.
-            </p>
+      {/* Shop Info Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+        <div className="bg-card rounded-xl shadow-xl p-6 mb-8">
+          <div className="flex flex-col md:flex-row items-start gap-6">
+            {/* Shop Logo */}
+            <div className="relative h-24 w-24 md:h-32 md:w-32 rounded-xl overflow-hidden bg-muted shrink-0 ring-4 ring-background shadow-xl">
+              {vendor.logoUrl ? (
+                <Image
+                  src={vendor.logoUrl}
+                  alt={vendor.storeName}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <Store className="h-12 w-12 md:h-16 md:w-16 text-primary" />
+                </div>
+              )}
+            </div>
+
+            {/* Shop Details */}
+            <div className="flex-1">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold mb-2">{vendor.storeName}</h1>
+                  {vendor.description && (
+                    <p className="text-muted-foreground mb-4 max-w-2xl">{vendor.description}</p>
+                  )}
+                  
+                  {/* Shop Stats */}
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{vendor.location}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-medium">{vendor.rating.toFixed(1)}</span>
+                      <span className="text-muted-foreground">rating</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span>{vendor.totalProducts} products</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Member since {new Date(vendor.createdAt).getFullYear()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Contact
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm">Contact {vendor.storeName}</h4>
+                        
+                        <div className="space-y-2">
+                          {vendor.phoneNumber && (
+                            <a
+                              href={`tel:${vendor.phoneNumber}`}
+                              className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                            >
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{vendor.phoneNumber}</span>
+                            </a>
+                          )}
+                          
+                          {vendor.socialLinks && vendor.socialLinks.length > 0 && (
+                            <div className="pt-2 border-t">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Social Media</p>
+                              
+                              <div className="space-y-2">
+                                {vendor.socialLinks.map((link, index) => {
+                                  const { icon: Icon, type } = getSocialIcon(link)
+                                  return (
+                                    <a
+                                      key={index}
+                                      href={link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors"
+                                    >
+                                      <Icon className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm capitalize">{type}</span>
+                                      <ExternalLink className="h-3 w-3 ml-auto text-muted-foreground" />
+                                    </a>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {!vendor.phoneNumber && (!vendor.socialLinks || vendor.socialLinks.length === 0) && (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                              No contact information available
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}>
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    Report
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {products.map((product) => (
-              <motion.div key={product._id} variants={itemVariants}>
-                <ProductCard product={product} />
+
+          {/* Trust Badges */}
+          <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t">
+            <Badge variant="secondary" className="gap-1">
+              <Shield className="h-3 w-3" />
+              Verified Seller
+            </Badge>
+            <Badge variant="secondary" className="gap-1">
+              <ShoppingBag className="h-3 w-3" />
+              {products.filter(p => p.quantityInStock > 0).length} Items in Stock
+            </Badge>
+            {vendor.rating >= 4.5 && (
+              <Badge variant="secondary" className="gap-1">
+                <Star className="h-3 w-3" />
+                Top Rated
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Products Section with Tabs */}
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="about">About</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="products" className="space-y-6">
+            {/* Category Filter */}
+            {categories.length > 2 && (
+              <div className="flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                    className="capitalize"
+                  >
+                    {category === "all" ? "All Products" : category}
+                    {category === "all" ? (
+                      <Badge variant="secondary" className="ml-2">
+                        {products.length}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="ml-2">
+                        {products.filter(p => p.category === category).length}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-muted/50 rounded-lg">
+                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg">No products in this category</p>
+              </div>
+            ) : (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+              >
+                {filteredProducts.map((product) => (
+                  <motion.div key={product.productId} variants={itemVariants}>
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </motion.div>
-        )}
+            )}
+          </TabsContent>
+
+          <TabsContent value="about" className="space-y-6">
+            <div className="bg-muted/50 rounded-lg p-8 text-center">
+              <Store className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">About {vendor.storeName}</h3>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                {vendor.description || `Welcome to ${vendor.storeName}! We're dedicated to providing quality products and excellent customer service. Browse our collection and find exactly what you're looking for.`}
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div className="text-center">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <Shield className="h-6 w-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Secure Shopping</h4>
+                  <p className="text-sm text-muted-foreground">Your transactions are protected</p>
+                </div>
+                <div className="text-center">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <Package className="h-6 w-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Fast Shipping</h4>
+                  <p className="text-sm text-muted-foreground">Quick and reliable delivery</p>
+                </div>
+                <div className="text-center">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                    <MessageCircle className="h-6 w-6 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Customer Support</h4>
+                  <p className="text-sm text-muted-foreground">We're here to help</p>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Report Dialog */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Report {vendor.storeName}</DialogTitle>
+            <DialogDescription>
+              Please provide details about your concern. All reports are reviewed by our team.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for report *</Label>
+              <Select
+                value={reportForm.reason}
+                onValueChange={(value) => setReportForm({ ...reportForm, reason: value })}
+              >
+                <SelectTrigger id="reason">
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fake-products">Fake or counterfeit products</SelectItem>
+                  <SelectItem value="misleading">Misleading information</SelectItem>
+                  <SelectItem value="inappropriate">Inappropriate content</SelectItem>
+                  <SelectItem value="scam">Suspected scam</SelectItem>
+                  <SelectItem value="copyright">Copyright infringement</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Please provide detailed information about your concern..."
+                value={reportForm.description}
+                onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Your Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your@email.com"
+                value={reportForm.email}
+                onChange={(e) => setReportForm({ ...reportForm, email: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                We may contact you for additional information if needed.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setReportDialogOpen(false)}
+              disabled={isSubmittingReport}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleReportSubmit}
+              disabled={isSubmittingReport}
+            >
+              {isSubmittingReport ? "Submitting..." : "Submit Report"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -120,6 +120,10 @@ export default function VendorProfilePage() {
     try {
       setLoading(true)
       const profileData = await userService.getVendorProfile()
+      
+      console.log('Fetched profile data:', profileData)
+      console.log('Social links from API:', profileData.socialLinks)
+      
       setProfile(profileData)
       setEditedProfile({
         storeName: profileData.storeName,
@@ -147,13 +151,46 @@ export default function VendorProfilePage() {
     try {
       setIsSaving(true)
       const formattedProfile = {
-        ...editedProfile,
-        phoneNumber: formatPhoneNumber(editedProfile.phoneNumber)
+        storeName: editedProfile.storeName,
+        location: editedProfile.location,
+        phoneNumber: formatPhoneNumber(editedProfile.phoneNumber),
+        logoUrl: editedProfile.logoUrl,
+        storeBannerUrl: editedProfile.storeBannerUrl,
+        socialLinks: editedProfile.socialLinks
       }
+      
+      console.log('Updating profile with data:', formattedProfile)
+      console.log('Social links being sent:', formattedProfile.socialLinks)
+      
       const response = await userService.updateVendorProfile(formattedProfile)
-      setProfile(response.vendor)
+      
+      console.log('Update response received:', response)
+      console.log('Updated profile from response:', response.vendor)
+      console.log('Social links in updated profile:', response.vendor?.socialLinks)
+      
+      // The response has profile data in response.profile
+      const updatedProfile = response.profile
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile)
+        // Also update editedProfile to ensure it has the latest data
+        setEditedProfile({
+          storeName: updatedProfile.storeName,
+          location: updatedProfile.location,
+          phoneNumber: updatedProfile.phoneNumber,
+          logoUrl: updatedProfile.logoUrl || "",
+          storeBannerUrl: updatedProfile.storeBannerUrl || "",
+          socialLinks: updatedProfile.socialLinks || []
+        })
+      }
+      
       setIsEditing(false)
       toast.success('Profile updated successfully')
+      
+      // Refresh the profile to ensure we have the latest data
+      setTimeout(() => {
+        fetchProfile()
+      }, 500)
     } catch (error) {
       console.error('Failed to update profile:', error)
       toast.error('Failed to update profile')
@@ -260,15 +297,6 @@ export default function VendorProfilePage() {
       >
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="mb-4"
-            onClick={() => router.push('/vendor')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Store Profile</h1>
@@ -276,7 +304,7 @@ export default function VendorProfilePage() {
             </div>
             <Button 
               variant="outline"
-              onClick={() => window.open(`/vendor/${profile.vendorId}/products`, '_blank')}
+              onClick={() => window.open(`/shop/${profile.vendorId}`, '_blank')}
             >
               <Eye className="h-4 w-4 mr-2" />
               Preview Store

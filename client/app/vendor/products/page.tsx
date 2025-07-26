@@ -46,7 +46,8 @@ import {
   BarChart3,
   RefreshCw,
   PlusCircle,
-  Eye
+  Eye,
+  ArrowLeft
 } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 

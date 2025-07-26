@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { VendorHeader } from "@/components/vendor/vendor-header";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -33,14 +33,8 @@ export default function VendorLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardHeader 
-        type="vendor"
-        title="Vendor Dashboard"
-        subtitle="Store Management"
-        userName={user.username}
-        userRole="Store Owner"
-      />
+    <div className="min-h-screen bg-gray-50 dark:bg-background">
+      <VendorHeader vendorId={user.userId} />
       
       <main className="w-full">
         {children}
