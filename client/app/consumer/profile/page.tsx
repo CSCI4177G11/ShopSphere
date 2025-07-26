@@ -19,7 +19,6 @@ import {
   X,
   Loader2,
   Shield,
-  Bell,
   CreditCard,
   ChevronRight
 } from "lucide-react"
@@ -56,6 +55,38 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 // Helper function to get address ID
 const getAddressId = (address: Address): string => {
   return address._id || address.addressId || ''
+}
+
+// Canadian postal code validation (e.g., K1A 0B1, k1a0b1)
+const isValidCanadianPostalCode = (postalCode: string): boolean => {
+  const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
+  return postalCodeRegex.test(postalCode)
+}
+
+// Canadian phone number validation (e.g., (416) 555-0123, 416-555-0123, 4165550123)
+const isValidCanadianPhoneNumber = (phoneNumber: string): boolean => {
+  const phoneRegex = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/
+  return phoneRegex.test(phoneNumber)
+}
+
+// Format postal code to standard format
+const formatPostalCode = (postalCode: string): string => {
+  const cleaned = postalCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  if (cleaned.length >= 6) {
+    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)}`
+  }
+  return postalCode.toUpperCase()
+}
+
+// Format phone number to standard format
+const formatPhoneNumber = (phoneNumber: string): string => {
+  const cleaned = phoneNumber.replace(/[^\d]/g, '')
+  if (cleaned.length === 10) {
+    return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`
+  } else if (cleaned.length === 11 && cleaned[0] === '1') {
+    return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(4, 7)}-${cleaned.slice(7)}`
+  }
+  return phoneNumber
 }
 
 export default function ConsumerProfilePage() {
@@ -116,9 +147,19 @@ export default function ConsumerProfilePage() {
   }
 
   const handleUpdateProfile = async () => {
+    // Validate phone number
+    if (!isValidCanadianPhoneNumber(editedProfile.phoneNumber)) {
+      toast.error('Please enter a valid Canadian phone number')
+      return
+    }
+
     try {
       setIsSaving(true)
-      const response = await userService.updateConsumerProfile(editedProfile)
+      const formattedProfile = {
+        ...editedProfile,
+        phoneNumber: formatPhoneNumber(editedProfile.phoneNumber)
+      }
+      const response = await userService.updateConsumerProfile(formattedProfile)
       if (profile) {
         setProfile({
           ...profile,
@@ -136,9 +177,20 @@ export default function ConsumerProfilePage() {
   }
 
   const handleAddAddress = async () => {
+    // Validate postal code
+    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
+      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
+      return
+    }
+
     try {
       setIsSaving(true)
-      const response = await userService.createAddress(addressForm)
+      const formattedAddress = {
+        ...addressForm,
+        postalCode: formatPostalCode(addressForm.postalCode),
+        country: 'Canada' // Default to Canada
+      }
+      const response = await userService.createAddress(formattedAddress)
       // Refetch addresses to get the proper _id from MongoDB
       const addressesData = await userService.getAddresses()
       setAddresses(addressesData.addresses)
@@ -160,9 +212,20 @@ export default function ConsumerProfilePage() {
   }
 
   const handleUpdateAddress = async (addressId: string) => {
+    // Validate postal code
+    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
+      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
+      return
+    }
+
     try {
       setIsSaving(true)
-      const response = await userService.updateAddress(addressId, addressForm)
+      const formattedAddress = {
+        ...addressForm,
+        postalCode: formatPostalCode(addressForm.postalCode),
+        country: 'Canada' // Default to Canada
+      }
+      const response = await userService.updateAddress(addressId, formattedAddress)
       setAddresses(addresses.map(addr => 
         getAddressId(addr) === addressId ? response.address : addr
       ))
@@ -263,12 +326,15 @@ export default function ConsumerProfilePage() {
                         <Label htmlFor="phoneNumber">Phone Number</Label>
                         <Input
                           id="phoneNumber"
+                          type="tel"
                           value={editedProfile.phoneNumber}
                           onChange={(e) => setEditedProfile({
                             ...editedProfile,
                             phoneNumber: e.target.value
                           })}
+                          placeholder="(416) 555-0123"
                         />
+                        <p className="text-xs text-muted-foreground">Canadian phone number format</p>
                       </div>
                     </div>
                     <div className="flex gap-2 pt-4">
@@ -323,7 +389,7 @@ export default function ConsumerProfilePage() {
             </Card>
 
             {/* Quick Links */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/orders')}>
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
@@ -344,19 +410,6 @@ export default function ConsumerProfilePage() {
                     <div>
                       <p className="font-semibold">Payment Methods</p>
                       <p className="text-sm text-muted-foreground">Manage payments</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-
-              <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="flex items-center justify-between p-6">
-                  <div className="flex items-center gap-4">
-                    <Bell className="h-8 w-8 text-primary" />
-                    <div>
-                      <p className="font-semibold">Notifications</p>
-                      <p className="text-sm text-muted-foreground">Manage alerts</p>
                     </div>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -565,18 +618,24 @@ function AddressForm({
           <Input
             id="postalCode"
             value={form.postalCode}
-            onChange={(e) => onChange({ ...form, postalCode: e.target.value })}
-            placeholder="B3H 4R2"
+            onChange={(e) => {
+              const value = e.target.value.toUpperCase()
+              onChange({ ...form, postalCode: value })
+            }}
+            placeholder="K1A 0B1"
+            maxLength={7}
           />
+          <p className="text-xs text-muted-foreground">Canadian postal code format</p>
         </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="country">Country</Label>
         <Input
           id="country"
-          value={form.country}
-          onChange={(e) => onChange({ ...form, country: e.target.value })}
-          placeholder="Canada"
+          value="Canada"
+          readOnly
+          disabled
+          className="bg-muted"
         />
       </div>
       <DialogFooter>

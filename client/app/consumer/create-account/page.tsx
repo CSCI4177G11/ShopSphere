@@ -14,9 +14,14 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
 
+// Canadian phone number validation
+const canadianPhoneRegex = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/
+
 const profileSchema = z.object({
   fullName: z.string().min(2, "Name is required"),
-  phoneNumber: z.string().min(5, "Phone number is required"),
+  phoneNumber: z.string()
+    .min(10, "Phone number is required")
+    .regex(canadianPhoneRegex, "Please enter a valid Canadian phone number"),
 })
 
 type ProfileForm = z.infer<typeof profileSchema>
@@ -99,8 +104,15 @@ export default function CreateConsumerAccountPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phoneNumber">Phone number</Label>
-                <Input id="phoneNumber" {...register("phoneNumber")} disabled={submitting} />
+                <Input 
+                  id="phoneNumber" 
+                  type="tel"
+                  placeholder="(416) 555-0123"
+                  {...register("phoneNumber")} 
+                  disabled={submitting} 
+                />
                 {errors.phoneNumber && <p className="text-sm text-destructive">{errors.phoneNumber.message}</p>}
+                <p className="text-xs text-muted-foreground">Canadian phone number format</p>
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Creating..." : "Create Profile"}
