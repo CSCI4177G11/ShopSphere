@@ -159,66 +159,84 @@ export const deleteProduct = async (req, res) => {
     }
   };
 
-export const listProducts = async (req, res) => {
+  export const listProducts = async (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ error: 'Invalid query parameters' });
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Invalid query parameters' });
+      }
+  
+      const {
+        page       = 1,
+        limit      = 20,
+        minPrice,
+        maxPrice,
+        tags,
+        sort       = 'createdAt:desc',
+        name,                     
+        search,                   
+        category,
+        vendorId
+      } = req.query;
+  
+      const q = {};
+      if (minPrice !== undefined) q.price = { ...q.price, $gte: minPrice };
+      if (maxPrice !== undefined) q.price = { ...q.price, $lte: maxPrice };
+      if (tags)       q.tags      = { $in: tags.split(',').map(t => t.trim()) };
+      if (category)   q.category  = category;
+      if (vendorId)   q.vendorId  = vendorId;
+  
+      const searchTerm = name || search;
+      if (searchTerm) q.name = { $regex: searchTerm, $options: 'i' };
+  
+      
+      const normalSort = (() => {
+        if (sort.includes(':')) return sort;           
+        if (sort.startsWith('-')) return `${sort.slice(1)}:desc`; 
+        return `${sort}:asc`;                          
+      })();
+  
+      const [field, dir] = normalSort.split(':');
+      const allowed = ['price', 'name', 'createdAt', 'averageRating'];
+      const sortOption = allowed.includes(field)
+        ? { [field]: dir === 'asc' ? 1 : -1 }
+        : { createdAt: -1 };
+  
+      const [products, total] = await Promise.all([
+        Product.find(q)
+          .sort(sortOption)
+          .skip((page - 1) * limit)
+          .limit(limit),
+        Product.countDocuments(q)
+      ]);
+  
+      const transformed = products.map(p => ({
+        productId     : p._id,
+        name          : p.name,
+        price         : p.price,
+        category      : p.category || 'other',
+        thumbnail     : p.images?.[0] ?? null,
+        averageRating : p.averageRating,
+        reviewCount   : p.reviewCount,
+        _links: {
+          self   : `/api/product/${p._id}`,
+          reviews: `/api/product/${p._id}/reviews`,
+          vendor : `/api/product/vendor/${p.vendorId}`
         }
-        const {
-            page = 1,
-            limit = 20,
-            minPrice,
-            maxPrice,
-            tags,
-            sort = 'createdAt:desc',
-            name,
-        } = req.query;
-        const query = {};
-        if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
-        if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
-        if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
-        if (name) query.name = { $regex: name, $options: 'i' };
-        let sortOption = { createdAt: -1 };
-        if (sort === 'price:asc') sortOption = { price: 1 };
-        if (sort === 'price:desc') sortOption = { price: -1 };
-        if (sort === 'name:asc') sortOption = { name: 1 };
-        if (sort === 'name:desc') sortOption = { name: -1 };
-        if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
-        if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
-        const products = await Product.find(query)
-            .sort(sortOption)
-            .skip((page - 1) * limit)
-            .limit(Number(limit));
-        const total = await Product.countDocuments(query);
-        const transformedProducts = products.map(product => {
-            const images = product.images || [];
-            return {
-                productId: product._id,
-                name: product.name,
-                price: product.price,
-                category: product.category || 'other',
-                thumbnail: images.length > 0 ? images[0] : null,
-                averageRating: product.averageRating,
-                reviewCount: product.reviewCount,
-                _links: {
-                    self: `api/product/${product._id}`,
-                    reviews: `api/product/${product._id}/reviews`,
-                    vendor: `api/product/vendor/${product.vendorId}`
-                }
-            };
-        });
-        res.json({
-            page: Number(page),
-            limit: Number(limit),
-            total,
-            products: transformedProducts
-        });
-    } catch (error) {
-        console.error('Error listing products:', error);
-        res.status(500).json({ error: 'Internal server error' });
+      }));
+  
+      res.json({
+        page:   Number(page),
+        limit:  Number(limit),
+        total,
+        pages:  Math.ceil(total / limit),
+        products: transformed
+      });
+    } catch (err) {
+      console.error('Error listing products:', err);
+      res.status(500).json({ error: 'Internal server error' });
     }
-};
+  };
 
 export const listProductsByVendor = async (req, res) => {
     try {

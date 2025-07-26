@@ -81,7 +81,29 @@ export default function ProductsPage() {
   }, [fetchProducts])
 
   const handleSearch = () => {
-    setFilters(prev => ({ ...prev, search: searchQuery }))
+    const tokens = searchQuery.trim().split(/\s+/)
+  
+    // tokens that start with @ become tag filters
+    const tagTokens  = tokens
+      .filter(t => /^@/.test(t))
+      .map(t => t.slice(1).toLowerCase())
+  
+    // everything else is part of the name search
+    const nameTokens = tokens.filter(t => !/^@/.test(t))
+    const nameQuery  = nameTokens.join(' ')
+  
+    setFilters(prev => ({
+      ...prev,
+      search: nameQuery || undefined,   // text search for product names
+      tags  : tagTokens.length ? tagTokens : undefined
+    }))
+  
+    // optional: keep URL in sync so the search can be shared / refreshed
+    const params = new URLSearchParams()
+    if (nameQuery) params.set('search', nameQuery)
+    if (tagTokens.length) params.set('tags', tagTokens.join(','))
+    router.push(`/products?${params.toString()}`)
+  
     setPage(1)
   }
 
@@ -137,7 +159,7 @@ export default function ProductsPage() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder="Search products or type @tag"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -256,7 +278,7 @@ export default function ProductsPage() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
                 {products.map((product, index) => (
-                  <motion.div key={product._id || `product-${index}`} variants={itemVariants}>
+                  <motion.div key={product.productId  || `product-${index}`} variants={itemVariants}>
                     <ProductCard product={product} />
                   </motion.div>
                 ))}

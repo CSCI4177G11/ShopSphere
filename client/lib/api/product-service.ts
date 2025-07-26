@@ -101,27 +101,31 @@ class ProductService {
     return productApi.get<ServiceHealthResponse>('/health')
   }
 
-  // Product endpoints
   async getProducts(query?: ProductQuery): Promise<ProductsResponse> {
     const params = new URLSearchParams()
-
+  
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            params.append(key, value.join(','))
-          } else {
-            params.append(key, String(value))
-          }
+        if (value === undefined || value === null) return
+  
+        if (key === 'search') {
+          params.append('name', String(value))          
+          return
+        }
+  
+        if (Array.isArray(value)) {
+          params.append(key, value.join(','))
+        } else {
+          params.append(key, String(value))
         }
       })
     }
-
+  
     const qs = params.toString()
     const endpoint = qs ? `?${qs}` : ''
-
     return productApi.get<ProductsResponse>(endpoint)
   }
+  
 
   async getProduct(id: string): Promise<Product> {
     return productApi.get<Product>(`/${id}`)
