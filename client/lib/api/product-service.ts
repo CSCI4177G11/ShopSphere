@@ -31,10 +31,12 @@ export interface Product {
 }
 
 export interface Review {
-  _id: string
+  _id?: string
+  reviewId?: string
   productId: string
   userId: string
   userName?: string
+  username?: string
   rating: number
   comment: string
   createdAt?: string
@@ -157,9 +159,14 @@ class ProductService {
 
   // Review endpoints
   async getProductReviews(productId: string, page = 1, limit = 10): Promise<Review[]> {
-    return productApi.get<Review[]>(
-      `/${productId}/reviews?page=${page}&limit=${limit}`
-    )
+    const response = await productApi.get<{
+      reviews: Review[]
+      page: number
+      limit: number
+      total: number
+    }>(`/${productId}/reviews?page=${page}&limit=${limit}`)
+    
+    return response.reviews || []
   }
 
   async createReview(productId: string, data: CreateReviewDto): Promise<Review> {

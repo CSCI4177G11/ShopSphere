@@ -15,11 +15,14 @@ import { ShoppingBag, Minus, Plus, Trash2, ArrowRight } from "lucide-react"
 import type { CartItemsResponse, CartItem, CartTotals } from "@/lib/api/cart-service"
 
 export default function CartPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const { cart, totals, loading, updateQuantity: updateCartQuantity, removeItem: removeCartItem, clearCart: clearCartItems } = useCart()
 
   useEffect(() => {
+    // Wait for auth to load before redirecting
+    if (authLoading) return
+    
     if (!user) {
       router.push('/auth/login')
       return
@@ -30,7 +33,7 @@ export default function CartPage() {
       toast.error('Only consumers can access the cart')
       return
     }
-  }, [user])
+  }, [user, authLoading, router])
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
@@ -60,7 +63,8 @@ export default function CartPage() {
     }
   }
 
-  if (loading) {
+  // Show loading state while auth is loading
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen max-w-7xl mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4">
@@ -70,6 +74,11 @@ export default function CartPage() {
         </div>
       </div>
     )
+  }
+  
+  // Don't render cart content until auth check is complete
+  if (!user || user.role !== 'consumer') {
+    return null
   }
 
   if (!cart || !cart.items || cart.items.length === 0) {

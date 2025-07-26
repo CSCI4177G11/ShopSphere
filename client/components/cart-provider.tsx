@@ -10,6 +10,7 @@ interface CartContextType {
   loading: boolean
   refreshCart: () => Promise<void>
   addToCart: (productId: string, quantity?: number) => Promise<void>
+  addItem: (productId: string, quantity?: number) => Promise<void>
   updateQuantity: (itemId: string, quantity: number) => Promise<void>
   removeItem: (itemId: string) => Promise<void>
   clearCart: () => Promise<void>
@@ -80,8 +81,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         
         await cartService.addToCart({ productId, quantity })
         
-        // Schedule a debounced refresh
-        debouncedRefresh()
+        // Immediately refresh cart to show new items
+        await refreshCart()
       } catch (error) {
         // On error, immediately refresh to get correct state
         await refreshCart()
@@ -157,6 +158,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       loading,
       refreshCart,
       addToCart,
+      addItem: addToCart,
       updateQuantity,
       removeItem,
       clearCart

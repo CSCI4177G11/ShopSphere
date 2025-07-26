@@ -6,8 +6,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
-import { cartService } from "@/lib/api/cart-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/cart-provider"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -29,6 +29,7 @@ import type { Product, Review } from "@/lib/api/product-service"
 export default function ProductDetailPage() {
   const params = useParams()
   const { user } = useAuth()
+  const { addItem } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,10 +74,7 @@ export default function ProductDetailPage() {
     if (!product) return
 
     try {
-      await cartService.addToCart({
-        productId: product._id,
-        quantity
-      })
+      await addItem(product.productId, quantity)
       toast.success(`Added ${quantity} item(s) to cart!`)
     } catch (error) {
       toast.error("Failed to add to cart")
@@ -110,7 +108,7 @@ export default function ProductDetailPage() {
   }
 
   const images = product.images?.length ? product.images : ["/placeholder-product.jpg"]
-  const isOutOfStock = product.stock === 0
+  const isOutOfStock = product.quantityInStock === 0
 
   return (
     <div className="min-h-screen">
@@ -203,14 +201,14 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Rating */}
-              {product.rating !== undefined && product.rating > 0 && (
+              {product.averageRating !== undefined && product.averageRating > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="flex">
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
                         key={i}
                         className={`h-5 w-5 ${
-                          i < Math.floor(product.rating!)
+                          i < Math.floor(product.averageRating!)
                             ? 'fill-yellow-400 text-yellow-400'
                             : 'text-gray-300'
                         }`}
@@ -218,7 +216,7 @@ export default function ProductDetailPage() {
                     ))}
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {product.rating.toFixed(1)} ({product.reviewCount || 0} reviews)
+                    {product.averageRating.toFixed(1)} ({product.reviewCount || 0} reviews)
                   </span>
                 </div>
               )}
@@ -251,8 +249,8 @@ export default function ProductDetailPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setQuantity(prev => Math.min(product.stock, prev + 1))}
-                        disabled={isOutOfStock || quantity >= product.stock}
+                        onClick={() => setQuantity(prev => Math.min(product.quantityInStock, prev + 1))}
+                        disabled={isOutOfStock || quantity >= product.quantityInStock}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -269,9 +267,9 @@ export default function ProductDetailPage() {
                     </Button>
                   </div>
                   
-                  {product.stock > 0 && product.stock <= 5 && (
+                  {product.quantityInStock > 0 && product.quantityInStock <= 5 && (
                     <p className="text-sm text-orange-600 font-medium">
-                      Only {product.stock} left in stock - order soon!
+                      Only {product.quantityInStock} left in stock - order soon!
                     </p>
                   )}
                 </div>
@@ -326,11 +324,11 @@ export default function ProductDetailPage() {
                     </Card>
                   ) : (
                     reviews.map((review) => (
-                      <Card key={review._id}>
+                      <Card key={review.reviewId || review._id}>
                         <CardContent className="pt-6">
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <p className="font-medium">{review.userName || 'Anonymous'}</p>
+                              <p className="font-medium">{review.userName || review.username || 'Anonymous'}</p>
                               <div className="flex items-center gap-1 mt-1">
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Star
