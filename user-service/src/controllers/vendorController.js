@@ -291,59 +291,68 @@ export const listPublicVendors = async (req, res) => {
       page = 1,
       limit = 20,
       search,
-      sort = 'createdAt:desc',
+      sort = "createdAt:desc",
+      minRating,         // ⭐ NEW – minimum average rating (e.g. 3 → “3 stars & up”)
     } = req.query;
 
-    // Temporarily show all vendors for development
-    // TODO: Change back to { isApproved: true } for production
-    const query = {};
-    
-    // Add search functionality
+    /* ---------- query ---------- */
+    const query = { isApproved: true };              // only show approved vendors
+
+    // text search (store name or location)
     if (search) {
       query.$or = [
-        { storeName: { $regex: search, $options: 'i' } },
-        { location: { $regex: search, $options: 'i' } }
+        { storeName: { $regex: search, $options: "i" } },
+        { location:  { $regex: search, $options: "i" } },
       ];
     }
 
-    // Parse sort parameter
-    let sortOption = { createdAt: -1 };
-    if (sort === 'name:asc') sortOption = { storeName: 1 };
-    if (sort === 'name:desc') sortOption = { storeName: -1 };
-    if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
-    if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+    // filter by minimum rating
+    if (minRating) {
+      const ratingNum = parseFloat(minRating);
+      if (!isNaN(ratingNum)) query.rating = { $gte: ratingNum };
+    }
 
+    /* ---------- sorting ---------- */
+    let sortOption = { createdAt: -1 };
+    if (sort === "name:asc")        sortOption = { storeName:  1 };
+    if (sort === "name:desc")       sortOption = { storeName: -1 };
+    if (sort === "createdAt:asc")   sortOption = { createdAt:  1 };
+    if (sort === "createdAt:desc")  sortOption = { createdAt: -1 };
+    if (sort === "rating:asc")      sortOption = { rating:     1 };   // ⭐ NEW – lowest → highest
+    if (sort === "rating:desc")     sortOption = { rating:    -1 };   // ⭐ NEW – highest → lowest
+
+    /* ---------- db query ---------- */
     const vendors = await Vendor.find(query)
       .sort(sortOption)
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .select('-phoneNumber -socialLink -payoutSettings'); // Exclude sensitive data
+      .select("-phoneNumber -socialLink -payoutSettings"); // exclude sensitive fields
 
     const total = await Vendor.countDocuments(query);
 
-    // Transform vendor data for public consumption
-    const transformedVendors = vendors.map(vendor => ({
-      vendorId: vendor.vendorId,
-      storeName: vendor.storeName,
-      location: vendor.location,
-      logoUrl: vendor.logoUrl,
-      bannerUrl: vendor.storeBannerUrl,
-      rating: 4.5, // TODO: Calculate from product reviews
-      totalProducts: 0, // TODO: Get from product service
-      createdAt: vendor.createdAt,
-      _id: vendor._id,
+    /* ---------- transform ---------- */
+    const transformedVendors = vendors.map((vendor) => ({
+      vendorId:      vendor.vendorId,
+      storeName:     vendor.storeName,
+      location:      vendor.location,
+      logoUrl:       vendor.logoUrl,
+      bannerUrl:     vendor.storeBannerUrl,
+      rating:        vendor.rating,
+      totalProducts: 0, // TODO: fetch from product service
+      createdAt:     vendor.createdAt,
+      _id:           vendor._id,
     }));
 
     res.json({
       vendors: transformedVendors,
-      page: Number(page),
-      limit: Number(limit),
+      page:    Number(page),
+      limit:   Number(limit),
       total,
-      pages: Math.ceil(total / limit)
+      pages:   Math.ceil(total / limit),
     });
   } catch (error) {
-    console.error('listPublicVendors error:', error);
-    res.status(500).json({ error: 'Failed to fetch vendors' });
+    console.error("listPublicVendors error:", error);
+    res.status(500).json({ error: "Failed to fetch vendors" });
   }
 };
 
@@ -368,7 +377,7 @@ export const getPublicVendorProfile = async (req, res) => {
       logoUrl: vendor.logoUrl,
       bannerUrl: vendor.storeBannerUrl,
       socialLinks: vendor.socialLink,
-      rating: vendor.rating || 4.5,
+      rating: vendor.rating,
       isApproved: vendor.isApproved,
       createdAt: vendor.createdAt,
     };
