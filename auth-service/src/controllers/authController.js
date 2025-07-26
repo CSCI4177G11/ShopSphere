@@ -130,3 +130,28 @@ export const validateToken = (req, res) => {
     return res.status(401).json({ error: err.message });
   }
 };
+
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: 'Both currentPassword and newPassword are required.' });
+  }
+  try {
+    const user = await User.findById(req.user.userId).select('+password');
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+    user.password = newPassword;
+    await user.save();
+    const token = signToken(user);
+    return res
+      .status(200)
+      .json({ message: 'Password updated successfully.', token });
+  } catch (err) {
+    console.error('Change‑password error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};

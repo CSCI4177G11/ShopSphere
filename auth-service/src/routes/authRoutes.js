@@ -7,7 +7,8 @@ import {
   login,
   logout,
   me,
-  validateToken
+  validateToken,
+  changePassword
 } from '../controllers/authController.js';
 
 import { requireAuth /*, requireRole */ } from '../middleware/auth.js';
@@ -70,5 +71,20 @@ router.post('/logout', requireAuth, logout);
 router.get('/me', requireAuth, me);
 
 router.get('/validate', requireAuth, validateToken);
+
+router.patch(
+  '/password',
+  requireAuth,
+  [
+    body('currentPassword')
+      .notEmpty()
+      .withMessage('Current password is required.'),
+    body('newPassword')
+      .isLength({ min: 8 })
+      .withMessage('New password must be at least 8 characters.')
+  ],
+  handleValidation,
+  changePassword
+);
 
 export default router;
