@@ -65,7 +65,8 @@ export default function CartPage() {
           const product = products[index]
           return {
             ...item,
-            productImage: product?.thumbnail || product?.images?.[0] || null
+            productImage: product?.thumbnail || product?.images?.[0] || null,
+            availableStock: product?.quantityInStock ?? Infinity   // ← add stock info
           }
         })
         
@@ -90,7 +91,8 @@ export default function CartPage() {
   }, [cart?.items])
 
   const handleQuantityChange = (itemId: string, newQty: number) => {
-  if (newQty < 1) return
+  const stock = (enrichedItems.find(e => e.itemId === itemId)?.availableStock) ?? Infinity
+  if (newQty < 1 || newQty > stock) return
   setTempQuantities(q => ({ ...q, [itemId]: newQty }))
 
   if (updateTimers.current[itemId]) clearTimeout(updateTimers.current[itemId])
@@ -282,34 +284,43 @@ export default function CartPage() {
                         </div>
                         
                         <div className="flex items-end justify-between mt-4">
-                          <div className="flex items-center border rounded-lg">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleQuantityChange(item.itemId, (tempQuantities[item.itemId] ?? item.quantity) - 1)}
-                            disabled={(tempQuantities[item.itemId] ?? item.quantity) <= 1}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <Input
-                            value={tempQuantities[item.itemId] ?? item.quantity}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value)
-                              if (!isNaN(val) && val > 0) {
-                                handleQuantityChange(item.itemId, val)
-                              }
-                            }}
-                            className="w-16 text-center border-0 focus-visible:ring-0"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleQuantityChange(item.itemId, (tempQuantities[item.itemId] ?? item.quantity) + 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                          </div>
-                          
+                          {(() => {
+                            const qty   = tempQuantities[item.itemId] ?? item.quantity
+                            const stock = enrichedItem.availableStock ?? Infinity
+
+                            return (
+                              <div className="flex items-center border rounded-lg">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleQuantityChange(item.itemId, qty - 1)}
+                                  disabled={qty <= 1}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+
+                                <Input
+                                  value={qty}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value)
+                                    if (!isNaN(val) && val > 0 && val <= stock) {
+                                      handleQuantityChange(item.itemId, val)
+                                    }
+                                  }}
+                                  className="w-16 text-center border-0 focus-visible:ring-0"
+                                />
+
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleQuantityChange(item.itemId, qty + 1)}
+                                  disabled={qty >= stock}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )
+                          })()}
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} each</p>
                             <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>

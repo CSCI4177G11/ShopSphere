@@ -31,7 +31,7 @@ import { vendorService } from "@/lib/api/vendor-service"
 export default function ProductDetailPage() {
   const params = useParams()
   const { user } = useAuth()
-  const { addItem } = useCart()
+  const { cart, addItem } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,7 +89,10 @@ export default function ProductDetailPage() {
     }
 
     if (!product) return
-
+    if (quantity > maxAddable) {
+      toast.error(`Only ${maxAddable} left in stock (including items in your cart)`)
+      return
+    }
     try {
       await addItem(product.productId, quantity)
       toast.success(`Added ${quantity} item(s) to cart!`)
@@ -201,6 +204,10 @@ export default function ProductDetailPage() {
 
   const images = product.images?.length ? product.images : ["/placeholder-product.jpg"]
   const isOutOfStock = product.quantityInStock === 0
+  const currentCartQty =
+  cart?.items.find(i => i.productId === product.productId)?.quantity ?? 0
+  const maxAddable       = Math.max(0, product.quantityInStock - currentCartQty)
+  const isSoldOutForUser = maxAddable === 0
 
   return (
     <div className="min-h-screen">
@@ -337,21 +344,24 @@ export default function ProductDetailPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setQuantity(prev => Math.max(1, prev - 1))}
-                        disabled={isOutOfStock}
+                        disabled={isSoldOutForUser}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
                       <Input
                         value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        onChange={(e) => {
+                             const v = parseInt(e.target.value) || 1
+                             setQuantity(Math.min(Math.max(1, v), maxAddable))
+                           }}
                         className="w-16 text-center border-0 focus-visible:ring-0"
-                        disabled={isOutOfStock}
+                        disabled={isSoldOutForUser}
                       />
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setQuantity(prev => Math.min(product.quantityInStock, prev + 1))}
-                        disabled={isOutOfStock || quantity >= product.quantityInStock}
+                        onClick={() => setQuantity(prev => Math.min(maxAddable, prev + 1))}
+                        disabled={isSoldOutForUser || quantity >= maxAddable}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -361,16 +371,16 @@ export default function ProductDetailPage() {
                       size="lg"
                       className="flex-1"
                       onClick={handleAddToCart}
-                      disabled={isOutOfStock}
+                      disabled={isSoldOutForUser}
                     >
                       <ShoppingCart className="mr-2 h-5 w-5" />
                       Add to Cart
                     </Button>
                   </div>
                   
-                  {product.quantityInStock > 0 && product.quantityInStock <= 5 && (
+                  {maxAddable > 0 && maxAddable <= 5 && (
                     <p className="text-sm text-orange-600 font-medium">
-                      Only {product.quantityInStock} left in stock - order soon!
+                      Only {maxAddable} left – order soon!
                     </p>
                   )}
                 </div>
