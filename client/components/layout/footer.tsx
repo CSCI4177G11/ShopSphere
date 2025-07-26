@@ -5,17 +5,18 @@ import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Youtube, 
+import {
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
   Mail,
-  Heart,
   ArrowUp,
-  Send
+  Send,
 } from "lucide-react"
+import { useAuthSession } from "@/components/auth-provider"
 
+/* ---------- link sets ---------- */
 const quickLinks = [
   { name: "Sign In", href: "/auth/login" },
   { name: "Sign Up", href: "/auth/register" },
@@ -26,30 +27,42 @@ const shopLinks = [
   { name: "Get Started", href: "/auth/register" },
 ]
 
+/* replacement columns for signed‑in users */
+const accountLinksAuth = [
+  { name: "Profile", href: "/consumer/profile" },
+  { name: "Orders", href: "/orders" },
+]
+
+const exploreLinks = [
+  { name: "Shops", href: "/shop" },
+  { name: "Products", href: "/products" },
+  { name: "Categories", href: "/categories" },
+]
+
 const socialLinks = [
-  { 
-    name: "Facebook", 
-    href: "https://facebook.com", 
+  {
+    name: "Facebook",
+    href: "https://facebook.com",
     icon: <Facebook className="h-5 w-5" />,
-    color: "hover:text-blue-600 dark:hover:text-blue-400"
+    color: "hover:text-blue-600 dark:hover:text-blue-400",
   },
-  { 
-    name: "Twitter", 
-    href: "https://twitter.com", 
+  {
+    name: "Twitter",
+    href: "https://twitter.com",
     icon: <Twitter className="h-5 w-5" />,
-    color: "hover:text-sky-500 dark:hover:text-sky-400"
+    color: "hover:text-sky-500 dark:hover:text-sky-400",
   },
-  { 
-    name: "Instagram", 
-    href: "https://instagram.com", 
+  {
+    name: "Instagram",
+    href: "https://instagram.com",
     icon: <Instagram className="h-5 w-5" />,
-    color: "hover:text-pink-600 dark:hover:text-pink-400"
+    color: "hover:text-pink-600 dark:hover:text-pink-400",
   },
-  { 
-    name: "YouTube", 
-    href: "https://youtube.com", 
+  {
+    name: "YouTube",
+    href: "https://youtube.com",
     icon: <Youtube className="h-5 w-5" />,
-    color: "hover:text-red-600 dark:hover:text-red-400"
+    color: "hover:text-red-600 dark:hover:text-red-400",
   },
 ]
 
@@ -57,6 +70,7 @@ export function Footer() {
   const [email, setEmail] = React.useState("")
   const [isSubscribed, setIsSubscribed] = React.useState(false)
   const [showScrollTop, setShowScrollTop] = React.useState(false)
+  const { data: session } = useAuthSession()
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -67,29 +81,24 @@ export function Footer() {
     }, 2000)
   }
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" })
 
   React.useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 400)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    const handleScroll = () => setShowScrollTop(window.scrollY > 400)
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
   return (
     <footer className="relative bg-gradient-to-b from-gray-100 to-gray-200 dark:from-background dark:to-muted/20 border-t border-gray-300 dark:border-border/50 w-full overflow-hidden">
-      {/* Subtle background pattern */}
+      {/* subtle pattern */}
       <div className="absolute inset-0 bg-grid-gray-200/30 dark:bg-grid-white/[0.02] [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
-      
-      {/* Main Footer Content */}
+
+      {/* main content */}
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          
-          {/* Company Info */}
-          <motion.div 
+          {/* company info */}
+          <motion.div
             className="lg:col-span-1 space-y-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -97,91 +106,161 @@ export function Footer() {
             viewport={{ once: true }}
           >
             <Link href="/" className="flex items-center space-x-3 group">
-              <motion.div 
+              <motion.div
                 className="h-10 w-10 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
                 whileHover={{ scale: 1.05, rotate: 5 }}
                 transition={{ duration: 0.2 }}
               >
-                <span className="text-primary-foreground font-bold text-lg">SS</span>
+                <span className="text-primary-foreground font-bold text-lg">
+                  SS
+                </span>
               </motion.div>
               <span className="font-bold text-2xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent">
                 ShopSphere
               </span>
             </Link>
-            
+
             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-              Your trusted marketplace connecting millions of shoppers with amazing products from verified sellers worldwide.
+              Your trusted marketplace connecting millions of shoppers with
+              amazing products from verified sellers worldwide.
             </p>
-            
+
             <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
               <Mail className="h-4 w-4 flex-shrink-0" />
               <span>hello@shopsphere.com</span>
             </div>
           </motion.div>
 
-          {/* Auth Links */}
-          <motion.div 
-            className="space-y-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            viewport={{ once: true }}
-          >
-            <h4 className="font-semibold text-gray-900 dark:text-white">Account</h4>
-            <ul className="space-y-3">
-              {quickLinks.map((link, index) => (
-                <motion.li key={link.href}>
-                  <Link 
-                    href={link.href} 
-                    className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
-                  >
-                    <span className="group-hover:translate-x-1 transition-transform duration-200">
-                      {link.name}
-                    </span>
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-          </motion.div>
+          {/* columns 2 & 3 */}
+          {session ? (
+            <>
+              {/* My Account */}
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                viewport={{ once: true }}
+              >
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  My&nbsp;Account
+                </h4>
+                <ul className="space-y-3">
+                  {accountLinksAuth.map((link) => (
+                    <motion.li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
+                      >
+                        <span className="group-hover:translate-x-1 transition-transform duration-200">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
 
-          {/* Navigation Links */}
-          <motion.div 
-            className="space-y-6"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            viewport={{ once: true }}
-          >
-            <h4 className="font-semibold text-gray-900 dark:text-white">Navigation</h4>
-            <ul className="space-y-3">
-              {shopLinks.map((link, index) => (
-                <motion.li key={link.href}>
-                  <Link 
-                    href={link.href} 
-                    className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
-                  >
-                    <span className="group-hover:translate-x-1 transition-transform duration-200">
-                      {link.name}
-                    </span>
-                  </Link>
-                </motion.li>
-              ))}
-            </ul>
-          </motion.div>
+              {/* Explore */}
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Explore
+                </h4>
+                <ul className="space-y-3">
+                  {exploreLinks.map((link) => (
+                    <motion.li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
+                      >
+                        <span className="group-hover:translate-x-1 transition-transform duration-200">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+            </>
+          ) : (
+            <>
+              {/* Account (guest) */}
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                viewport={{ once: true }}
+              >
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Account
+                </h4>
+                <ul className="space-y-3">
+                  {quickLinks.map((link) => (
+                    <motion.li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
+                      >
+                        <span className="group-hover:translate-x-1 transition-transform duration-200">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
 
-          {/* Newsletter */}
-          <motion.div 
+              {/* Navigation (guest) */}
+              <motion.div
+                className="space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+              >
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Navigation
+                </h4>
+                <ul className="space-y-3">
+                  {shopLinks.map((link) => (
+                    <motion.li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors duration-200 flex items-center group"
+                      >
+                        <span className="group-hover:translate-x-1 transition-transform duration-200">
+                          {link.name}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+            </>
+          )}
+
+          {/* Newsletter column (always shown) */}
+          <motion.div
             className="space-y-6"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             viewport={{ once: true }}
           >
-            <h4 className="font-semibold text-gray-900 dark:text-white">Stay in the loop</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">
+              Stay in the loop
+            </h4>
             <p className="text-gray-600 dark:text-gray-400">
               Get the latest deals and updates delivered to your inbox.
             </p>
-            
+
             <form onSubmit={handleNewsletterSubmit} className="space-y-3">
               <div className="relative">
                 <Input
@@ -238,8 +317,8 @@ export function Footer() {
           </motion.div>
         </div>
 
-        {/* Bottom Section */}
-        <motion.div 
+        {/* bottom strip */}
+        <motion.div
           className="mt-16 pt-8 border-t border-gray-200 dark:border-border/50"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
@@ -247,13 +326,10 @@ export function Footer() {
           viewport={{ once: true }}
         >
           <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
-            
-            {/* Copyright */}
             <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-              <span>© 2024 ShopSphere. </span>
+              <span>© 2024 ShopSphere.</span>
             </div>
 
-            {/* Social Links */}
             <div className="flex items-center space-x-4">
               {socialLinks.map((social, index) => (
                 <motion.div
@@ -270,10 +346,7 @@ export function Footer() {
                     className={`text-gray-500 dark:text-gray-400 ${social.color} transition-all duration-200`}
                     aria-label={social.name}
                   >
-                    <motion.div
-                      whileHover={{ scale: 1.2, y: -2 }}
-                      whileTap={{ scale: 0.9 }}
-                    >
+                    <motion.div whileHover={{ scale: 1.2, y: -2 }} whileTap={{ scale: 0.9 }}>
                       {social.icon}
                     </motion.div>
                   </Link>
@@ -284,7 +357,7 @@ export function Footer() {
         </motion.div>
       </div>
 
-      {/* Scroll to top button */}
+      {/* scroll‑to‑top */}
       <AnimatePresence>
         {showScrollTop && (
           <motion.button
@@ -302,4 +375,4 @@ export function Footer() {
       </AnimatePresence>
     </footer>
   )
-} 
+}
