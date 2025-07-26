@@ -73,15 +73,19 @@ export default function OrdersPage() {
   if (orders.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6">
           <Package className="h-24 w-24 mx-auto text-muted-foreground" />
-          <h1 className="text-2xl font-bold">No orders yet</h1>
-          <p className="text-muted-foreground">Start shopping to see your orders here</p>
-          <Link href="/shop">
-            <Button size="lg">
-              Start Shopping
-            </Button>
-          </Link>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">No orders yet</h1>
+            <p className="text-muted-foreground">Start shopping to see your orders here</p>
+          </div>
+          <div className="pt-4">
+            <Link href="/products">
+              <Button size="lg">
+                Start Shopping
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     )

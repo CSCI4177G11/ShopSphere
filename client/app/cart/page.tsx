@@ -126,15 +126,19 @@ export default function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6">
           <ShoppingBag className="h-24 w-24 mx-auto text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Your cart is empty</h1>
-          <p className="text-muted-foreground">Add some products to get started</p>
-          <Link href="/shop">
-            <Button size="lg">
-              Continue Shopping
-            </Button>
-          </Link>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">Your cart is empty</h1>
+            <p className="text-muted-foreground">Add some products to get started</p>
+          </div>
+          <div className="pt-4">
+            <Link href="/products">
+              <Button size="lg">
+                Continue Shopping
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -261,7 +265,7 @@ export default function CartPage() {
                     </Button>
                   </Link>
                   
-                  <Link href="/shop" className="block">
+                  <Link href="/products" className="block">
                     <Button variant="outline" className="w-full">
                       Continue Shopping
                     </Button>
