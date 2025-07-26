@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, Star } from "lucide-react"
 import { toast } from "sonner"
-import { cartService } from "@/lib/api/cart-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/cart-provider"
 import type { Product } from "@/lib/api/product-service"
 
 interface ProductCardProps {
@@ -18,6 +18,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth()
+  const { addToCart } = useCart()
   
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault() // Prevent navigation when clicking the button
@@ -33,27 +34,21 @@ export function ProductCard({ product }: ProductCardProps) {
     }
     
     try {
-      await cartService.addToCart({
-        productId: product._id,
-        productName: product.name,
-        price: product.price,
-        quantity: 1,
-        vendorId: product.vendorId,
-        vendorName: product.vendorName
-      })
+      await addToCart(product.productId, 1)
       toast.success("Added to cart!")
     } catch (error) {
+      console.error('Add to cart error:', error)
       toast.error("Failed to add to cart")
     }
   }
   
-  const productImage = product.images?.[0] || "/placeholder-product.jpg"
+  const productImage = product.thumbnail || product.images?.[0] || "/placeholder.jpg"
   const isOutOfStock = product.stock === 0
 
   return (
-    <Link href={`/products/${product._id}`}>
-      <Card className="group h-full overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer">
-        <div className="relative aspect-square overflow-hidden bg-gray-100">
+    <Link href={`/products/${product.productId}`} className="h-full">
+      <Card className="group h-full flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer">
+        <div className="relative aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
           <Image
             src={productImage}
             alt={product.name}
@@ -80,39 +75,41 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
         
-        <CardContent className="p-4 space-y-2">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-              {product.name}
-            </h3>
-            {product.vendorName && (
-              <p className="text-sm text-muted-foreground">by {product.vendorName}</p>
-            )}
-          </div>
-          
-          <div className="flex items-center justify-between">
+        <CardContent className="p-4 flex-1 flex flex-col">
+          <div className="flex-1 space-y-2">
             <div className="space-y-1">
-              <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
-              {product.rating !== undefined && product.rating > 0 && (
-                <div className="flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm text-muted-foreground">
-                    {product.rating.toFixed(1)} ({product.reviewCount || 0})
-                  </span>
-                </div>
+              <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                {product.name}
+              </h3>
+              {product.vendorName && (
+                <p className="text-sm text-muted-foreground line-clamp-1">by {product.vendorName}</p>
               )}
             </div>
             
-            <Badge variant="secondary" className="capitalize">
-              {product.category}
-            </Badge>
+            <div className="flex items-center justify-between mt-auto pt-2">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
+                {product.rating !== undefined && product.rating > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm text-muted-foreground">
+                      {product.rating.toFixed(1)} ({product.reviewCount || 0})
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <Badge variant="secondary" className="capitalize shrink-0">
+                {product.category}
+              </Badge>
+            </div>
+            
+            {product.stock > 0 && product.stock <= 5 && (
+              <p className="text-sm text-orange-600 font-medium pt-2">
+                Only {product.stock} left in stock!
+              </p>
+            )}
           </div>
-          
-          {product.stock > 0 && product.stock <= 5 && (
-            <p className="text-sm text-orange-600 font-medium">
-              Only {product.stock} left in stock!
-            </p>
-          )}
         </CardContent>
       </Card>
     </Link>

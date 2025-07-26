@@ -13,13 +13,14 @@ export interface ServiceHealthResponse {
 
 // Cart item
 export interface CartItem {
-  _id: string
+  itemId: string
   productId: string
   productName: string
   price: number
   quantity: number
-  vendorId: string
+  vendorId?: string
   vendorName?: string
+  addedAt?: string
   _links?: {
     product: string
     update: string

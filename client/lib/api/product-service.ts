@@ -12,7 +12,7 @@ export interface ServiceHealthResponse {
 }
 
 export interface Product {
-  _id: string
+  productId: string
   name: string
   description: string
   price: number
@@ -21,11 +21,13 @@ export interface Product {
   vendorId: string
   vendorName?: string
   images?: string[]
+  thumbnail?: string
   tags?: string[]
   averageRating?: number
   reviewCount?: number
   createdAt?: string
   updatedAt?: string
+  stock?: number
 }
 
 export interface Review {

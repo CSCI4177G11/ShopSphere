@@ -25,8 +25,6 @@ router.post(
   '/items',
   [
     body('productId').isString().notEmpty(),
-    body('productName').isString().trim().notEmpty(),
-    body('price').isFloat({ min: 0 }),
     body('quantity').optional().isInt({ min: 1 }),
   ],
   cartCtrl.addToCart

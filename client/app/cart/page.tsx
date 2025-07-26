@@ -1,27 +1,23 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { cartService } from "@/lib/api/cart-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/cart-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { ShoppingBag, Minus, Plus, Trash2, ArrowRight } from "lucide-react"
-import type { Cart, CartItem, CartTotals } from "@/lib/api/cart-service"
+import type { CartItemsResponse, CartItem, CartTotals } from "@/lib/api/cart-service"
 
 export default function CartPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [cart, setCart] = useState<Cart | null>(null)
-  const [totals, setTotals] = useState<CartTotals | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set())
+  const { cart, totals, loading, updateQuantity: updateCartQuantity, removeItem: removeCartItem, clearCart: clearCartItems } = useCart()
 
   useEffect(() => {
     if (!user) {
@@ -34,77 +30,30 @@ export default function CartPage() {
       toast.error('Only consumers can access the cart')
       return
     }
+  }, [user])
 
-    fetchCart()
-  }, [user, router])
-
-  const fetchCart = async () => {
-    try {
-      const [cartData, totalsData] = await Promise.all([
-        cartService.getCart(),
-        cartService.getCartTotals()
-      ])
-      setCart(cartData)
-      setTotals(totalsData)
-    } catch (error) {
-      console.error('Failed to fetch cart:', error)
-      toast.error('Failed to load cart')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const updateQuantity = async (itemId: string, newQuantity: number) => {
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
-
-    setUpdatingItems(prev => new Set(prev).add(itemId))
     try {
-      const updatedCart = await cartService.updateCartItem(itemId, { quantity: newQuantity })
-      setCart(updatedCart)
-      
-      // Fetch updated totals
-      const newTotals = await cartService.getCartTotals()
-      setTotals(newTotals)
-      
+      await updateCartQuantity(itemId, newQuantity)
       toast.success('Cart updated')
     } catch (error) {
       toast.error('Failed to update quantity')
-    } finally {
-      setUpdatingItems(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(itemId)
-        return newSet
-      })
     }
   }
 
-  const removeItem = async (itemId: string) => {
-    setUpdatingItems(prev => new Set(prev).add(itemId))
+  const handleRemoveItem = async (itemId: string) => {
     try {
-      const updatedCart = await cartService.removeFromCart(itemId)
-      setCart(updatedCart)
-      
-      // Fetch updated totals
-      const newTotals = await cartService.getCartTotals()
-      setTotals(newTotals)
-      
+      await removeCartItem(itemId)
       toast.success('Item removed from cart')
     } catch (error) {
       toast.error('Failed to remove item')
-    } finally {
-      setUpdatingItems(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(itemId)
-        return newSet
-      })
     }
   }
 
-  const clearCart = async () => {
+  const handleClearCart = async () => {
     try {
-      await cartService.clearCart()
-      setCart(null)
-      setTotals(null)
+      await clearCartItems()
       toast.success('Cart cleared')
     } catch (error) {
       toast.error('Failed to clear cart')
@@ -123,7 +72,7 @@ export default function CartPage() {
     )
   }
 
-  if (!cart || cart.items.length === 0) {
+  if (!cart || !cart.items || cart.items.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-6">
@@ -153,8 +102,8 @@ export default function CartPage() {
           transition={{ duration: 0.5 }}
         >
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold">Shopping Cart ({totals?.itemCount || 0} items)</h1>
-            <Button variant="outline" size="sm" onClick={clearCart}>
+            <h1 className="text-3xl font-bold">Shopping Cart ({totals?.totalItems || 0} items)</h1>
+            <Button variant="outline" size="sm" onClick={handleClearCart}>
               Clear Cart
             </Button>
           </div>
@@ -163,16 +112,14 @@ export default function CartPage() {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cart.items.map((item) => (
-                <Card key={item._id} className={updatingItems.has(item._id) ? 'opacity-50' : ''}>
+                <Card key={item.itemId}>
                   <CardContent className="p-6">
                     <div className="flex gap-4">
                       <div className="relative h-24 w-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                        <Image
-                          src="/placeholder-product.jpg"
-                          alt={item.productName}
-                          fill
-                          className="object-cover"
-                        />
+                        {/* TODO: Add product image when available from cart API */}
+                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                          <ShoppingBag className="h-8 w-8 text-gray-400" />
+                        </div>
                       </div>
                       
                       <div className="flex-1">
@@ -186,8 +133,7 @@ export default function CartPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeItem(item._id)}
-                            disabled={updatingItems.has(item._id)}
+                            onClick={() => handleRemoveItem(item.itemId)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -198,8 +144,8 @@ export default function CartPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                              disabled={updatingItems.has(item._id) || item.quantity <= 1}
+                              onClick={() => handleUpdateQuantity(item.itemId, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
@@ -208,17 +154,15 @@ export default function CartPage() {
                               onChange={(e) => {
                                 const val = parseInt(e.target.value)
                                 if (!isNaN(val) && val > 0) {
-                                  updateQuantity(item._id, val)
+                                  handleUpdateQuantity(item.itemId, val)
                                 }
                               }}
                               className="w-16 text-center border-0 focus-visible:ring-0"
-                              disabled={updatingItems.has(item._id)}
                             />
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                              disabled={updatingItems.has(item._id)}
+                              onClick={() => handleUpdateQuantity(item.itemId, item.quantity + 1)}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -249,7 +193,7 @@ export default function CartPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Tax</span>
-                      <span>${totals?.tax.toFixed(2) || '0.00'}</span>
+                      <span>${totals?.estimatedTax.toFixed(2) || '0.00'}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-semibold text-lg">

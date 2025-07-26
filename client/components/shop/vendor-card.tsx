@@ -13,10 +13,10 @@ interface VendorCardProps {
 
 export function VendorCard({ vendor }: VendorCardProps) {
   return (
-    <Link href={`/vendor/${vendor.vendorId}/products`}>
-      <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
+    <Link href={`/vendor/${vendor.vendorId}/products`} className="h-full">
+      <Card className="group h-full flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300">
         {/* Banner Image */}
-        <div className="relative h-32 bg-gradient-to-br from-primary/10 to-secondary/10">
+        <div className="relative h-32 bg-gradient-to-br from-primary/10 to-secondary/10 flex-shrink-0">
           {vendor.bannerUrl && (
             <Image
               src={vendor.bannerUrl}
@@ -46,30 +46,28 @@ export function VendorCard({ vendor }: VendorCardProps) {
           </div>
         </div>
 
-        <CardContent className="pt-14 pb-6">
+        <CardContent className="pt-14 pb-6 flex-1 flex flex-col">
           {/* Store Name & Rating */}
           <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+            <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
               {vendor.storeName}
             </h3>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
               <span className="text-sm font-medium">{vendor.rating.toFixed(1)}</span>
             </div>
           </div>
 
           {/* Description */}
-          {vendor.description && (
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-              {vendor.description}
-            </p>
-          )}
+          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 min-h-[2.5rem]">
+            {vendor.description || "Welcome to our store!"}
+          </p>
 
           {/* Location & Products */}
-          <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center justify-between text-sm mt-auto">
             <div className="flex items-center gap-1 text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span>{vendor.location}</span>
+              <span className="truncate max-w-[120px]">{vendor.location}</span>
             </div>
             <div className="flex items-center gap-1 text-muted-foreground">
               <Package className="h-3 w-3" />

@@ -32,10 +32,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CurrencySelector } from "@/components/currency-selector";
 import { useMounted } from "@/hooks/use-mounted";
 import { cn } from "@/lib/utils";
+import { useCart } from "@/components/cart-provider";
 
 export function Header() {
   const { data: session } = useAuthSession();
   const { signOut } = useAuth();
+  const { totals } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const mounted = useMounted();
@@ -47,6 +49,7 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
 
   if (!mounted) {
     return null; // or a skeleton header
@@ -139,7 +142,12 @@ export function Header() {
                       >
                         <Link href="/cart">
                           <ShoppingCart className="h-5 w-5" />
-                          <span className="sr-only">Cart</span>
+                          {totals && totals.totalItems > 0 && (
+                            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                              {totals.totalItems > 99 ? '99+' : totals.totalItems}
+                            </span>
+                          )}
+                          <span className="sr-only">Cart ({totals?.totalItems || 0} items)</span>
                         </Link>
                       </Button>
                     </motion.div>

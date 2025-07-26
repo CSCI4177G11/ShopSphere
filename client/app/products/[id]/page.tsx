@@ -75,11 +75,7 @@ export default function ProductDetailPage() {
     try {
       await cartService.addToCart({
         productId: product._id,
-        productName: product.name,
-        price: product.price,
-        quantity,
-        vendorId: product.vendorId,
-        vendorName: product.vendorName
+        quantity
       })
       toast.success(`Added ${quantity} item(s) to cart!`)
     } catch (error) {

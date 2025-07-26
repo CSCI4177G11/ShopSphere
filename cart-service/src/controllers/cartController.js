@@ -1,5 +1,6 @@
 import Cart from '../models/Cart.js';
 import axios from 'axios';
+import { validationResult } from 'express-validator';
 
 
 function resolveUserId(req) {
@@ -56,6 +57,11 @@ export const getCart = async (req, res) => {
 };
 
 export const addToCart = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -106,6 +112,11 @@ export const addToCart = async (req, res) => {
 };
 
 export const updateCart = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const userId = requireUserId(req, res);
   if (!userId) return;
 
@@ -144,6 +155,11 @@ export const updateCart = async (req, res) => {
 };
 
 export const removeFromCart = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
   const userId = requireUserId(req, res);
   if (!userId) return;
 

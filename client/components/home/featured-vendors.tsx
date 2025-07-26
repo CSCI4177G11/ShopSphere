@@ -88,9 +88,9 @@ export function FeaturedVendors() {
           animate="visible"
           transition={{ delay: index * 0.1 }}
         >
-          <Link href={`/vendor/${vendor.id}/products`}>
-            <Card className="group hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden">
-              <CardContent className="p-6">
+          <Link href={`/vendor/${vendor.id}/products`} className="h-full">
+            <Card className="group h-full flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden">
+              <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="flex items-start space-x-4">
                   <div className="relative h-16 w-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                     <Image
@@ -100,33 +100,33 @@ export function FeaturedVendors() {
                       className="object-cover"
                     />
                   </div>
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 min-w-0 space-y-2">
                     <div>
-                      <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">
+                      <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
                         {vendor.name}
                       </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                         {vendor.description}
                       </p>
                     </div>
                     
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                         <span className="text-sm font-medium">{vendor.rating}</span>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge variant="secondary" className="text-xs shrink-0">
                         {vendor.productCount} products
                       </Badge>
                     </div>
                     
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs w-fit">
                       {vendor.category}
                     </Badge>
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t flex items-center justify-between text-sm">
+                <div className="mt-auto pt-4 border-t flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1 text-muted-foreground">
                     <Store className="h-4 w-4" />
                     <span>Visit Shop</span>
