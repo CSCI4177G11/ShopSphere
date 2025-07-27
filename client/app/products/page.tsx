@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useCallback } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { productService } from "@/lib/api/product-service"
-import { ProductCard } from "@/components/product/product-card"
-import { ProductFilters } from "@/components/shop/product-filters"
-import { ProductSort } from "@/components/shop/product-sort"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Search, SlidersHorizontal, Package } from "lucide-react"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import type { Product, ProductQuery } from "@/lib/api/product-service"
+import { useEffect, useState, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { productService } from "@/lib/api/product-service";
+import { ProductCard } from "@/components/product/product-card";
+import { ProductFilters } from "@/components/shop/product-filters";
+import { ProductSort } from "@/components/shop/product-sort";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, SlidersHorizontal, Package } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import type { Product, ProductQuery } from "@/lib/api/product-service";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -22,7 +28,7 @@ const containerVariants = {
       staggerChildren: 0.05,
     },
   },
-}
+};
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -33,89 +39,89 @@ const itemVariants = {
       duration: 0.4,
     },
   },
-}
+};
 
 export default function ProductsPage() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filters, setFilters] = useState<ProductQuery>({})
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState<ProductQuery>({});
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const query: ProductQuery = {
         page,
         limit: 12,
         ...filters,
-      }
+      };
 
       // Apply URL params
-      const category = searchParams.get('category')
-      if (category) query.category = category
+      const category = searchParams.get("category");
+      if (category) query.category = category;
 
-      const search = searchParams.get('search')
-      if (search) query.search = search
+      const search = searchParams.get("search");
+      if (search) query.search = search;
 
-      const vendor = searchParams.get('vendor')
-      if (vendor) query.vendorId = vendor
+      const vendor = searchParams.get("vendor");
+      if (vendor) query.vendorId = vendor;
 
-      const response = await productService.getProducts(query)
-      console.log('Products response:', response)
-      console.log('First product:', response.products[0])
-      setProducts(response.products)
-      setTotalPages(response.pages)
+      const response = await productService.getProducts(query);
+      console.log("Products response:", response);
+      console.log("First product:", response.products[0]);
+      setProducts(response.products);
+      setTotalPages(response.pages);
     } catch (error) {
-      console.error('Failed to fetch products:', error)
+      console.error("Failed to fetch products:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [page, filters, searchParams])
+  }, [page, filters, searchParams]);
 
   useEffect(() => {
-    fetchProducts()
-  }, [fetchProducts])
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleSearch = () => {
-    const tokens = searchQuery.trim().split(/\s+/)
-  
+    const tokens = searchQuery.trim().split(/\s+/);
+
     // tokens that start with @ become tag filters
-    const tagTokens  = tokens
-      .filter(t => /^@/.test(t))
-      .map(t => t.slice(1).toLowerCase())
-  
+    const tagTokens = tokens
+      .filter((t) => /^@/.test(t))
+      .map((t) => t.slice(1).toLowerCase());
+
     // everything else is part of the name search
-    const nameTokens = tokens.filter(t => !/^@/.test(t))
-    const nameQuery  = nameTokens.join(' ')
-  
-    setFilters(prev => ({
+    const nameTokens = tokens.filter((t) => !/^@/.test(t));
+    const nameQuery = nameTokens.join(" ");
+
+    setFilters((prev) => ({
       ...prev,
-      search: nameQuery || undefined,   // text search for product names
-      tags  : tagTokens.length ? tagTokens : undefined
-    }))
-  
+      search: nameQuery || undefined, // text search for product names
+      tags: tagTokens.length ? tagTokens : undefined,
+    }));
+
     // optional: keep URL in sync so the search can be shared / refreshed
-    const params = new URLSearchParams()
-    if (nameQuery) params.set('search', nameQuery)
-    if (tagTokens.length) params.set('tags', tagTokens.join(','))
-    router.push(`/products?${params.toString()}`)
-  
-    setPage(1)
-  }
+    const params = new URLSearchParams();
+    if (nameQuery) params.set("search", nameQuery);
+    if (tagTokens.length) params.set("tags", tagTokens.join(","));
+    router.push(`/products?${params.toString()}`);
+
+    setPage(1);
+  };
 
   const handleFilterChange = (newFilters: ProductQuery) => {
-    setFilters(newFilters)
-    setPage(1)
-  }
+    setFilters(newFilters);
+    setPage(1);
+  };
 
   const handleSortChange = (sort: string) => {
-    setFilters(prev => ({ ...prev, sort: sort as ProductQuery['sort'] }))
-    setPage(1)
-  }
+    setFilters((prev) => ({ ...prev, sort: sort as ProductQuery["sort"] }));
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen">
@@ -131,28 +137,33 @@ export default function ProductsPage() {
             <div className="inline-flex items-center gap-2 mb-4">
               <Package className="h-8 w-8 text-primary" />
               <h1 className="text-4xl font-bold">
-                {searchParams.get('category') ? (
+                {searchParams.get("category") ? (
                   <>
-                    <span className="capitalize">{searchParams.get('category')}</span>
-                    <span className="text-muted-foreground text-2xl ml-2">Products</span>
+                    <span className="capitalize">
+                      {searchParams.get("category")}
+                    </span>
+                    <span className="text-muted-foreground text-2xl ml-2">
+                      Products
+                    </span>
                   </>
-                ) : searchParams.get('vendor') ? (
-                  'Shop Products'
+                ) : searchParams.get("vendor") ? (
+                  "Shop Products"
                 ) : (
-                  'All Products'
+                  "All Products"
                 )}
               </h1>
             </div>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              {searchParams.get('category') 
-                ? `Discover amazing ${searchParams.get('category')} products from verified vendors`
-                : searchParams.get('vendor')
-                ? 'Browse products from this shop'
-                : 'Explore our complete collection of quality products'
-              }
+              {searchParams.get("category")
+                ? `Discover amazing ${searchParams.get(
+                    "category"
+                  )} products from verified vendors`
+                : searchParams.get("vendor")
+                ? "Browse products from this shop"
+                : "Explore our complete collection of quality products"}
             </p>
           </motion.div>
-          
+
           {/* Search Bar */}
           <div className="max-w-2xl mx-auto mt-8">
             <div className="flex gap-2">
@@ -162,7 +173,7 @@ export default function ProductsPage() {
                   placeholder="Search products or type @tag"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                   className="pl-10"
                 />
               </div>
@@ -179,7 +190,10 @@ export default function ProductsPage() {
           <div className="hidden lg:block">
             <div className="sticky top-20">
               <h2 className="font-semibold text-lg mb-4">Filters</h2>
-              <ProductFilters onFilterChange={handleFilterChange} initialFilters={filters} />
+              <ProductFilters
+                onFilterChange={handleFilterChange}
+                initialFilters={filters}
+              />
             </div>
           </div>
 
@@ -200,27 +214,36 @@ export default function ProductsPage() {
                       <SheetTitle>Filters</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6">
-                      <ProductFilters onFilterChange={handleFilterChange} initialFilters={filters} />
+                      <ProductFilters
+                        onFilterChange={handleFilterChange}
+                        initialFilters={filters}
+                      />
                     </div>
                   </SheetContent>
                 </Sheet>
               </div>
-              
+
               <ProductSort onSortChange={handleSortChange} />
             </div>
 
             {/* Results count and breadcrumb */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                {(searchParams.get('category') || searchParams.get('vendor')) && (
+                {(searchParams.get("category") ||
+                  searchParams.get("vendor")) && (
                   <div className="flex items-center gap-2 text-sm mb-2">
-                    <Link href="/products" className="text-muted-foreground hover:text-primary transition-colors">
+                    <Link
+                      href="/products"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
                       All Products
                     </Link>
-                    {searchParams.get('category') && (
+                    {searchParams.get("category") && (
                       <>
                         <span className="text-muted-foreground">/</span>
-                        <span className="font-medium capitalize">{searchParams.get('category')}</span>
+                        <span className="font-medium capitalize">
+                          {searchParams.get("category")}
+                        </span>
                       </>
                     )}
                   </div>
@@ -229,13 +252,13 @@ export default function ProductsPage() {
                   Showing {products.length} products
                 </p>
               </div>
-              {(searchParams.get('category') || searchParams.get('vendor')) && (
-                <Button 
-                  variant="ghost" 
+              {(searchParams.get("category") || searchParams.get("vendor")) && (
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={() => {
-                    setFilters({})
-                    router.push('/products')
+                    setFilters({});
+                    router.push("/products");
                   }}
                   className="text-xs"
                 >
@@ -265,7 +288,9 @@ export default function ProductsPage() {
             ) : products.length === 0 ? (
               <div className="text-center py-16">
                 <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg">No products found</p>
+                <p className="text-muted-foreground text-lg">
+                  No products found
+                </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Try adjusting your filters or search query
                 </p>
@@ -278,7 +303,10 @@ export default function ProductsPage() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
                 {products.map((product, index) => (
-                  <motion.div key={product.productId  || `product-${index}`} variants={itemVariants}>
+                  <motion.div
+                    key={product.productId || `product-${index}`}
+                    variants={itemVariants}
+                  >
                     <ProductCard product={product} />
                   </motion.div>
                 ))}
@@ -290,7 +318,7 @@ export default function ProductsPage() {
               <div className="mt-12 flex justify-center gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                   disabled={page === 1}
                 >
                   Previous
@@ -300,7 +328,9 @@ export default function ProductsPage() {
                 </span>
                 <Button
                   variant="outline"
-                  onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={page === totalPages}
                 >
                   Next
@@ -311,5 +341,5 @@ export default function ProductsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

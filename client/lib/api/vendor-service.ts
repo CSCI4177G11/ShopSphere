@@ -23,7 +23,8 @@ export interface VendorQuery {
   limit?: number
   search?: string
   category?: string
-  sort?: 'name:asc' | 'name:desc' | 'createdAt:asc' | 'createdAt:desc'
+  minRating?: number
+  sort?: 'name:asc' | 'name:desc' | 'createdAt:asc' | 'createdAt:desc' | 'rating:asc' | 'rating:desc'
 }
 
 interface VendorResponse {
@@ -41,6 +42,7 @@ class VendorService {
       if (query.page) params.append('page', query.page.toString())
       if (query.limit) params.append('limit', query.limit.toString())
       if (query.search) params.append('search', query.search)
+      if (query.minRating) params.append('minRating', query.minRating.toString())
       if (query.sort) params.append('sort', query.sort)
       
       const queryString = params.toString()

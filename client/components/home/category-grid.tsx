@@ -21,7 +21,7 @@ const categories = [
     iconColor: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-50 dark:bg-blue-500/10",
     hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-500/20",
-    href: "/shop?category=electronics",
+    href: "/products?category=electronics",
     description: "Latest gadgets & tech"
   },
   { 
@@ -30,7 +30,7 @@ const categories = [
     iconColor: "text-pink-600 dark:text-pink-400",
     bgColor: "bg-pink-50 dark:bg-pink-500/10",
     hoverBg: "hover:bg-pink-100 dark:hover:bg-pink-500/20",
-    href: "/shop?category=fashion",
+    href: "/products?category=fashion",
     description: "Trendy styles & outfits"
   },
   { 
@@ -39,7 +39,7 @@ const categories = [
     iconColor: "text-green-600 dark:text-green-400",
     bgColor: "bg-green-50 dark:bg-green-500/10",
     hoverBg: "hover:bg-green-100 dark:hover:bg-green-500/20",
-    href: "/shop?category=home",
+    href: "/products?category=home",
     description: "Everything for your space"
   },
   { 
@@ -48,7 +48,7 @@ const categories = [
     iconColor: "text-purple-600 dark:text-purple-400",
     bgColor: "bg-purple-50 dark:bg-purple-500/10",
     hoverBg: "hover:bg-purple-100 dark:hover:bg-purple-500/20",
-    href: "/shop?category=books",
+    href: "/products?category=books",
     description: "Knowledge & stories"
   },
   { 
@@ -57,7 +57,7 @@ const categories = [
     iconColor: "text-orange-600 dark:text-orange-400",
     bgColor: "bg-orange-50 dark:bg-orange-500/10",
     hoverBg: "hover:bg-orange-100 dark:hover:bg-orange-500/20",
-    href: "/shop?category=sports",
+    href: "/products?category=sports",
     description: "Fitness & outdoor gear"
   },
   { 
@@ -66,7 +66,7 @@ const categories = [
     iconColor: "text-yellow-600 dark:text-yellow-400",
     bgColor: "bg-yellow-50 dark:bg-yellow-500/10",
     hoverBg: "hover:bg-yellow-100 dark:hover:bg-yellow-500/20",
-    href: "/shop?category=accessories",
+    href: "/products?category=accessories",
     description: "Perfect additions"
   },
   { 
@@ -75,7 +75,7 @@ const categories = [
     iconColor: "text-red-600 dark:text-red-400",
     bgColor: "bg-red-50 dark:bg-red-500/10",
     hoverBg: "hover:bg-red-100 dark:hover:bg-red-500/20",
-    href: "/shop?category=gaming",
+    href: "/products?category=gaming",
     description: "Games & accessories"
   },
   { 
@@ -84,7 +84,7 @@ const categories = [
     iconColor: "text-indigo-600 dark:text-indigo-400",
     bgColor: "bg-indigo-50 dark:bg-indigo-500/10",
     hoverBg: "hover:bg-indigo-100 dark:hover:bg-indigo-500/20",
-    href: "/shop?category=art",
+    href: "/products?category=art",
     description: "Creative supplies"
   },
 ]

@@ -68,7 +68,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
               >
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-                  Shop by Category
+                  Products by Category
                 </h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
                   Browse through our diverse collection of products across all categories

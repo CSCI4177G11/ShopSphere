@@ -380,7 +380,7 @@ export default function ProductDetailPage() {
                   
                   {maxAddable > 0 && maxAddable <= 5 && (
                     <p className="text-sm text-orange-600 font-medium">
-                      Only {maxAddable} left – order soon!
+                      Only {maxAddable} more left!
                     </p>
                   )}
                 </div>

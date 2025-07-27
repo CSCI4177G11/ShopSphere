@@ -80,7 +80,25 @@ export default function ShopPage() {
         })
       )
       
-      setVendors(vendorsWithCounts)
+      // Client-side filtering for product range only (backend doesn't support this)
+      let filteredVendors = vendorsWithCounts
+      
+      // Product range filter (still client-side)
+      // @ts-ignore
+      if (filters.productRange) {
+        filteredVendors = filteredVendors.filter(vendor => {
+          const count = vendor.totalProducts || 0
+          // @ts-ignore
+          switch(filters.productRange) {
+            case 'small': return count >= 1 && count <= 10
+            case 'medium': return count >= 11 && count <= 50
+            case 'large': return count > 50
+            default: return true
+          }
+        })
+      }
+      
+      setVendors(filteredVendors)
       setTotalPages(response.pages)
     } catch (error) {
       console.error('Failed to fetch vendors:', error)
@@ -100,7 +118,7 @@ export default function ShopPage() {
 
   const handleFilterChange = (newFilters: VendorQuery) => {
     setFilters(newFilters)
-    setPage(1)
+    setPage(1) // Reset to first page when filters change
   }
 
   const handleSortChange = (sort: string) => {
