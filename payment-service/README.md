@@ -31,7 +31,6 @@ Authorization: Bearer <token>
 **Success 201**
 ```json
 {
-  "setupIntentId": "seti_1OC...",
   "clientSecret": "seti_1OC..._secret_xyz"
 }
 ```
@@ -50,8 +49,7 @@ Authorization: Bearer <token>
 ### 2.1 POST `/consumer/payment-methods`
 ```json
 {
-  "paymentMethodToken": "pm_123456789",
-  "billingDetails": { "name": "Abdullah Al Salmi", "email": "abdullah@example.com" }
+  "paymentMethodToken": "pm_card_visa"
 }
 ```
 **Success 201**
@@ -115,7 +113,7 @@ Charge the consumer for all items in their cart. The payment service will:
 ```json
 {
   "amount": 259900,
-  "currency": "CAD",
+  "currency": "cad",
   "paymentMethodId": "pm_123456789"
 }
 ```
