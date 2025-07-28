@@ -21,12 +21,17 @@ import {
   Store
 } from "lucide-react"
 
-const HERO_STATS = [
-  { label: "Verified Sellers", value: "10K+", icon: Shield },
-  { label: "Happy Customers", value: "250K+", icon: Users },
-  { label: "Products", value: "1M+", icon: Package },
-  { label: "Countries", value: "50+", icon: Globe }
-]
+import { productService } from "@/lib/api/product-service"
+import { userService    } from "@/lib/api/user-service"
+import { vendorService  } from "@/lib/api/vendor-service"
+
+
+function formatCount(n: number) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M+"
+  if (n >=   1_000)   return (n /   1_000).toFixed(1).replace(/\.0$/, "") + "K+"
+  return n.toString()
+}
+
 
 
 
@@ -45,11 +50,41 @@ export function Hero() {
   const isVendor = user?.role === 'vendor'
   const isConsumer = user?.role === 'consumer'
 
+  const [heroStats, setHeroStats] = useState([
+    { label: "Verified Sellers", value: "...", icon: Shield },
+    { label: "Happy Customers",  value: "...", icon: Users  },
+    { label: "Products",         value: "...", icon: Package },
+  ])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTextIndex((prev) => (prev + 1) % ROTATING_TEXT.length)
     }, 3000)
     return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [
+          vendorCountRes,
+          consumerCountRes,
+          productCountRes,
+        ] = await Promise.all([
+          vendorService.getVendorCount({ isApproved: true }),
+          userService.getConsumerCount(),
+          productService.getProductCount(),
+        ])
+  
+        setHeroStats([
+          { label: "Verified Sellers", value: formatCount(vendorCountRes.totalVendors),   icon: Shield },
+          { label: "Happy Customers",  value: formatCount(consumerCountRes.totalConsumers), icon: Users  },
+          { label: "Products",         value: formatCount(productCountRes.totalProducts),  icon: Package },
+        ])
+      } catch (err) {
+        console.error("Failed to load hero stats:", err)
+      }
+    })()
   }, [])
 
   return (
@@ -255,8 +290,8 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="pt-8"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {HERO_STATS.map((stat, index) => {
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto justify-items-center">
+              {heroStats.map((stat, index) => {
                 const Icon = stat.icon
                 return (
                   <motion.div
