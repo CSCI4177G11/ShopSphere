@@ -9,7 +9,7 @@ export async function getSummary(req, res) {
     const vendorId = getVendorId(req);
     if (!vendorId) return res.status(400).json({ error: 'vendorId missing' });
     const result = await OrdersFact.findAll({
-        where: { vendorId },
+        where: { vendorId, orderStatus: 'delivered' },
         attributes: [
             [fn('SUM', col('subtotal')), 'totalRevenue'],
             [fn('COUNT', literal('DISTINCT orderId')), 'totalOrders'],
@@ -18,7 +18,7 @@ export async function getSummary(req, res) {
         ],
         raw: true,
     });
-    res.json(result[0]);
+    res.json({result: result[0] , vendorId});
 }
 
 export async function getTopProducts(req, res) {
@@ -30,7 +30,9 @@ export async function getTopProducts(req, res) {
     const rows = await OrdersFact.findAll({
         where: {
             vendorId,
-            orderDate: { [Op.between]: [startDate, endDate] },
+            orderDate: { [Op.between]: [startDate, endDate],
+            orderStatus: 'delivered'
+             },
         },
         attributes: [
             'productId',
@@ -59,7 +61,9 @@ export async function getSalesTrend(req, res) {
     const rows = await OrdersFact.findAll({
         where: {
             vendorId,
-            orderDate: { [Op.between]: [startDate, endDate] },
+            orderDate: { [Op.between]: [startDate, endDate],
+            orderStatus: 'delivered'
+             },
         },
         attributes: [
             [fn('DATE_FORMAT', col('orderDate'), dateFormat), 'period'],

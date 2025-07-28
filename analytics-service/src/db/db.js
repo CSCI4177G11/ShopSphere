@@ -47,9 +47,16 @@ export const OrdersFact = sequelize.define('orders_fact', {
         comment: 'quantity × price',
     },
     orderStatus: {
-        type: DataTypes.ENUM('pending', 'shipped', 'refunded'),
+        type: DataTypes.ENUM(
+          'pending',
+          'processing',
+          'shipped',
+          'out_for_delivery',
+          'delivered',
+          'cancelled'
+        ),
         allowNull: false,
-    },
+      },
     orderDate: {
         type: DataTypes.DATEONLY,
         allowNull: false,
