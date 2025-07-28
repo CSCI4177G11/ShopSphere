@@ -54,7 +54,7 @@ export const listPaymentMethods = asyncHandler(async (req, res) => {
                                   customer.default_source;
 
     const methods = paymentMethods.map((pm) => ({
-        id: pm.id,
+        paymentMethodId: pm.id,
         brand: pm.card.brand,
         last4: pm.card.last4,
         exp_month: pm.card.exp_month,
