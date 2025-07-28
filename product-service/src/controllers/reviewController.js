@@ -10,7 +10,7 @@ export const createReview = async (req, res) => {
             return res.status(400).json({ error: 'Rating must be between 1 and 5' });
         }
         const { id: productId } = req.params;
-        const { rating, comment } = req.body;
+        const {username, rating, comment } = req.body;
         const { userId } = req.user;
 
         const existingReview = await Review.findOne({ productId, userId });
@@ -39,6 +39,7 @@ export const createReview = async (req, res) => {
         const review = await Review.create({
             productId,
             userId,
+            username,
             rating,
             comment: comment || '',
         });
@@ -51,7 +52,7 @@ export const createReview = async (req, res) => {
             message: "Review submitted.",
             review: {
                 reviewId: review._id,
-                userId: review.userId,
+                username: review.username,
                 rating: review.rating,
                 comment: review.comment,
                 createdAt: review.createdAt
@@ -93,7 +94,7 @@ export const listReviews = async (req, res) => {
         const transformedReviews = reviews.map(review => ({
             reviewId: review._id,
             userId: review.userId,
-            username: `user_${review.userId}`, // Placeholder - should come from user service
+            username: review.username, 
             rating: review.rating,
             comment: review.comment,
             createdAt: review.createdAt

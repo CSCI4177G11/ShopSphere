@@ -15,6 +15,11 @@ const reviewSchema = new Schema(
       required: true,
       index: true,          
     },
+    username: {
+      type: String,
+      required: true,
+      index: true,          
+    },
     rating: {
       type: Number,
       required: true,
