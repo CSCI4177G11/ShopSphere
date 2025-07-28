@@ -167,7 +167,7 @@ function PaymentMethods() {
         payment_method: {
           card: elements.getElement(CardElement)!,
           billing_details: {
-            name: user?.fullName ?? user?.name ?? "",
+            name: user?.username ?? "",
             email: user?.email ?? "",
           },
         },
@@ -323,10 +323,10 @@ function PaymentMethods() {
                           iconStyle: "default",
                           style: {
                             base: {
-                              fontSize: "16px",
-                              color: "hsl(var(--foreground))",
+                              fontSize: "15px",
+                              color: "white",
                               fontFamily: "inherit",
-                              iconColor: "hsl(var(--muted-foreground))",
+                              iconColor: "white",
                               "::placeholder": { color: "hsl(var(--muted-foreground))" },
                             },
                             invalid: { color: "hsl(var(--destructive))" },
@@ -356,10 +356,7 @@ function PaymentMethods() {
 
                   {/* Security Features */}
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                      <Shield className="h-4 w-4 text-green-600" />
-                      Security Features
-                    </div>
+    
                     <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <div className="h-2 w-2 bg-green-500 rounded-full" />
@@ -478,140 +475,141 @@ function PaymentMethods() {
 /* -------------------------------------------------------------------------- */
 
 function PaymentCard({
-  method,
-  onDelete,
-  onSetDefault,
-}: {
-  method: PaymentMethod;
-  onDelete: () => void;
-  onSetDefault: () => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
-    >
-      <Card className="relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-300">
-        {/* Card Background Gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${getCardBrandColors(method.card.brand)} opacity-90`} />
-        
-        {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
-        
-        <CardContent className="relative p-6 text-white">
-          <div className="flex items-start justify-between mb-6">
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{getCardBrandIcon(method.card.brand)}</span>
-                <div>
-                  <p className="font-bold text-lg capitalize tracking-wide">
-                    {method.card.brand}
-                  </p>
-                  {method.isDefault && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="flex items-center gap-1 mt-1"
-                    >
-                      <Sparkles className="h-3 w-3 text-yellow-300" />
-                      <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
-                        Primary
-                      </Badge>
-                    </motion.div>
-                  )}
+    method,
+    onDelete,
+    onSetDefault,
+  }: {
+    method: PaymentMethod;
+    onDelete: () => void;
+    onSetDefault: () => void;
+  }) {
+    const [isHovered, setIsHovered] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+    return (
+      <motion.div
+        whileHover={{ y: -4 }}
+        transition={{ duration: 0.2 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
+      >
+        <Card className="relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-300">
+          {/* Card Background Gradient */}
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardBrandColors(method.card.brand)} opacity-90`} />
+          
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
+          
+          <CardContent className="relative p-6 text-white">
+            <div className="flex items-start justify-between mb-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{getCardBrandIcon(method.card.brand)}</span>
+                  <div>
+                    <p className="font-bold text-lg capitalize tracking-wide">
+                      {method.card.brand}
+                    </p>
+                    {method.isDefault && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="flex items-center gap-1 mt-1"
+                      >
+                        <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
+                          Default
+                        </Badge>
+                      </motion.div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <AnimatePresence>
-              {isHovered && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex gap-1"
-                >
-                  {!method.isDefault && (
+  
+              <div className="flex gap-1">
+                {!method.isDefault && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onSetDefault}
+                    title="Set as Default"
+                    className={`h-8 w-8 hover:bg-white/20 text-white/80 hover:text-white transition-opacity duration-200 ${
+                      isHovered || deleteDialogOpen ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  >
+                    <Star className="h-4 w-4" />
+                  </Button>
+                )}
+                
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={onSetDefault}
-                      title="Set as primary"
-                      className="h-8 w-8 hover:bg-white/20 text-white/80 hover:text-white"
+                      title="Remove card"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteDialogOpen(true);
+                      }}
+                      className={`h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200 transition-opacity duration-200 ${
+                        isHovered || deleteDialogOpen ? 'opacity-100' : 'opacity-0'
+                      }`}
                     >
-                      <Star className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        title="Remove card"
-                        className="h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200"
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        Remove Payment Method
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to remove this {method.card.brand} card ending in {method.card.last4}? 
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel 
+                        className="rounded-full"
+                        onClick={() => setDeleteDialogOpen(false)}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center gap-2">
-                          <AlertCircle className="h-5 w-5 text-red-500" />
-                          Remove Payment Method
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to remove this {method.card.brand} card ending in {method.card.last4}? 
-                          This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={onDelete} 
-                          className="bg-red-600 hover:bg-red-700 rounded-full"
-                        >
-                          Remove Card
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="space-y-4">
-            <div className="font-mono text-xl tracking-wider">
-              {maskCard(method.card.last4)}
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => {
+                          onDelete();
+                          setDeleteDialogOpen(false);
+                        }} 
+                        className="bg-red-600 hover:bg-red-700 rounded-full"
+                      >
+                        Remove Card
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <p className="text-white/80 text-xs uppercase tracking-wide">Expires</p>
-                <p className="font-semibold">
-                  {formatExpiry(method.card.exp_month, method.card.exp_year)}
-                </p>
+  
+            <div className="space-y-4">
+              <div className="font-mono text-xl tracking-wider">
+                {maskCard(method.card.last4)}
               </div>
               
-              <div className="text-right">
-                <p className="text-white/80 text-xs uppercase tracking-wide">Status</p>
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse" />
-                  <span className="font-semibold text-xs">Active</span>
+              <div className="flex items-center justify-between text-sm">
+                <div>
+                  <p className="text-white/80 text-xs uppercase tracking-wide">Expires</p>
+                  <p className="font-semibold">
+                    {formatExpiry(method.card.exp_month, method.card.exp_year)}
+                  </p>
                 </div>
+
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
 
 /* -------------------------------------------------------------------------- */
 /* Enhanced Skeleton                                                          */
