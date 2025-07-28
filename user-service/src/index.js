@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import vendorRoute from './routes/vendorRoutes.js';
 import consumerRoute from './routes/consumerRoutes.js';
 import publicVendorRoute from './routes/publicVendorRoutes.js';
+import publicConsumerRoutes from './routes/publicConsumerRoutes.js'
 import cors from 'cors';
 import morgan from 'morgan';
 dotenv.config();
@@ -32,6 +33,7 @@ app.get('/api/user/health', (req, res) => {
 
 app.use('/api/user/consumer', consumerRoute);
 app.use('/api/user/vendor', vendorRoute);
+app.use('/api/user/consumers/public', publicConsumerRoutes);
 app.use('/api/user/vendors/public', publicVendorRoute);
 
 app.use((req, res, next) => {

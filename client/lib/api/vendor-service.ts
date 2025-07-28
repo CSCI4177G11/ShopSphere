@@ -35,6 +35,10 @@ interface VendorResponse {
   pages: number
 }
 
+export interface VendorCountResponse {
+  totalVendors: number
+}
+
 class VendorService {
   async getVendors(query: VendorQuery = {}): Promise<VendorResponse> {
     try {
@@ -70,6 +74,14 @@ class VendorService {
       console.error('Failed to fetch vendor:', error)
       return null
     }
+  }
+
+  async getVendorCount(params?: {
+    isApproved?: boolean
+    minRating?: number
+    search?: string      
+  }) {
+    return userApi.get<VendorCountResponse>('/vendors/public/count', { params })
   }
 
 }

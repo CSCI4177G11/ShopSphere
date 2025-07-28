@@ -452,3 +452,40 @@ export const getPublicVendorProfile = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch vendor profile' });
   }
 };
+
+export const getVendorCount = async (req, res) => {
+  try {
+    const {
+      isApproved,
+      minRating,
+      search,
+    } = req.query;
+
+    const q = {};
+
+    // filter by approval flag
+    if (isApproved !== undefined) {
+      q.isApproved = isApproved === 'true';
+    }
+
+    // filter by minimum rating
+    if (minRating !== undefined) {
+      const ratingNum = parseFloat(minRating);
+      if (!isNaN(ratingNum)) q.rating = { $gte: ratingNum };
+    }
+
+    // fuzzy search (store name or location)
+    if (search) {
+      q.$or = [
+        { storeName: { $regex: search, $options: 'i' } },
+        { location:  { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const totalVendors = await Vendor.countDocuments(q);
+    return res.json({ totalVendors });
+  } catch (err) {
+    console.error('getVendorCount error:', err);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+};

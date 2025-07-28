@@ -63,6 +63,10 @@ export interface CreateAddressRequest {
   country: string
 }
 
+export interface ConsumerCountResponse {
+  totalConsumers: number
+}
+
 class UserService {
   health() {
     return userApi.get<{ service: string; status: string }>('/user/health')
@@ -170,6 +174,14 @@ class UserService {
       '/vendor/settings',
       data
     )
+  }
+
+  async getConsumerCount(params?: {
+    startDate?: string  // YYYY‑MM‑DD
+    endDate?: string    // YYYY‑MM‑DD
+  }) {
+    // assuming routes are mounted under `/api/user`
+    return userApi.get<ConsumerCountResponse>('/consumers/public/count', { params })
   }
 }
 

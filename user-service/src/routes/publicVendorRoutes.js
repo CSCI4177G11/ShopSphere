@@ -5,6 +5,12 @@ import * as vendorCtrl from '../controllers/vendorController.js';
 const router = Router();
 
 // Public endpoint - no authentication required
+
+router.get(
+  '/count',
+  vendorCtrl.getVendorCount
+);
+
 router.get(
   '/',
   [

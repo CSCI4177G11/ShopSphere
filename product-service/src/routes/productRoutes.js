@@ -15,6 +15,8 @@ router.get('/health', (req, res) => {
     message: 'Product service is running smoothly.',
   });
 });
+
+router.get('/count', productCtrl.getProductCount);
 router.post(
   '/',
   requireAuth,

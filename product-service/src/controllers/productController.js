@@ -372,4 +372,48 @@ export const decrementStock = async (req, res) => {
     }
 };
 
+
+export const getProductCount = async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Invalid query parameters' });
+      }
+  
+      const {
+        vendorId,
+        category,
+        isPublished,
+        search,
+        minPrice,
+        maxPrice,
+      } = req.query;
+  
+      /* --------------------------------------------------------------
+       * BUILD QUERY OBJECT
+       * ------------------------------------------------------------ */
+      const q = {};
+  
+      if (vendorId)       q.vendorId = vendorId;
+      if (category)       q.category = category;
+      if (isPublished !== undefined)
+        q.isPublished = isPublished === 'true';
+  
+      if (minPrice !== undefined) q.price = { ...q.price, $gte: Number(minPrice) };
+      if (maxPrice !== undefined) q.price = { ...q.price, $lte: Number(maxPrice) };
+  
+      if (search)
+        q.name = { $regex: search, $options: 'i' };
+  
+      /* --------------------------------------------------------------
+       * COUNT DOCUMENTS
+       * ------------------------------------------------------------ */
+      const totalProducts = await Product.countDocuments(q);
+      return res.json({ totalProducts });
+    } catch (err) {
+      console.error('Error counting products:', err);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+
 const getCloudinaryUrl = (imageId) => `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/products/${imageId}`;

@@ -93,6 +93,10 @@ export interface CreateReviewDto {
   comment: string
 }
 
+export interface ProductCountResponse {
+  totalProducts: number
+}
+
 /* ---------- Service ---------- */
 
 class ProductService {
@@ -212,6 +216,17 @@ class ProductService {
 
   async deleteReview(productId: string, reviewId: string): Promise<void> {
     await productApi.delete<void>(`/${productId}/reviews/${reviewId}`)
+  }
+
+  async getProductCount(params?: {
+    vendorId?: string
+    category?: string
+    isPublished?: boolean
+    search?: string
+    minPrice?: number
+    maxPrice?: number
+  }) {
+    return productApi.get<ProductCountResponse>('/count', { params })
   }
 }
 

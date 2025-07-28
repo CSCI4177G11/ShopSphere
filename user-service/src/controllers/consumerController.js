@@ -1,5 +1,6 @@
 import Consumer from '../models/consumerModel.js';
 import { v4 as uuidv4 } from 'uuid';
+import { validationResult } from 'express-validator';
 
 function resolveAddressId(req) {
   return req?.address?.addressId || req?.address?.id || null;
@@ -251,6 +252,32 @@ export const getSetting = async (req, res) => {
         } catch (err) {
           console.error('deleteAddress error:', err);
           res.status(500).json({ error: 'Internal server error.' });
+        }
+      };
+
+      export const getConsumerCount = async (req, res) => {
+        try {
+          const errors = validationResult(req);
+          if (!errors.isEmpty()) {
+            return res.status(400).json({ error: 'Invalid query parameters' });
+          }
+      
+          // Optional date window
+          const startDate = req.query.startDate || '1970-01-01';
+          const endDate   = req.query.endDate   || new Date().toISOString().slice(0, 10);
+      
+          const q = {
+            createdAt: {
+              $gte: new Date(startDate),
+              $lte: new Date(endDate),
+            },
+          };
+      
+          const totalConsumers = await Consumer.countDocuments(q);
+          return res.json({ totalConsumers });
+        } catch (err) {
+          console.error('getConsumerCount error:', err);
+          return res.status(500).json({ error: 'Internal server error.' });
         }
       };
 
