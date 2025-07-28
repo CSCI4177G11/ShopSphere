@@ -189,6 +189,7 @@ export default function VendorProductDetailPage() {
                           src={product.images[selectedImage]}
                           alt={product.name}
                           fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
                           className="object-cover"
                           priority
                         />
@@ -214,6 +215,7 @@ export default function VendorProductDetailPage() {
                               src={image}
                               alt={`${product.name} ${index + 1}`}
                               fill
+                              sizes="80px"
                               className="object-cover"
                             />
                           </button>
@@ -430,31 +432,6 @@ export default function VendorProductDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Performance Insights */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance Insights</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Views (This Month)</span>
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="font-medium">Coming Soon</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Conversion Rate</span>
-                      <span className="font-medium">Coming Soon</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Return Rate</span>
-                      <span className="font-medium">Coming Soon</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </motion.div>

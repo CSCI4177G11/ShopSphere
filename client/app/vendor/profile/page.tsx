@@ -37,7 +37,8 @@ import {
   MessageCircle,
   Hash,
   Video,
-  Camera
+  Camera,
+  Star
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -607,7 +608,16 @@ export default function VendorProfilePage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Store Rating</p>
-                      <p className="font-medium">{profile.rating || "No ratings yet"}</p>
+                      <p className="font-medium">
+                        {profile.rating && profile.rating > 0 ? (
+                          <span className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            {profile.rating.toFixed(1)} {profile.reviewCount ? `(${profile.reviewCount} reviews)` : ''}
+                          </span>
+                        ) : (
+                          "No ratings yet"
+                        )}
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Approval Status</p>

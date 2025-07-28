@@ -16,6 +16,7 @@ export interface Vendor {
   phoneNumber?: string
   socialLinks?: string[]
   isApproved?: boolean
+  reviewCount?: number
 }
 
 export interface VendorQuery {

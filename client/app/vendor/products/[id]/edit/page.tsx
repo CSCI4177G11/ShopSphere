@@ -399,6 +399,7 @@ export default function EditProductPage() {
                                     src={image}
                                     alt={`Product image ${index + 1}`}
                                     fill
+                                    sizes="100px"
                                     className="object-cover"
                                   />
                                 </div>
@@ -476,6 +477,7 @@ export default function EditProductPage() {
                                     src={preview}
                                     alt={`New image ${index + 1}`}
                                     fill
+                                    sizes="100px"
                                     className="object-cover"
                                   />
                                 </div>

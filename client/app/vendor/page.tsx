@@ -69,30 +69,102 @@ export default function VendorDashboard() {
   const fetchDashboardData = async () => {
     try {
       // Fetch vendor's products
-      const vendorProducts = await productService.getVendorProducts(user!.userId)
-      setProducts(vendorProducts)
+      let vendorProducts: Product[] = []
+      try {
+        const productResponse = await productService.getVendorProducts(user!.userId)
+        vendorProducts = productResponse.products || []
+        setProducts(vendorProducts)
+      } catch (productError) {
+        console.error('Failed to fetch products:', productError)
+        // Continue even if products fail to load
+      }
 
       // Fetch all orders (vendor sees their own orders)
-      const allOrders = await orderService.getOrders()
+      let allOrders: Order[] = []
+      try {
+        const ordersResponse = await orderService.listOrders({ limit: 1000 })
+        allOrders = ordersResponse.orders || []
+      } catch (orderError: any) {
+        console.error('Failed to fetch orders:', orderError)
+        // For now, continue with empty orders even for auth errors
+        // This allows vendors to still see their dashboard
+        if (orderError?.message?.includes('401') || orderError?.message?.includes('Unauthorized')) {
+          console.warn('Orders API returned 401 - vendor may not have order access yet')
+        }
+        allOrders = []
+      }
       
-      // Calculate stats
-      const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0)
-      const pendingOrders = allOrders.filter(order => order.status === 'pending').length
+      // Calculate current month stats
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
+      
+      const currentMonthOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt)
+        return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear
+      })
+      
+      const lastMonthOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt)
+        return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear
+      })
+      
+      // Calculate revenue
+      const currentMonthRevenue = currentMonthOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
+      const lastMonthRevenue = lastMonthOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
+      
+      // Calculate percentage changes
+      const revenueChange = lastMonthRevenue > 0 
+        ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+        : currentMonthRevenue > 0 ? 100 : 0
+      
+      const ordersChange = lastMonthOrders.length > 0
+        ? ((currentMonthOrders.length - lastMonthOrders.length) / lastMonthOrders.length) * 100
+        : currentMonthOrders.length > 0 ? 100 : 0
+      
+      const totalRevenue = allOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
+      const pendingOrders = allOrders.filter(order => order.orderStatus === 'pending').length
       
       setStats({
         totalRevenue,
         totalOrders: allOrders.length,
         totalProducts: vendorProducts.length,
         pendingOrders,
-        revenueChange: 12.5, // Mock data
-        ordersChange: 8.2 // Mock data
+        revenueChange: parseFloat(revenueChange.toFixed(1)),
+        ordersChange: parseFloat(ordersChange.toFixed(1))
       })
       
       // Get recent orders (last 5)
       setRecentOrders(allOrders.slice(0, 5))
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch dashboard data:', error)
-      toast.error('Failed to load dashboard data')
+      
+      // Check if it's an authentication error
+      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        toast.error('Session expired. Please login again.')
+        router.push('/auth/login')
+        return
+      }
+      
+      // For other errors, show a more specific message
+      if (error?.message) {
+        toast.error(`Failed to load dashboard: ${error.message}`)
+      } else {
+        toast.error('Failed to load dashboard data')
+      }
+      
+      // Set empty data to prevent errors
+      setStats({
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalProducts: products.length || 0,
+        pendingOrders: 0,
+        revenueChange: 0,
+        ordersChange: 0
+      })
+      setRecentOrders([])
     } finally {
       setLoading(false)
     }
@@ -229,14 +301,14 @@ export default function VendorDashboard() {
                     {recentOrders.map((order) => (
                       <div key={order._id} className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Order #{order.orderId}</p>
+                          <p className="font-medium">Order #{order.parentOrderId}</p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.createdAt!).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${order.total.toFixed(2)}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{order.status}</p>
+                          <p className="font-medium">${(order.subtotalAmount * 1.13).toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground capitalize">{order.orderStatus}</p>
                         </div>
                       </div>
                     ))}

@@ -37,6 +37,7 @@ export function VendorCard({ vendor }: VendorCardProps) {
               src={vendor.bannerUrl}
               alt={`${vendor.storeName} banner`}
               fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               className="object-cover"
             />
           )}
@@ -48,6 +49,7 @@ export function VendorCard({ vendor }: VendorCardProps) {
                   src={vendor.logoUrl}
                   alt={vendor.storeName}
                   fill
+                  sizes="80px"
                   className="object-cover"
                 />
               ) : (
@@ -67,10 +69,14 @@ export function VendorCard({ vendor }: VendorCardProps) {
             <h3 className="font-semibold text-lg line-clamp-1 group-hover:text-primary transition-colors">
               {vendor.storeName}
             </h3>
-            <div className="flex items-center gap-1 shrink-0">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm font-medium">{vendor.rating.toFixed(1)}</span>
-            </div>
+            {vendor.rating > 0 ? (
+              <div className="flex items-center gap-1 shrink-0">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-medium">{vendor.rating.toFixed(1)}</span>
+              </div>
+            ) : (
+              <span className="text-sm text-muted-foreground">No reviews</span>
+            )}
           </div>
 
           {/* Description */}

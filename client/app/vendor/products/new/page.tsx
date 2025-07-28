@@ -371,6 +371,7 @@ export default function NewProductPage() {
                                   src={preview}
                                   alt={`Product image ${index + 1}`}
                                   fill
+                                  sizes="100px"
                                   className="object-cover"
                                 />
                               </div>
