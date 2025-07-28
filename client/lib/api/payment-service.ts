@@ -44,7 +44,7 @@ export interface SetupIntentResponse {
 
 /* Payment DTOs ------------------------------------------------------------- */
 export interface CreatePaymentDto {
-  amount: number;          // in cents
+  amount: number;          // in dollars (e.g., 346.14)
   currency?: string;       // default CAD
   paymentMethodId: string; // pm_…
 }

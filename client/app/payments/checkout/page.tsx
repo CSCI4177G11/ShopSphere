@@ -180,7 +180,7 @@ export default function CheckoutPage() {
 
       // 1. Create payment
       const payment = await paymentService.createPayment({
-        amount: Math.round(totals!.total * 100), // Convert to cents
+        amount: totals!.total, // Backend expects amount in dollars, not cents
         paymentMethodId: data.paymentMethodId,
         currency: 'usd'
       })
