@@ -73,8 +73,10 @@ export const updateVendorRating = async (vendorId) => {
       ) / ratedProducts.length;
 
     const newRating = Number(avg.toFixed(2)); 
+    const profile = await Vendor.findOne({ vendorId });
 
-    await Vendor.updateOne({ _id: vendorId }, { rating: newRating });
+    profile.rating = newRating;
+    await profile.save();
 
     return newRating;
   } catch (err) {
@@ -143,7 +145,7 @@ export const addVendorProfile = async (req, res) => {
 export const getVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
-    updateVendorRating(vendorId);
+    const newRating = await updateVendorRating(vendorId);
     try {
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
@@ -155,7 +157,7 @@ export const getVendorProfile = async (req, res) => {
         phoneNumber:    formatPhoneNumber(profile.phoneNumber),
         logoUrl:        profile.logoUrl,
         storeBannerUrl: profile.storeBannerUrl,
-        rating:         profile.rating,
+        rating:         newRating,
         socialLinks:    profile.socialLink, // schema field
       };
       res.status(200).json({ displayProfile });
@@ -395,7 +397,7 @@ export const listPublicVendors = async (req, res) => {
           location:      vendor.location,
           logoUrl:       vendor.logoUrl,
           bannerUrl:     vendor.storeBannerUrl,
-          rating:        newRating ?? vendor.rating,  // keep existing if null
+          rating:        newRating,
           totalProducts: 0, // TODO: fetch from product service
           createdAt:     vendor.createdAt,
           _id:           vendor._id,
@@ -420,7 +422,8 @@ export const listPublicVendors = async (req, res) => {
 export const getPublicVendorProfile = async (req, res) => {
   try {
     const { vendorId } = req.params;
-    updateVendorRating(vendorId);
+    const newRating = await updateVendorRating(vendorId);
+
     
     const vendor = await Vendor.findOne({ vendorId })
       .select('-payoutSettings'); // Exclude only payment settings, keep phone and social for display
@@ -438,7 +441,7 @@ export const getPublicVendorProfile = async (req, res) => {
       logoUrl: vendor.logoUrl,
       bannerUrl: vendor.storeBannerUrl,
       socialLinks: vendor.socialLink,
-      rating: vendor.rating,
+      rating: newRating,
       isApproved: vendor.isApproved,
       createdAt: vendor.createdAt,
     };
