@@ -21,12 +21,19 @@ const gridVariants = {
 
 export default function HomePage() {
   return (
-    <div className="w-full">
+    <div className="w-full bg-background">
       <Hero />
 
+      {/* Smooth transition gradient */}
+      <div className="relative h-0 overflow-visible">
+        <div className="absolute inset-x-0 -top-32 h-32 bg-gradient-to-b from-transparent to-background" />
+      </div>
+
       {/* Trending Products Section */}
-      <section className="w-full py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="trending-products" className="w-full py-16 scroll-mt-16 relative overflow-hidden">
+        {/* Background decoration - smooth transition from hero */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-muted/5 to-muted/10" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
             variants={gridVariants}
             initial="hidden"
@@ -47,11 +54,11 @@ export default function HomePage() {
       </section>
 
       {/* Categories Section */}
-      <section className="w-full py-16 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-        <div className="absolute top-0 left-0 w-72 h-72 bg-primary/10 rounded-full filter blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/10 rounded-full filter blur-3xl" />
+      <section className="w-full py-16 relative overflow-hidden -mt-8">
+        {/* Background decoration - smooth continuation */}
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/10 via-primary/5 to-muted/10" />
+        <div className="absolute top-0 left-0 w-72 h-72 bg-primary/10 rounded-full filter blur-3xl opacity-50" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-secondary/10 rounded-full filter blur-3xl opacity-50" />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
@@ -81,8 +88,10 @@ export default function HomePage() {
       </section>
 
       {/* Featured Vendors Section */}
-      <section className="w-full py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="w-full py-16 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/10 via-background to-background" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <motion.div
             variants={gridVariants}
             initial="hidden"

@@ -134,6 +134,7 @@ export function CategoryGrid() {
                 shadow-sm hover:shadow-md dark:hover:shadow-xl
                 transition-all duration-300
                 hover:-translate-y-1
+                flex flex-col items-center text-center
               `}>
                 {/* Icon */}
                 <div className={`

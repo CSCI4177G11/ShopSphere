@@ -412,36 +412,34 @@ export default function CategoriesPage() {
                       {/* Gradient Overlay */}
                       <div className={`absolute inset-0 bg-gradient-to-br ${category.colorClasses.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 pointer-events-none`} />
                       <CardContent className="p-0">
-                        <div className="p-6 lg:p-8">
+                        <div className="p-6 lg:p-8 flex flex-col items-center text-center">
                           {/* Header */}
-                          <div className="mb-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex items-center gap-4">
-                                <motion.div 
-                                  className={`p-4 rounded-2xl ${category.colorClasses.bg} ${category.colorClasses.border} border-2 transition-all duration-300`}
-                                  animate={{
-                                    scale: isHovered ? 1.1 : 1,
-                                    rotate: isHovered ? 3 : 0
-                                  }}
-                                >
-                                  <Icon className={`h-8 w-8 ${category.colorClasses.text}`} />
-                                </motion.div>
-                                <div>
-                                  <h3 className="text-2xl font-bold">{category.name}</h3>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {loading ? (
-                                      <span className="animate-pulse">Loading...</span>
-                                    ) : (
-                                      <span className="font-semibold">
-                                        {category.productCount?.toLocaleString() || 0} products
-                                      </span>
-                                    )}
-                                  </p>
-                                </div>
+                          <div className="mb-6 w-full">
+                            <div className="flex flex-col items-center mb-4">
+                              <motion.div 
+                                className={`p-4 rounded-2xl ${category.colorClasses.bg} ${category.colorClasses.border} border-2 transition-all duration-300 mb-4`}
+                                animate={{
+                                  scale: isHovered ? 1.1 : 1,
+                                  rotate: isHovered ? 3 : 0
+                                }}
+                              >
+                                <Icon className={`h-8 w-8 ${category.colorClasses.text}`} />
+                              </motion.div>
+                              <div>
+                                <h3 className="text-2xl font-bold">{category.name}</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {loading ? (
+                                    <span className="animate-pulse">Loading...</span>
+                                  ) : (
+                                    <span className="font-semibold">
+                                      {category.productCount?.toLocaleString() || 0} products
+                                    </span>
+                                  )}
+                                </p>
                               </div>
                               {/* Trending Badge */}
                               {category.productCount && category.productCount > 100 && (
-                                <Badge className="text-xs" variant="default">
+                                <Badge className="text-xs mt-3" variant="default">
                                   <TrendingUp className="mr-1 h-3 w-3" />
                                   Popular
                                 </Badge>
@@ -449,7 +447,7 @@ export default function CategoriesPage() {
                             </div>
                             
                             {/* Stats Row */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center gap-2">
                               <Badge variant="secondary" className="text-xs">
                                 <Package className="mr-1 h-3 w-3" />
                                 {loading ? '-' : (category.productCount || 0)} Products
@@ -467,9 +465,9 @@ export default function CategoriesPage() {
                           <p className="text-muted-foreground mb-6">{category.description}</p>
 
                           {/* Subcategories */}
-                          <div className="mb-6">
+                          <div className="mb-6 w-full">
                             <p className="text-sm font-medium mb-3">Popular Subcategories:</p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap justify-center gap-2">
                               {category.featured.map((sub) => (
                                 <Badge
                                   key={sub}
@@ -484,10 +482,10 @@ export default function CategoriesPage() {
 
 
                           {/* Actions */}
-                          <div className="flex gap-3">
+                          <div className="flex gap-3 w-full max-w-sm">
                             <Link href={category.href} className="flex-1">
                               <Button className="w-full group/btn relative overflow-hidden" size="lg" disabled={loading || !category.productCount}>
-                                <span className="relative z-10 flex items-center">
+                                <span className="relative z-10 flex items-center justify-center">
                                   Browse {category.name}
                                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                 </span>

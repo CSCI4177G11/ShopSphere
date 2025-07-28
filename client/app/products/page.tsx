@@ -10,7 +10,7 @@ import { ProductFilters } from "@/components/shop/product-filters";
 import { ProductSort } from "@/components/shop/product-sort";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, Package } from "lucide-react";
+import { Search, SlidersHorizontal, Package, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -83,6 +83,11 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  // Reset page when category changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchParams]);
 
   const handleSearch = () => {
     const tokens = searchQuery.trim().split(/\s+/);
@@ -190,7 +195,10 @@ export default function ProductsPage() {
               <h2 className="font-semibold text-lg mb-4">Filters</h2>
               <ProductFilters
                 onFilterChange={handleFilterChange}
-                initialFilters={filters}
+                initialFilters={{
+                  ...filters,
+                  category: searchParams.get("category") || filters.category
+                }}
               />
             </div>
           </div>
@@ -214,7 +222,10 @@ export default function ProductsPage() {
                     <div className="mt-6">
                       <ProductFilters
                         onFilterChange={handleFilterChange}
-                        initialFilters={filters}
+                        initialFilters={{
+                          ...filters,
+                          category: searchParams.get("category") || filters.category
+                        }}
                       />
                     </div>
                   </SheetContent>
@@ -247,20 +258,36 @@ export default function ProductsPage() {
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  Showing {products.length} products
+                  {loading ? (
+                    <span className="animate-pulse">Loading...</span>
+                  ) : (
+                    <>Showing {products.length} products</>
+                  )}
+                  {searchParams.get("category") && (
+                    <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      Category: {searchParams.get("category")}
+                    </span>
+                  )}
+                  {searchParams.get("search") && (
+                    <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      Search: {searchParams.get("search")}
+                    </span>
+                  )}
                 </p>
               </div>
-              {(searchParams.get("category") || searchParams.get("vendor")) && (
+              {(searchParams.get("category") || searchParams.get("vendor") || searchParams.get("search")) && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="outline"
+                  size="default"
                   onClick={() => {
                     setFilters({});
+                    setSearchQuery("");
                     router.push("/products");
                   }}
-                  className="text-xs"
+                  className="text-sm font-medium"
                 >
-                  Clear Filter
+                  <X className="h-4 w-4 mr-2" />
+                  Clear All Filters
                 </Button>
               )}
             </div>

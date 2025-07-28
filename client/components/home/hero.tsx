@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -104,18 +104,8 @@ export function Hero() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-6"
+            className="space-y-6 pt-16"
           >
-            <div className="flex justify-center pt-16">
-              <Badge 
-                variant="outline" 
-                className="bg-background/80 backdrop-blur-sm border-primary/20 text-primary px-6 py-2 text-sm font-medium"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Trusted by 250K+ shoppers worldwide
-              </Badge>
-            </div>
-            
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
               <span className="bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent">
                 Discover Amazing
@@ -283,6 +273,30 @@ export function Hero() {
             )}
           </motion.div>
 
+          {/* Stats Section Divider */}
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="relative max-w-xs mx-auto my-4"
+          >
+            <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <motion.div
+                className="h-2 w-2 rounded-full bg-primary/30"
+                animate={{
+                  scale: [1, 1.5, 1],
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            </div>
+          </motion.div>
+
           {/* Trust Indicators */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -290,39 +304,107 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="pt-8"
           >
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6 max-w-4xl mx-auto justify-items-center">
-              {heroStats.map((stat, index) => {
-                const Icon = stat.icon
-                return (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.8 + index * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -4 }}
-                  >
-                    <Card className="bg-background/60 backdrop-blur-xl border-border/50 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-xl">
-                      <CardContent className="p-6 text-center">
+            <div className="relative max-w-2xl mx-auto">
+              {/* Background glow */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-96 h-24 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 blur-3xl opacity-50" />
+              </div>
+              
+              {/* Stats Container */}
+              <div className="relative flex justify-center items-center gap-2 sm:gap-4">
+                {heroStats.map((stat, index) => {
+                  const Icon = stat.icon
+                  const isLast = index === heroStats.length - 1
+                  
+                  return (
+                    <React.Fragment key={index}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.8 + index * 0.15 }}
+                        className="group"
+                      >
                         <motion.div
-                          className="flex justify-center mb-3"
-                          whileHover={{ rotate: 12, scale: 1.1 }}
-                          transition={{ duration: 0.2 }}
+                          whileHover={{ y: -3 }}
+                          className="relative"
                         >
-                          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 border border-primary/20 flex items-center justify-center">
-                            <Icon className="h-6 w-6 text-primary" />
+                          {/* Card Background */}
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          
+                          <div className="relative bg-background/60 backdrop-blur-md border border-border/50 rounded-2xl p-4 sm:p-6 group-hover:border-primary/30 group-hover:bg-background/80 transition-all duration-300 w-32 sm:w-40">
+                            {/* Top accent line */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            
+                            <div className="flex flex-col items-center gap-3 h-full">
+                              {/* Icon */}
+                              <motion.div
+                                whileHover={{ scale: 1.1, rotate: 360 }}
+                                transition={{ duration: 0.6 }}
+                                className="relative"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="relative p-2.5 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 transition-colors duration-300">
+                                  <Icon className="h-5 w-5 text-primary" />
+                                </div>
+                              </motion.div>
+                              
+                              {/* Value */}
+                              <div className="text-center flex-1 flex flex-col justify-center">
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ 
+                                    type: "spring",
+                                    stiffness: 200,
+                                    delay: 0.9 + index * 0.1 
+                                  }}
+                                  className="text-3xl sm:text-4xl font-bold"
+                                >
+                                  {stat.value === "..." ? (
+                                    <div className="h-9 w-16 bg-muted/50 animate-pulse rounded mx-auto" />
+                                  ) : (
+                                    <span className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                                      {stat.value}
+                                    </span>
+                                  )}
+                                </motion.div>
+                                <p className="text-xs sm:text-sm font-medium text-muted-foreground mt-1 whitespace-nowrap">
+                                  {stat.label}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         </motion.div>
-                        <div className="text-2xl font-bold text-foreground mb-1">
-                          {stat.value}
-                        </div>
-                        <div className="text-sm text-muted-foreground font-medium">
-                          {stat.label}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                )
-              })}
+                      </motion.div>
+                      
+                      {/* Separator */}
+                      {!isLast && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
+                          className="hidden sm:flex flex-col items-center gap-1"
+                        >
+                          <div className="w-px h-8 bg-gradient-to-b from-transparent via-border/30 to-transparent" />
+                          <motion.div
+                            className="w-1.5 h-1.5 rounded-full bg-primary/30"
+                            animate={{
+                              scale: [1, 1.3, 1],
+                              opacity: [0.3, 0.6, 0.3],
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              delay: index * 0.5,
+                            }}
+                          />
+                          <div className="w-px h-8 bg-gradient-to-b from-transparent via-border/30 to-transparent" />
+                        </motion.div>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
+              </div>
             </div>
           </motion.div>
 
@@ -331,22 +413,28 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.2 }}
-            className="pt-12"
+            className="pt-12 flex justify-center"
           >
-            <motion.div
+            <motion.button
+              onClick={() => {
+                const element = document.getElementById('trending-products')
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
               animate={{ y: [0, 8, 0] }}
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-              className="flex flex-col items-center text-muted-foreground cursor-pointer hover:text-primary transition-colors duration-300"
+              className="flex flex-col items-center text-muted-foreground cursor-pointer hover:text-primary transition-colors duration-300 group"
             >
-              <span className="text-sm font-medium mb-2">Explore More</span>
-              <ChevronDown className="h-5 w-5" />
-            </motion.div>
+              <span className="text-sm font-medium mb-2 group-hover:scale-105 transition-transform">Explore More</span>
+              <ChevronDown className="h-5 w-5 group-hover:scale-110 transition-transform" />
+            </motion.button>
           </motion.div>
         </div>
       </div>
 
       {/* Bottom Gradient Fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/50 to-transparent pointer-events-none" />
     </div>
   )
 }
