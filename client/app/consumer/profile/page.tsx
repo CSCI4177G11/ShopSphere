@@ -482,7 +482,7 @@ export default function ConsumerProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/wishlist')}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => router.push('/payments/payment-methods')}>
                 <CardContent className="flex items-center justify-between p-6">
                   <div className="flex items-center gap-4">
                     <CreditCard className="h-8 w-8 text-primary" />

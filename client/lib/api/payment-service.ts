@@ -1,86 +1,154 @@
-import { paymentApi } from './api-client'
+/**
+ * src/lib/api/payment-service.ts
+ * Fully aligned with the backend (Stripe) and the front‑end UI.
+ */
 
+import { paymentApi } from './api-client';
+
+/* -------------------------------------------------------------------------- */
+/* Types                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/** Card saved to the consumer (nested to match the UI) */
 export interface PaymentMethod {
-  id: string
-  type: 'card'
+  id: string;            // Stripe pm_…
   card: {
-    brand: string
-    last4: string
-    expMonth: number
-    expYear: number
-  }
-  isDefault?: boolean
+    brand: string;       // Visa, MasterCard, ...
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+  };
+  isDefault?: boolean;
 }
 
-export interface Payment {
-  _id: string
-  paymentId: string
-  parentOrderId: string
-  userId: string
-  amount: number
-  currency: string
-  status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded'
-  paymentMethod: string
-  stripePaymentIntentId?: string
-  createdAt?: string
-  updatedAt?: string
+/* Raw payload coming from the backend */
+interface PaymentMethodRaw {
+  paymentMethodId: string;
+  brand: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  isDefault?: boolean;
+  default?: boolean;     // legacy field
 }
 
-export interface CreatePaymentDto {
-  amount: number
-  currency?: string
-  paymentMethodId: string
-  savePaymentMethod?: boolean
+interface PaymentMethodsResponse {
+  paymentMethods: PaymentMethodRaw[];
 }
 
+/* SetupIntent helper */
 export interface SetupIntentResponse {
-  clientSecret: string
-  setupIntentId: string
+  clientSecret: string;
+  setupIntentId: string;
+}
+
+/* Payment DTOs ------------------------------------------------------------- */
+export interface CreatePaymentDto {
+  amount: number;          // in cents
+  currency?: string;       // default CAD
+  paymentMethodId: string; // pm_…
 }
 
 export interface RefundPaymentDto {
-  amount?: number // Optional partial refund
-  reason?: string
+  amount?: number;
+  reason?: string;
 }
+
+export interface Payment {
+  id: string;
+  orderId: string;
+  paymentIntentId: string;
+  paymentMethodId: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded';
+  createdAt: string;
+  updatedAt?: string;
+  paymentMethod?: {
+    brand: string;
+    last4: string;
+  };
+}
+
+interface PaymentResponse  { payment: Payment }
+interface PaymentsResponse { payments: Payment[] }
+
+/* -------------------------------------------------------------------------- */
+/* Service                                                                    */
+/* -------------------------------------------------------------------------- */
 
 class PaymentService {
-  async createSetupIntent(): Promise<SetupIntentResponse> {
-    return paymentApi.post<SetupIntentResponse>('/setup-intent')
+  /* 0 — health (optional) */
+  health() {
+    return paymentApi.get<{ status: 'ok' | 'error' }>('/health');
   }
 
+  /* 1 — Stripe SetupIntent */
+  createSetupIntent() {
+    return paymentApi.post<SetupIntentResponse>('/setup-intent');
+  }
+
+  /* 2 — Payment‑methods */
   async getPaymentMethods(): Promise<PaymentMethod[]> {
-    return paymentApi.get<PaymentMethod[]>('/payment-methods')
+    const { paymentMethods } =
+      await paymentApi.get<PaymentMethodsResponse>('/payment-methods');
+
+    /* map backend ⇢ front‑end shape */
+    return paymentMethods.map((pm): PaymentMethod => ({
+      id: pm.paymentMethodId,
+      card: {
+        brand: pm.brand,
+        last4: pm.last4,
+        exp_month: pm.exp_month,
+        exp_year: pm.exp_year,
+      },
+      isDefault: pm.isDefault ?? pm.default ?? false,
+    }));
   }
 
-  async deletePaymentMethod(paymentMethodId: string): Promise<{ message: string }> {
-    return paymentApi.delete<{ message: string }>(`/payment-methods/${paymentMethodId}`)
+  savePaymentMethod(paymentMethodToken: string) {
+    return paymentApi.post<{ message: string; paymentMethod: PaymentMethodRaw }>(
+      '/consumer/payment-methods',
+      { paymentMethodToken }
+    );
   }
 
-  async savePaymentMethod(paymentMethodId: string): Promise<{ message: string; paymentMethod: PaymentMethod }> {
-    return paymentApi.post<{ message: string; paymentMethod: PaymentMethod }>('/consumer/payment-methods', {
-      paymentMethodId
-    })
+  setDefaultPaymentMethod(paymentMethodId: string) {
+    return paymentApi.put<{ message: string }>(
+      `/consumer/payment-methods/${paymentMethodId}/default`
+    );
   }
 
-  async setDefaultPaymentMethod(paymentMethodId: string): Promise<{ message: string }> {
-    return paymentApi.put<{ message: string }>(`/consumer/payment-methods/${paymentMethodId}/default`)
+  async deletePaymentMethod(paymentMethodId: string): Promise<void> {
+    await paymentApi.delete<void>(`/payment-methods/${paymentMethodId}`);
   }
 
-  async createPayment(data: CreatePaymentDto): Promise<Payment> {
-    return paymentApi.post<Payment>('/', data)
+  /* 3 — Payments */
+  async createPayment(dto: CreatePaymentDto): Promise<Payment> {
+    const { amount, currency, paymentMethodId } = dto;
+    const { payment } =
+      await paymentApi.post<PaymentResponse>('/', { amount, currency, paymentMethodId });
+    return payment;
   }
 
-  async getPayments(): Promise<Payment[]> {
-    return paymentApi.get<Payment[]>('/')
+  async getPayments(page = 1, limit = 10): Promise<Payment[]> {
+    const { payments } =
+      await paymentApi.get<PaymentsResponse>(`/?page=${page}&limit=${limit}`);
+    return payments;
   }
 
-  async getPayment(paymentId: string): Promise<Payment> {
-    return paymentApi.get<Payment>(`/${paymentId}`)
+  getPayment(paymentId: string) {
+    return paymentApi.get<Payment>(`/${paymentId}`);
   }
 
-  async refundPayment(paymentId: string, data?: RefundPaymentDto): Promise<{ message: string; refund: any }> {
-    return paymentApi.post<{ message: string; refund: any }>(`/${paymentId}/refund`, data || {})
+  refundPayment(paymentId: string, data?: RefundPaymentDto) {
+    return paymentApi.post<{ message: string; refund: any }>(
+      `/${paymentId}/refund`,
+      data ?? {}
+    );
   }
 }
 
-export const paymentService = new PaymentService()
+/* -------------------------------------------------------------------------- */
+
+export const paymentService = new PaymentService();

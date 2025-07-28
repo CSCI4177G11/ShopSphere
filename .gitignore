@@ -137,3 +137,4 @@ dist
 docker-compose.yml
 package-lock.json
 .claude/settings.local.json
+package-lock.json
