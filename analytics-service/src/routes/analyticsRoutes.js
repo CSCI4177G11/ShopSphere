@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requireRole } from '../middlewares/auth.js';
-import { getSummary, getTopProducts, getSalesTrend } from '../controllers/analyticsController.js';
+import { getSummary, getTopProducts, getSalesTrend, getTopProductsGlobal } from '../controllers/analyticsController.js';
 import sequelize from '../db/db.js';
 
 const router = Router();
@@ -19,6 +19,8 @@ router.get('/health', async (req, res) => {
         res.status(500).json({ error: 'DB connection failed', details: err.message });
     }
 });
+
+router.get('/all-top-products', getTopProductsGlobal);
 
 router.get('/summary', requireAuth, requireRole(['vendor', 'admin']), getSummary);
 
