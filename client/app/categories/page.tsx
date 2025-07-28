@@ -221,6 +221,11 @@ export default function CategoriesPage() {
     try {
       setLoading(true)
       
+      // Fetch all products to get real counts
+      const allProductsResponse = await productService.getProducts({ limit: 1, page: 1 })
+      const totalProductCount = allProductsResponse.total || 0
+      setTotalProducts(totalProductCount)
+      
       // Fetch product counts for each category
       const countsPromises = categories.map(async (category) => {
         try {
@@ -235,18 +240,17 @@ export default function CategoriesPage() {
           if (backendCategory.includes('art')) {
             backendCategory = 'art'
           }
-          // "Other" category maps directly to "other"
-          if (backendCategory === 'other') {
-            backendCategory = 'other'
-          }
           
-          const response = await productService.getProductCount({ 
-            category: backendCategory
+          // Fetch products for this category
+          const response = await productService.getProducts({ 
+            category: backendCategory,
+            limit: 1,
+            page: 1
           })
-          console.log(`Category ${category.name} (${backendCategory}): ${response.totalProducts} products`)
+          
           return { 
             categoryName: category.name, 
-            count: response.totalProducts 
+            count: response.total || 0
           }
         } catch (error) {
           console.error(`Failed to fetch count for ${category.name}:`, error)
@@ -255,18 +259,6 @@ export default function CategoriesPage() {
       })
 
       const counts = await Promise.all(countsPromises)
-      
-      // Try to get total count from API directly
-      try {
-        const totalResponse = await productService.getProductCount({})
-        console.log(`Total products from API: ${totalResponse.totalProducts}`)
-        setTotalProducts(totalResponse.totalProducts)
-      } catch (error) {
-        // Fallback to sum of categories
-        const total = counts.reduce((sum, item) => sum + item.count, 0)
-        console.log(`Total products from sum: ${total}`)
-        setTotalProducts(total)
-      }
       
       // Update categories with counts
       const updatedCategories = categories.map(category => {
