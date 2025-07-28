@@ -70,7 +70,16 @@ class AnalyticsService {
     return analyticsApi.get<SalesTrendResponse>('/sales-trend', { params })
   }
 
-  /* 4. HEALTH ------------------------------------------------------ */
+  /* 4. ALL TOP PRODUCTS -------------------------------------------- */
+  async getAllTopProducts(params?: {
+    limit?: number            // default 5
+    startDate?: string        // YYYY-MM-DD
+    endDate?: string          // YYYY-MM-DD
+  }) {
+    return analyticsApi.get<TopProductsResponse>('/all-top-products', { params })
+  }
+
+  /* 5. HEALTH ------------------------------------------------------ */
   async health() {
     return analyticsApi.get<{ service: string; status: string }>('health')
   }

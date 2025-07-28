@@ -36,7 +36,7 @@ export default function HomePage() {
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold tracking-tight mb-4">Trending Products</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Discover what&apos;s popular right now across all categories
+                Top selling products from the last 10 days
               </p>
             </div>
             <Suspense fallback={<ProductGridSkeleton />}>

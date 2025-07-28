@@ -4,10 +4,12 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
+import { analyticsService } from "@/lib/api/analytics-service"
 import { ProductCard } from "@/components/product/product-card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
+import type { TopProductsResponse } from "@/lib/api/analytics-service"
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -26,22 +28,65 @@ export function TrendingProducts() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchTrendingProducts = async () => {
       try {
-        // Fetch products sorted by rating or recent activity
-        const response = await productService.getProducts({
+        // Calculate date for 10 days ago
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 10)
+        const formattedStartDate = startDate.toISOString().split('T')[0] // YYYY-MM-DD format
+
+        // Fetch top selling products from analytics
+        const topProductsResponse = await analyticsService.getAllTopProducts({
           limit: 8,
-          sort: '-rating' // Sort by highest rating
+          startDate: formattedStartDate
         })
-        setProducts(response.products)
+
+        if (topProductsResponse.topProducts.length > 0) {
+          // Fetch product details for each top product
+          const productPromises = topProductsResponse.topProducts.map(async (item) => {
+            try {
+              const product = await productService.getProduct(item.productId)
+              // Add sales data to product for potential display
+              return {
+                ...product,
+                recentRevenue: item.revenue,
+                recentUnitsSold: item.unitsSold
+              }
+            } catch (err) {
+              console.error(`Failed to fetch product ${item.productId}:`, err)
+              return null
+            }
+          })
+
+          const fetchedProducts = await Promise.all(productPromises)
+          const validProducts = fetchedProducts.filter((p): p is Product => p !== null)
+          setProducts(validProducts)
+        } else {
+          // Fallback to regular products if no trending data
+          const response = await productService.getProducts({
+            limit: 8,
+            sort: '-createdAt' // Sort by newest
+          })
+          setProducts(response.products)
+        }
       } catch (error) {
         console.error('Failed to fetch trending products:', error)
+        // Fallback to regular products on error
+        try {
+          const response = await productService.getProducts({
+            limit: 8,
+            sort: '-createdAt'
+          })
+          setProducts(response.products)
+        } catch (fallbackError) {
+          console.error('Failed to fetch fallback products:', fallbackError)
+        }
       } finally {
         setLoading(false)
       }
     }
 
-    fetchProducts()
+    fetchTrendingProducts()
   }, [])
 
   if (loading) {
