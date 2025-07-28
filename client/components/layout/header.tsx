@@ -67,7 +67,7 @@ export function Header() {
       {/* Main Header - Centered container with proper max-width */}
       <div className="w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
+          <div className="relative flex items-center justify-between h-16 gap-4">
             {/* Logo Section - Enhanced with animation */}
             <div className="flex-shrink-0 min-w-0">
               <Link href="/" className="flex items-center space-x-3 group">
@@ -99,8 +99,8 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Navigation Links */}
-            <nav className="hidden lg:flex flex-1 items-center justify-center gap-6">
+            {/* Navigation Links - Centered */}
+            <nav className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 items-center gap-8">
               <Link href="/shop" className="text-sm font-medium hover:text-primary transition-colors">
                 Shops
               </Link>
