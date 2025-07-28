@@ -156,7 +156,7 @@ export default function CheckoutPage() {
       let shippingAddress;
       if (data.useNewAddress) {
         shippingAddress = {
-          street: data.street!,
+          line1: data.street!,
           city: data.city!,
           state: data.state!,
           zipCode: data.zipCode!,
@@ -170,9 +170,8 @@ export default function CheckoutPage() {
           throw new Error('Selected address not found')
         }
         shippingAddress = {
-          street: savedAddress.line1,
+          line1: savedAddress.line1,
           city: savedAddress.city,
-          state: savedAddress.postalCode.length <= 5 ? 'N/A' : savedAddress.postalCode.substring(0, 2), // Extract province/state
           zipCode: savedAddress.postalCode,
           country: savedAddress.country,
         }
@@ -182,11 +181,12 @@ export default function CheckoutPage() {
       const payment = await paymentService.createPayment({
         amount: totals!.total, // Backend expects amount in dollars, not cents
         paymentMethodId: data.paymentMethodId,
-        currency: 'usd'
+        currency: 'cad'
       })
 
       // 2. Create order with payment's orderId as parentOrderId
       const orders = await orderService.createOrder({
+        consumerId: user?.userId,
         parentOrderId: payment.orderId,
         shippingAddress,
         paymentMethod: data.paymentMethodId,
