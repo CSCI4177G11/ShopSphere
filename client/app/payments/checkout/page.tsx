@@ -9,29 +9,49 @@ import { motion } from "framer-motion"
 import { cartService } from "@/lib/api/cart-service"
 import { paymentService } from "@/lib/api/payment-service"
 import { orderService } from "@/lib/api/order-service"
+import { userService, type Address } from "@/lib/api/user-service"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { CreditCard, Loader2, CheckCircle } from "lucide-react"
-import type { CartTotals } from "@/lib/api/cart-service"
+import { CreditCard, Loader2, CheckCircle, MapPin, Plus, Star } from "lucide-react"
+import type { CartTotals, CartItem } from "@/lib/api/cart-service"
 import type { PaymentMethod } from "@/lib/api/payment-service"
 
 const checkoutSchema = z.object({
+  // Address selection
+  useNewAddress: z.boolean(),
+  savedAddressId: z.string().optional(),
+  
   // Shipping Address
-  street: z.string().min(5, "Street address is required"),
-  city: z.string().min(2, "City is required"),
-  state: z.string().min(2, "State is required"),
-  zipCode: z.string().min(5, "ZIP code is required"),
-  country: z.string().min(2, "Country is required"),
+  street: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.enum(["USA", "Canada"]).optional(),
   
   // Payment
   paymentMethodId: z.string().min(1, "Please select a payment method"),
+}).refine((data) => {
+  if (data.useNewAddress) {
+    return data.street && data.city && data.state && data.zipCode && data.country;
+  }
+  return data.savedAddressId;
+}, {
+  message: "Please complete the shipping address or select a saved address",
+  path: ["street"],
 })
+
+const formatExpiry = (m?: number, y?: number) =>
+  typeof m === "number" && typeof y === "number"
+    ? `${m.toString().padStart(2, "0")} / ${y.toString().slice(-2)}`
+    : "— / —";
 
 type CheckoutForm = z.infer<typeof checkoutSchema>
 
@@ -39,7 +59,9 @@ export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
   const [totals, setTotals] = useState<CartTotals | null>(null)
+  const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [savedAddresses, setSavedAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [orderComplete, setOrderComplete] = useState(false)
@@ -53,11 +75,13 @@ export default function CheckoutPage() {
   } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
+      useNewAddress: false,
       country: "USA",
     }
   })
 
   const selectedPaymentMethod = watch("paymentMethodId")
+  const useNewAddress = watch("useNewAddress")
 
   useEffect(() => {
     if (!user) {
@@ -76,23 +100,45 @@ export default function CheckoutPage() {
 
   const fetchCheckoutData = async () => {
     try {
-      const [cartTotals, methods] = await Promise.all([
+      const [cartData, cartTotals, methods, addressData] = await Promise.all([
+        cartService.getCart(),
         cartService.getCartTotals(),
-        paymentService.getPaymentMethods()
+        paymentService.getPaymentMethods(),
+        userService.getAddresses()
       ])
 
-      if (cartTotals.itemCount === 0) {
+      if (cartTotals.totalItems === 0) {
         router.push('/cart')
         toast.error('Your cart is empty')
         return
       }
 
+      setCartItems(cartData.items)
       setTotals(cartTotals)
-      setPaymentMethods(methods)
       
-      // Select first payment method by default
-      if (methods.length > 0) {
-        setValue("paymentMethodId", methods[0].id)
+      // Sort payment methods to show default first
+      const sortedMethods = [...methods].sort((a, b) => {
+        if (a.isDefault) return -1
+        if (b.isDefault) return 1
+        return 0
+      })
+      setPaymentMethods(sortedMethods)
+      setSavedAddresses(addressData.addresses)
+      
+      // Select default payment method or first one
+      const defaultMethod = sortedMethods.find(m => m.isDefault)
+      if (defaultMethod) {
+        setValue("paymentMethodId", defaultMethod.id)
+      } else if (sortedMethods.length > 0) {
+        setValue("paymentMethodId", sortedMethods[0].id)
+      }
+      
+      // If user has saved addresses, select the first one by default
+      if (addressData.addresses.length > 0) {
+        setValue("savedAddressId", addressData.addresses[0]._id || addressData.addresses[0].addressId || '')
+      } else {
+        // If no saved addresses, default to new address
+        setValue("useNewAddress", true)
       }
     } catch (error) {
       console.error('Failed to fetch checkout data:', error)
@@ -106,23 +152,43 @@ export default function CheckoutPage() {
     setProcessing(true)
 
     try {
+      // Determine the shipping address
+      let shippingAddress;
+      if (data.useNewAddress) {
+        shippingAddress = {
+          street: data.street!,
+          city: data.city!,
+          state: data.state!,
+          zipCode: data.zipCode!,
+          country: data.country!,
+        }
+      } else {
+        const savedAddress = savedAddresses.find(addr => 
+          (addr._id || addr.addressId) === data.savedAddressId
+        )
+        if (!savedAddress) {
+          throw new Error('Selected address not found')
+        }
+        shippingAddress = {
+          street: savedAddress.line1,
+          city: savedAddress.city,
+          state: savedAddress.postalCode.length <= 5 ? 'N/A' : savedAddress.postalCode.substring(0, 2), // Extract province/state
+          zipCode: savedAddress.postalCode,
+          country: savedAddress.country,
+        }
+      }
+
       // 1. Create payment
       const payment = await paymentService.createPayment({
-        amount: totals!.total,
+        amount: Math.round(totals!.total * 100), // Convert to cents
         paymentMethodId: data.paymentMethodId,
         currency: 'usd'
       })
 
-      // 2. Create order with payment's parentOrderId
+      // 2. Create order with payment's orderId as parentOrderId
       const orders = await orderService.createOrder({
-        parentOrderId: payment.parentOrderId,
-        shippingAddress: {
-          street: data.street,
-          city: data.city,
-          state: data.state,
-          zipCode: data.zipCode,
-          country: data.country,
-        },
+        parentOrderId: payment.orderId,
+        shippingAddress,
         paymentMethod: data.paymentMethodId,
       })
 
@@ -186,75 +252,164 @@ export default function CheckoutPage() {
                 {/* Shipping Address */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Shipping Address</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Shipping Address</CardTitle>
+                      {savedAddresses.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push('/consumer/profile')}
+                          className="text-xs"
+                        >
+                          Manage
+                        </Button>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Label htmlFor="street">Street Address</Label>
-                        <Input
-                          id="street"
-                          {...register("street")}
-                          placeholder="123 Main St"
-                          disabled={processing}
-                        />
-                        {errors.street && (
-                          <p className="text-sm text-destructive mt-1">{errors.street.message}</p>
-                        )}
+                    {savedAddresses.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* Saved Addresses Grid */}
+                        <div className="grid gap-3">
+                          {savedAddresses.map((address) => {
+                            const addressId = address._id || address.addressId || ''
+                            const isSelected = !useNewAddress && watch("savedAddressId") === addressId
+                            return (
+                              <div
+                                key={addressId}
+                                onClick={() => {
+                                  setValue("useNewAddress", false)
+                                  setValue("savedAddressId", addressId)
+                                }}
+                                className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                  isSelected 
+                                    ? 'border-primary bg-primary/5' 
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                              >
+                                {isSelected && (
+                                  <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                    <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                                <div className="pr-8">
+                                  <p className="font-medium mb-1">{address.label}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {address.line1}, {address.city}, {address.postalCode}, {address.country}
+                                  </p>
+                                </div>
+                              </div>
+                            )
+                          })}
+                          
+                          {/* Add New Address Option */}
+                          <div
+                            onClick={() => setValue("useNewAddress", true)}
+                            className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center ${
+                              useNewAddress 
+                                ? 'border-primary bg-primary/5' 
+                                : 'border-border hover:border-primary/50 border-dashed'
+                            }`}
+                          >
+                            {useNewAddress && (
+                              <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                <CheckCircle className="h-3 w-3 text-primary-foreground" />
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Plus className="h-4 w-4" />
+                              <span className="font-medium">Add new address</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          {...register("city")}
-                          placeholder="New York"
-                          disabled={processing}
-                        />
-                        {errors.city && (
-                          <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
-                        )}
+                    ) : (
+                      <div className="text-center py-4 text-muted-foreground">
+                        <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No saved addresses</p>
+                        <p className="text-xs mt-1">Enter your shipping address below</p>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="state">State</Label>
-                        <Input
-                          id="state"
-                          {...register("state")}
-                          placeholder="NY"
-                          disabled={processing}
-                        />
-                        {errors.state && (
-                          <p className="text-sm text-destructive mt-1">{errors.state.message}</p>
-                        )}
+                    )}
+
+                    {/* New Address Form */}
+                    {(useNewAddress || savedAddresses.length === 0) && (
+                      <div className="space-y-4 pt-4 border-t">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <Label htmlFor="street">Street Address</Label>
+                          <Input
+                            id="street"
+                            {...register("street")}
+                            placeholder="123 Main St"
+                            disabled={processing}
+                          />
+                          {errors.street && (
+                            <p className="text-sm text-destructive mt-1">{errors.street.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            {...register("city")}
+                            placeholder="Toronto or New York"
+                            disabled={processing}
+                          />
+                          {errors.city && (
+                            <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="state">{watch("country") === "Canada" ? "Province" : "State"}</Label>
+                          <Input
+                            id="state"
+                            {...register("state")}
+                            placeholder={watch("country") === "Canada" ? "ON" : "NY"}
+                            disabled={processing}
+                          />
+                          {errors.state && (
+                            <p className="text-sm text-destructive mt-1">{errors.state.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="zipCode">{watch("country") === "Canada" ? "Postal Code" : "ZIP Code"}</Label>
+                          <Input
+                            id="zipCode"
+                            {...register("zipCode")}
+                            placeholder={watch("country") === "Canada" ? "M5V 3A8" : "10001"}
+                            disabled={processing}
+                          />
+                          {errors.zipCode && (
+                            <p className="text-sm text-destructive mt-1">{errors.zipCode.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <Label htmlFor="country">Country</Label>
+                          <Select
+                            value={watch("country")}
+                            onValueChange={(value) => setValue("country", value as "USA" | "Canada")}
+                            disabled={processing}
+                          >
+                            <SelectTrigger id="country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="USA">United States</SelectItem>
+                              <SelectItem value="Canada">Canada</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {errors.country && (
+                            <p className="text-sm text-destructive mt-1">{errors.country.message}</p>
+                          )}
+                        </div>
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="zipCode">ZIP Code</Label>
-                        <Input
-                          id="zipCode"
-                          {...register("zipCode")}
-                          placeholder="10001"
-                          disabled={processing}
-                        />
-                        {errors.zipCode && (
-                          <p className="text-sm text-destructive mt-1">{errors.zipCode.message}</p>
-                        )}
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                          id="country"
-                          {...register("country")}
-                          placeholder="USA"
-                          disabled={processing}
-                        />
-                        {errors.country && (
-                          <p className="text-sm text-destructive mt-1">{errors.country.message}</p>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -268,37 +423,59 @@ export default function CheckoutPage() {
                       <div className="text-center py-8">
                         <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                         <p className="text-muted-foreground mb-4">No payment methods saved</p>
-                        <Button variant="outline" disabled>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => router.push('/payments/payment-methods')}
+                        >
                           Add Payment Method
                         </Button>
                         <p className="text-sm text-muted-foreground mt-4">
-                          For testing, we'll use a mock payment method
+                          You need to add a payment method before checkout
                         </p>
                       </div>
                     ) : (
-                      <RadioGroup
-                        value={selectedPaymentMethod}
-                        onValueChange={(value) => setValue("paymentMethodId", value)}
-                        disabled={processing}
-                      >
-                        {paymentMethods.map((method) => (
-                          <div key={method.id} className="flex items-center space-x-2 p-3 border rounded-lg">
-                            <RadioGroupItem value={method.id} id={method.id} />
-                            <Label htmlFor={method.id} className="flex-1 cursor-pointer">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <CreditCard className="h-4 w-4" />
-                                  <span className="capitalize">{method.card.brand}</span>
-                                  <span>•••• {method.card.last4}</span>
+                      <>
+                        <RadioGroup
+                          value={selectedPaymentMethod}
+                          onValueChange={(value) => setValue("paymentMethodId", value)}
+                          disabled={processing}
+                        >
+                          {paymentMethods.map((method) => (
+                            <div 
+                              key={method.id} 
+                              className="flex items-center space-x-2 p-3 border rounded-lg transition-all hover:border-gray-300"
+                            >
+                              <RadioGroupItem value={method.id} id={method.id} />
+                              <Label htmlFor={method.id} className="flex-1 cursor-pointer">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4" />
+                                    <span className="capitalize font-medium">{method.card.brand}</span>
+                                    <span>•••• {method.card.last4}</span>
+                                    {method.isDefault && (
+                                      <span className="text-xs text-muted-foreground">(Default)</span>
+                                    )}
+                                  </div>
+                                  <span className="text-sm text-muted-foreground">
+                                  {formatExpiry(method.card.exp_month,method.card.exp_year)}
+                                  </span>
                                 </div>
-                                <span className="text-sm text-muted-foreground">
-                                  {method.card.expMonth}/{method.card.expYear}
-                                </span>
-                              </div>
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                        <div className="mt-4 text-center">
+                          <Button 
+                            type="button"
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => router.push('/payments/payment-methods')}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add New Payment Method
+                          </Button>
+                        </div>
+                      </>
                     )}
                     
                     {errors.paymentMethodId && (
@@ -315,14 +492,31 @@ export default function CheckoutPage() {
                     <CardTitle>Order Summary</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {/* Cart Items */}
+                    {cartItems.length > 0 && (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {cartItems.map((item) => (
+                          <div key={item.itemId} className="flex justify-between text-sm">
+                            <span className="truncate pr-2">
+                              {item.quantity}x {item.productName}
+                            </span>
+                            <span className="font-medium">
+                              ${(item.price * item.quantity).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                        <Separator className="my-2" />
+                      </div>
+                    )}
+                    
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Subtotal ({totals?.itemCount || 0} items)</span>
-                        <span>${totals?.subtotal.toFixed(2) || '0.00'}</span>
+                        <span>Subtotal ({totals?.totalItems || 0} items)</span>
+                        <span>${totals?.subtotal?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>${totals?.tax.toFixed(2) || '0.00'}</span>
+                        <span>${totals?.estimatedTax?.toFixed(2) || '0.00'}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Shipping</span>
@@ -331,7 +525,7 @@ export default function CheckoutPage() {
                       <Separator />
                       <div className="flex justify-between font-semibold text-lg">
                         <span>Total</span>
-                        <span>${totals?.total.toFixed(2) || '0.00'}</span>
+                        <span>${totals?.total?.toFixed(2) || '0.00'}</span>
                       </div>
                     </div>
                     
@@ -347,7 +541,7 @@ export default function CheckoutPage() {
                           Processing...
                         </>
                       ) : (
-                        `Place Order - $${totals?.total.toFixed(2) || '0.00'}`
+                        `Place Order - $${totals?.total?.toFixed(2) || '0.00'}`
                       )}
                     </Button>
                     

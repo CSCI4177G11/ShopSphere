@@ -44,6 +44,8 @@ export interface CartTotals {
   estimatedTax: number
   total: number
   currency: string
+  tax?: number  // Alias for estimatedTax for backward compatibility
+  itemCount?: number  // Alias for totalItems for backward compatibility
 }
 
 // DTOs

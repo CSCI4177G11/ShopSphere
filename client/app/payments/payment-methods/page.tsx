@@ -37,6 +37,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
@@ -79,23 +80,20 @@ const formatExpiry = (m?: number, y?: number) =>
     ? `${m.toString().padStart(2, "0")} / ${y.toString().slice(-2)}`
     : "— / —";
 
-const getCardBrandColors = (brand: string) => {
-  const colors = {
-    visa: "from-blue-600 to-blue-800",
-    mastercard: "from-red-600 to-orange-600",
-    amex: "from-green-600 to-teal-700",
-    discover: "from-orange-600 to-amber-700",
-    default: "from-slate-600 to-slate-800",
-  };
-  return colors[brand.toLowerCase() as keyof typeof colors] || colors.default;
+const getCardBrandColors = (brand: string, isDefault?: boolean) => {
+  if (isDefault) {
+    return "from-green-500 via-emerald-500 to-teal-600";
+  }
+  // All cards use green theme for consistency with subtle variations
+  return "from-green-600 via-emerald-600 to-green-700";
 };
 
 const getCardBrandIcon = (brand: string) => {
   const brandLower = brand.toLowerCase();
   if (brandLower === 'visa') return '💳';
-  if (brandLower === 'mastercard') return '🏦';
+  if (brandLower === 'mastercard') return '💵';
   if (brandLower === 'amex') return '💎';
-  if (brandLower === 'discover') return '🔍';
+  if (brandLower === 'discover') return '🏆';
   return '💳';
 };
 
@@ -135,7 +133,17 @@ function PaymentMethods() {
     setLoading(true);
     try {
       const data = await paymentService.getPaymentMethods();
-      setMethods(data);
+      // Ensure at least one card is default if cards exist
+      if (data.length > 0 && !data.some(m => m.isDefault)) {
+        data[0].isDefault = true;
+      }
+      // Sort payment methods to show default first
+      const sortedData = [...data].sort((a, b) => {
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return 0;
+      });
+      setMethods(sortedData);
     } catch {
       toast.error("Failed to load payment methods");
     } finally {
@@ -180,7 +188,13 @@ function PaymentMethods() {
 
       const pmToken = result.setupIntent?.payment_method as string;
       /* 3️⃣ Persist token in your DB */
-      await paymentService.savePaymentMethod(pmToken);
+      const savedResult = await paymentService.savePaymentMethod(pmToken);
+      
+      /* 4️⃣ If this is the first payment method, set it as default */
+      if (methods.length === 0) {
+        await paymentService.setDefaultPaymentMethod(savedResult.paymentMethod.paymentMethodId);
+      }
+      
       toast.success("Card saved successfully!");
 
       setDialogOpen(false);
@@ -208,7 +222,16 @@ function PaymentMethods() {
     try {
       await paymentService.setDefaultPaymentMethod(id);
       toast.success("Default payment method updated");
-      setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
+      setMethods((prev) => {
+        // Update default status
+        const updated = prev.map((m) => ({ ...m, isDefault: m.id === id }));
+        // Sort to keep default first
+        return updated.sort((a, b) => {
+          if (a.isDefault) return -1;
+          if (b.isDefault) return 1;
+          return 0;
+        });
+      });
     } catch {
       toast.error("Could not set default");
     }
@@ -219,100 +242,70 @@ function PaymentMethods() {
   if (loading) return <SkeletonPage />;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="space-y-8"
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
         >
           {/* Header Section */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full hover:bg-white/80 dark:hover:bg-slate-800/80 backdrop-blur-sm" 
-                onClick={router.back}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <div className="hidden sm:block w-px h-6 bg-border" />
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                    <CreditCard className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full flex items-center justify-center">
-                    <Shield className="h-2.5 w-2.5 text-white" />
-                  </div>
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-                    Payment Methods
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Securely manage your saved payment cards
-                  </p>
-                </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => router.back()}
+                  className="h-8 w-8"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <h1 className="text-3xl font-bold">Payment Methods</h1>
               </div>
+              <p className="text-muted-foreground">
+                Manage your saved payment cards
+              </p>
             </div>
 
             {/* Add New Card Button */}
             <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
               <DialogTrigger asChild>
-                <Button 
-                  size="sm" 
-                  className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                >
+                <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add New Card
+                  Add Card
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="sm:max-w-lg [&>button:last-of-type]:hidden">
-                <DialogHeader className="text-center space-y-3">
-                  <DialogTitle className="text-xl text-center">Add New Payment Method</DialogTitle>
-                  <DialogDescription className="text-center">
-                    Your card information is encrypted and securely stored using industry-standard security.
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Add Payment Method</DialogTitle>
+                  <DialogDescription>
+                    Your card information is encrypted and securely stored.
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="card-element"
-                        className="text-sm font-medium text-foreground flex items-center gap-2"
-                      >
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        Card Information
-                      </label>
-                      <AnimatePresence>
-                        {cardComplete && (
-                          <motion.span 
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            className="text-xs text-green-600 flex items-center gap-1 bg-green-50 dark:bg-green-950/30 px-2 py-1 rounded-full"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                            Valid
-                          </motion.span>
-                        )}
-                      </AnimatePresence>
+                      <Label htmlFor="card-element">Card Information</Label>
+                      {cardComplete && (
+                        <span className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Valid
+                        </span>
+                      )}
                     </div>
 
                     <div
                       id="card-element-container"
                       className={`
-                        relative rounded-xl border-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm
-                        px-4 py-4 shadow-sm transition-all duration-200
-                        ${error ? "border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-950/20" : 
-                          focused ? "border-blue-300 dark:border-blue-600 ring-4 ring-blue-100 dark:ring-blue-900/30 shadow-lg" : 
-                          "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"}
+                        relative rounded-lg border bg-background
+                        px-4 py-4 transition-all duration-200
+                        ${error ? "border-destructive" : 
+                          focused ? "border-primary ring-2 ring-primary/20" : 
+                          "border-input"}
                       `}
                       onFocus={() => setFocused(true)}
                       onBlur={() => setFocused(false)}
@@ -323,13 +316,12 @@ function PaymentMethods() {
                           iconStyle: "default",
                           style: {
                             base: {
-                              fontSize: "15px",
-                              color: "white",
-                              fontFamily: "inherit",
-                              iconColor: "white",
-                              "::placeholder": { color: "hsl(var(--muted-foreground))" },
+                              fontSize: "16px",
+                              color: "#424770",
+                              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                              "::placeholder": { color: "#aab7c4" },
                             },
-                            invalid: { color: "hsl(var(--destructive))" },
+                            invalid: { color: "#fa755a" },
                           },
                         }}
                         onChange={(event) => {
@@ -339,46 +331,22 @@ function PaymentMethods() {
                       />
                     </div>
                     
-                    <AnimatePresence>
-                      {error && (
-                        <motion.div 
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="text-sm text-red-600 flex items-start gap-2 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg"
-                        >
-                          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                          <span>{error.message}</span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {error && (
+                      <div className="text-sm text-destructive flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{error.message}</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Security Features */}
-                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-3">
-    
-                    <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                        256-bit SSL encryption
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                        PCI DSS compliant
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                        Stripe secure processing
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 bg-green-500 rounded-full" />
-                        No card data stored
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    <Shield className="h-4 w-4" />
+                    <span>Your payment information is encrypted and secure</span>
                   </div>
                 </div>
 
-                <DialogFooter className="gap-3">
+                <DialogFooter>
                   <Button 
                     variant="outline" 
                     onClick={() => {
@@ -386,14 +354,12 @@ function PaymentMethods() {
                       setCardComplete(false); 
                       setError(null);
                     }}
-                    className="rounded-full"
                   >
                     Cancel
                   </Button>
                   <Button
                     disabled={adding || !stripe || !elements || !cardComplete}
                     onClick={handleAddCard}
-                    className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   >
                     {adding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     {adding ? 'Saving...' : 'Save Card'}
@@ -404,39 +370,56 @@ function PaymentMethods() {
           </div>
 
           {/* Payment Methods Grid */}
-          <div className="space-y-6">
-            {methods.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Card className="border-2 border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-                  <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                    <div className="h-20 w-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                      <CreditCard className="h-10 w-10 text-slate-400" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                        No payment methods yet
-                      </h3>
-                      <p className="text-sm text-muted-foreground max-w-sm">
-                        Add your first payment method to get started with secure transactions.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ) : (
+          {methods.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="border-dashed border-2">
+                <CardContent className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                  <motion.div 
+                    className="h-16 w-16 rounded-full bg-muted flex items-center justify-center"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      rotate: [0, 5, -5, 0]
+                    }}
+                    transition={{ 
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                  >
+                    <CreditCard className="h-8 w-8 text-muted-foreground" />
+                  </motion.div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">
+                      No payment methods
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Add a payment method to make purchases
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                   {methods.map((method, index) => (
                     <motion.div
                       key={method.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.4, delay: index * 0.1 }}
+                      layout
+                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ 
+                        duration: 0.4, 
+                        delay: index * 0.05,
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 25
+                      }}
                     >
                       <PaymentCard
                         method={method}
@@ -448,21 +431,15 @@ function PaymentMethods() {
                 </AnimatePresence>
               </div>
             )}
-          </div>
 
           {/* Footer Info */}
           {methods.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="text-center"
-            >
-              <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm px-4 py-2 rounded-full border">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <Shield className="h-3 w-3" />
-                All payment methods are securely encrypted and PCI compliant
-              </div>
-            </motion.div>
+                Your payment information is encrypted and secure
+              </p>
+            </div>
           )}
         </motion.div>
       </div>
@@ -488,74 +465,141 @@ function PaymentCard({
   
     return (
       <motion.div
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -4, scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.2 }}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
+        className={method.isDefault ? "relative" : ""}
       >
-        <Card className="relative overflow-hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-0 shadow-lg hover:shadow-2xl transition-all duration-300">
+        {method.isDefault && (
+          <motion.div
+            className="absolute -top-3 -right-3 z-10"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-green-400 rounded-full blur-md animate-pulse" />
+              <div className="relative bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-xl flex items-center gap-1.5 border border-white/30">
+                <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                <span className="tracking-wide">Default</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        <Card className={`relative overflow-hidden transition-all duration-300 ${
+          method.isDefault 
+            ? "shadow-xl shadow-green-500/25 ring-2 ring-green-500/50 scale-[1.02]" 
+            : "hover:shadow-lg hover:shadow-gray-300/50 dark:hover:shadow-gray-700/50"
+        }`}>
+          {/* Animated Background Pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.05) 10px,
+                rgba(255,255,255,0.05) 20px
+              )`
+            }} />
+          </div>
+          
           {/* Card Background Gradient */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${getCardBrandColors(method.card.brand)} opacity-90`} />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardBrandColors(method.card.brand, method.isDefault)}`} />
           
-          {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
+          {/* Shimmer Effect for Default Card */}
+          {method.isDefault && (
+            <motion.div
+              className="absolute inset-0 opacity-30"
+              animate={{
+                background: [
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+                  "linear-gradient(90deg, transparent 100%, rgba(255,255,255,0.4) 150%, transparent 200%)",
+                ],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+              style={{
+                backgroundSize: "200% 100%",
+              }}
+            />
+          )}
           
-          <CardContent className="relative p-6 text-white">
-            <div className="flex items-start justify-between mb-6">
+          <CardContent className="relative p-6 text-white z-10">
+            <div className="flex items-start justify-between mb-8">
               <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">{getCardBrandIcon(method.card.brand)}</span>
+                  <motion.span 
+                    className="text-3xl filter drop-shadow-md"
+                    animate={{ 
+                      rotateY: isHovered ? 360 : 0,
+                    }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {getCardBrandIcon(method.card.brand)}
+                  </motion.span>
                   <div>
-                    <p className="font-bold text-lg capitalize tracking-wide">
+                    <p className="font-bold text-xl capitalize tracking-wide text-white drop-shadow-sm">
                       {method.card.brand}
                     </p>
-                    {method.isDefault && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="flex items-center gap-1 mt-1"
-                      >
-                        <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
-                          Default
-                        </Badge>
-                      </motion.div>
-                    )}
                   </div>
                 </div>
               </div>
   
               <div className="flex gap-1">
                 {!method.isDefault && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onSetDefault}
-                    title="Set as Default"
-                    className={`h-8 w-8 hover:bg-white/20 text-white/80 hover:text-white transition-opacity duration-200 ${
-                      isHovered || deleteDialogOpen ? 'opacity-100' : 'opacity-0'
-                    }`}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: isHovered || deleteDialogOpen ? 1 : 0 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <Star className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onSetDefault}
+                      title="Set as Default"
+                      className="h-8 w-8 hover:bg-green-500/30 text-white/80 hover:text-green-100 transition-all duration-200"
+                    >
+                      <motion.div
+                        whileHover={{ scale: 1.2, rotate: 180 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Star className="h-4 w-4" />
+                      </motion.div>
+                    </Button>
+                  </motion.div>
                 )}
                 
                 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Remove card"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteDialogOpen(true);
-                      }}
-                      className={`h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200 transition-opacity duration-200 ${
-                        isHovered || deleteDialogOpen ? 'opacity-100' : 'opacity-0'
-                      }`}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: isHovered || deleteDialogOpen ? 1 : 0 }}
+                      transition={{ duration: 0.2, delay: 0.05 }}
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Remove card"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200 transition-all duration-200"
+                      >
+                        <motion.div
+                          whileHover={{ scale: 1.2 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </motion.div>
+                      </Button>
+                    </motion.div>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -591,18 +635,41 @@ function PaymentCard({
             </div>
   
             <div className="space-y-4">
-              <div className="font-mono text-xl tracking-wider">
+              <motion.div 
+                className="font-mono text-2xl tracking-[0.2em] text-white drop-shadow-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+              >
                 {maskCard(method.card.last4)}
-              </div>
+              </motion.div>
               
               <div className="flex items-center justify-between text-sm">
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
                   <p className="text-white/80 text-xs uppercase tracking-wide">Expires</p>
                   <p className="font-semibold">
                     {formatExpiry(method.card.exp_month, method.card.exp_year)}
                   </p>
-                </div>
-
+                </motion.div>
+                
+                {method.isDefault && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring" }}
+                    className="flex items-center gap-1"
+                  >
+                    <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+                      <Lock className="h-3 w-3" />
+                      <span className="text-xs font-medium">Secure</span>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -617,38 +684,23 @@ function PaymentCard({
 
 function SkeletonPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
-      <div className="container max-w-6xl mx-auto px-4 py-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-8 w-16 rounded-full" />
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-12 w-12 rounded-2xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            </div>
-          </div>
-          <Skeleton className="h-9 w-32 rounded-full" />
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-6xl mx-auto px-4 py-8 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-0 shadow-lg">
+            <Card key={i}>
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-8 w-8 rounded" />
-                    <Skeleton className="h-5 w-20" />
-                  </div>
-                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-5 w-16" />
                 </div>
                 <Skeleton className="h-6 w-40" />
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-12" />
-                </div>
+                <Skeleton className="h-4 w-24" />
               </CardContent>
             </Card>
           ))}
