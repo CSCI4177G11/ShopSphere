@@ -1,4 +1,9 @@
 import Vendor from '../models/vendorModel.js';
+import axios from 'axios';
+
+
+
+
 
 // Format phone number for display
 function formatPhoneNumber(phoneNumber) {
@@ -30,6 +35,54 @@ function requireVendorId(req, res) {
   }
   return vendorId;
 }
+
+const PRODUCT_SERVICE_HOST =
+  process.env.PRODUCT_SERVICE_HOST || 'http://product-service:4300';
+
+/**
+ * Recalculate a vendor’s average rating based on *rated* products only.
+ *
+ * • Fetches all products via product‑service endpoint  
+ *   GET `${HOST}/api/product/vendor/${vendorId}`  
+ * • Includes a product in the mean **only when reviewCount > 0** so
+ *   unrated items don’t skew the score.  
+ * • If *no* products are rated, the vendor’s current rating is left intact
+ *   and the function returns `null`.  
+ * • A legitimate rating of 0 **is** counted in the average.  
+ *
+ * @param {string} vendorId  Mongo ObjectId string
+ * @returns {number|null}    new rating (two decimals) or null if unchanged
+ */
+export const updateVendorRating = async (vendorId) => {
+  try {
+    const { data } = await axios.get(
+      `${PRODUCT_SERVICE_HOST}/api/product/vendor/${vendorId}`,
+    );
+    const products = data?.products ?? [];
+    const ratedProducts = products.filter(
+      (p) => typeof p.reviewCount === 'number' && p.reviewCount > 0,
+    );
+
+    if (ratedProducts.length === 0) {
+      return -1;
+    }
+    const avg =
+      ratedProducts.reduce(
+        (sum, p) => sum + (typeof p.averageRating === 'number' ? p.averageRating : 0),
+        0,
+      ) / ratedProducts.length;
+
+    const newRating = Number(avg.toFixed(2)); 
+
+    await Vendor.updateOne({ _id: vendorId }, { rating: newRating });
+
+    return newRating;
+  } catch (err) {
+    console.error('updateVendorRating failed:', err.message);
+    throw err; 
+  }
+};
+
 
 export const addVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
@@ -90,6 +143,7 @@ export const addVendorProfile = async (req, res) => {
 export const getVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
+    updateVendorRating(vendorId);
     try {
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
@@ -331,17 +385,23 @@ export const listPublicVendors = async (req, res) => {
     const total = await Vendor.countDocuments(query);
 
     /* ---------- transform ---------- */
-    const transformedVendors = vendors.map((vendor) => ({
-      vendorId:      vendor.vendorId,
-      storeName:     vendor.storeName,
-      location:      vendor.location,
-      logoUrl:       vendor.logoUrl,
-      bannerUrl:     vendor.storeBannerUrl,
-      rating:        vendor.rating,
-      totalProducts: 0, // TODO: fetch from product service
-      createdAt:     vendor.createdAt,
-      _id:           vendor._id,
-    }));
+    const transformedVendors = await Promise.all(
+      vendors.map(async (vendor) => {
+        const newRating = await updateVendorRating(vendor.vendorId);
+
+        return {
+          vendorId:      vendor.vendorId,
+          storeName:     vendor.storeName,
+          location:      vendor.location,
+          logoUrl:       vendor.logoUrl,
+          bannerUrl:     vendor.storeBannerUrl,
+          rating:        newRating ?? vendor.rating,  // keep existing if null
+          totalProducts: 0, // TODO: fetch from product service
+          createdAt:     vendor.createdAt,
+          _id:           vendor._id,
+        };
+      }),
+    );
 
     res.json({
       vendors: transformedVendors,
@@ -360,6 +420,7 @@ export const listPublicVendors = async (req, res) => {
 export const getPublicVendorProfile = async (req, res) => {
   try {
     const { vendorId } = req.params;
+    updateVendorRating(vendorId);
     
     const vendor = await Vendor.findOne({ vendorId })
       .select('-payoutSettings'); // Exclude only payment settings, keep phone and social for display
