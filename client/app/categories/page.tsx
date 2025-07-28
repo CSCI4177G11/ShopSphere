@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import Image from "next/image"
@@ -26,8 +26,27 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { productService } from "@/lib/api/product-service"
+import { toast } from "sonner"
 
-const categories = [
+interface CategoryWithCount {
+  name: string
+  icon: any
+  color: string
+  colorClasses: {
+    gradient: string
+    bg: string
+    text: string
+    border: string
+    hover: string
+  }
+  href: string
+  description: string
+  featured: string[]
+  productCount?: number
+}
+
+const categories: CategoryWithCount[] = [
   { 
     name: "Electronics", 
     icon: Smartphone, 
@@ -39,13 +58,9 @@ const categories = [
       border: "border-blue-200 dark:border-blue-800",
       hover: "hover:from-blue-500/10 hover:to-blue-600/10"
     },
-    href: "/shop?category=electronics",
+    href: "/products?category=electronics",
     description: "Discover the latest smartphones, laptops, cameras, and cutting-edge tech gadgets",
     featured: ["Smartphones", "Laptops", "Headphones", "Smart Home"],
-    stats: { shops: 45, products: 1250, trending: "+12%" },
-    popularBrands: ["Apple", "Samsung", "Sony", "LG"],
-    bestSeller: "iPhone 15 Pro Max",
-    avgPrice: "$450"
   },
   { 
     name: "Fashion", 
@@ -58,13 +73,9 @@ const categories = [
       border: "border-pink-200 dark:border-pink-800",
       hover: "hover:from-pink-500/10 hover:to-pink-600/10"
     },
-    href: "/shop?category=fashion",
+    href: "/products?category=fashion",
     description: "Express yourself with trendy clothing, shoes, and accessories for every occasion",
     featured: ["Clothing", "Shoes", "Bags", "Jewelry"],
-    stats: { shops: 67, products: 3420, trending: "+25%" },
-    popularBrands: ["Nike", "Adidas", "Zara", "H&M"],
-    bestSeller: "Nike Air Max 270",
-    avgPrice: "$120"
   },
   { 
     name: "Home & Garden", 
@@ -77,13 +88,9 @@ const categories = [
       border: "border-green-200 dark:border-green-800",
       hover: "hover:from-green-500/10 hover:to-green-600/10"
     },
-    href: "/shop?category=home",
+    href: "/products?category=home",
     description: "Transform your living space with furniture, decor, and garden essentials",
     featured: ["Furniture", "Decor", "Kitchen", "Garden Tools"],
-    stats: { shops: 34, products: 890, trending: "+8%" },
-    popularBrands: ["IKEA", "Home Depot", "Wayfair", "Ashley"],
-    bestSeller: "Smart LED Bulbs Set",
-    avgPrice: "$180"
   },
   { 
     name: "Books", 
@@ -96,13 +103,9 @@ const categories = [
       border: "border-purple-200 dark:border-purple-800",
       hover: "hover:from-purple-500/10 hover:to-purple-600/10"
     },
-    href: "/shop?category=books",
+    href: "/products?category=books",
     description: "Explore worlds through fiction, learn with non-fiction, and grow with self-help",
     featured: ["Fiction", "Non-Fiction", "Educational", "Comics"],
-    stats: { shops: 23, products: 5670, trending: "+15%" },
-    popularBrands: ["Penguin", "HarperCollins", "Scholastic", "Oxford"],
-    bestSeller: "Atomic Habits",
-    avgPrice: "$25"
   },
   { 
     name: "Sports", 
@@ -115,13 +118,9 @@ const categories = [
       border: "border-orange-200 dark:border-orange-800",
       hover: "hover:from-orange-500/10 hover:to-orange-600/10"
     },
-    href: "/shop?category=sports",
+    href: "/products?category=sports",
     description: "Gear up for fitness and outdoor adventures with quality equipment",
     featured: ["Fitness Gear", "Outdoor", "Team Sports", "Yoga"],
-    stats: { shops: 29, products: 780, trending: "+20%" },
-    popularBrands: ["Nike", "Adidas", "Under Armour", "Puma"],
-    bestSeller: "Adjustable Dumbbells",
-    avgPrice: "$85"
   },
   { 
     name: "Accessories", 
@@ -134,13 +133,9 @@ const categories = [
       border: "border-yellow-200 dark:border-yellow-800",
       hover: "hover:from-yellow-500/10 hover:to-yellow-600/10"
     },
-    href: "/shop?category=accessories",
+    href: "/products?category=accessories",
     description: "Complete your look with watches, belts, wallets, and more",
     featured: ["Watches", "Belts", "Wallets", "Sunglasses"],
-    stats: { shops: 41, products: 920, trending: "+18%" },
-    popularBrands: ["Fossil", "Ray-Ban", "Michael Kors", "Coach"],
-    bestSeller: "Leather Wallet",
-    avgPrice: "$75"
   },
   { 
     name: "Gaming", 
@@ -153,13 +148,9 @@ const categories = [
       border: "border-red-200 dark:border-red-800",
       hover: "hover:from-red-500/10 hover:to-red-600/10"
     },
-    href: "/shop?category=gaming",
+    href: "/products?category=gaming",
     description: "Level up your gaming experience with consoles, games, and accessories",
     featured: ["Consoles", "PC Gaming", "Games", "Controllers"],
-    stats: { shops: 19, products: 450, trending: "+30%" },
-    popularBrands: ["PlayStation", "Xbox", "Nintendo", "Steam"],
-    bestSeller: "PS5 Controller",
-    avgPrice: "$250"
   },
   { 
     name: "Art & Crafts", 
@@ -172,13 +163,24 @@ const categories = [
       border: "border-indigo-200 dark:border-indigo-800",
       hover: "hover:from-indigo-500/10 hover:to-indigo-600/10"
     },
-    href: "/shop?category=art",
+    href: "/products?category=art",
     description: "Unleash your creativity with art supplies, craft materials, and DIY kits",
     featured: ["Painting", "Drawing", "Crafting", "DIY Kits"],
-    stats: { shops: 15, products: 340, trending: "+10%" },
-    popularBrands: ["Crayola", "Faber-Castell", "Winsor & Newton", "Prismacolor"],
-    bestSeller: "Watercolor Set",
-    avgPrice: "$45"
+  },
+  { 
+    name: "Other", 
+    icon: Package, 
+    color: "gray",
+    colorClasses: {
+      gradient: "from-gray-500 to-gray-600",
+      bg: "bg-gray-50 dark:bg-gray-950/20",
+      text: "text-gray-600 dark:text-gray-400",
+      border: "border-gray-200 dark:border-gray-800",
+      hover: "hover:from-gray-500/10 hover:to-gray-600/10"
+    },
+    href: "/products?category=other",
+    description: "Explore unique items and miscellaneous products that don't fit in other categories",
+    featured: ["Unique Items", "Collectibles", "Specialty", "Miscellaneous"],
   },
 ]
 
@@ -207,8 +209,76 @@ export default function CategoriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [categoriesWithCounts, setCategoriesWithCounts] = useState<CategoryWithCount[]>(categories)
+  const [loading, setLoading] = useState(true)
+  const [totalProducts, setTotalProducts] = useState(0)
 
-  const filteredCategories = categories.filter(category =>
+  useEffect(() => {
+    fetchCategoryCounts()
+  }, [])
+
+  const fetchCategoryCounts = async () => {
+    try {
+      setLoading(true)
+      
+      // Fetch all products to get real counts
+      const allProductsResponse = await productService.getProducts({ limit: 1, page: 1 })
+      const totalProductCount = allProductsResponse.total || 0
+      setTotalProducts(totalProductCount)
+      
+      // Fetch product counts for each category
+      const countsPromises = categories.map(async (category) => {
+        try {
+          // Map category names to match backend expectations
+          let backendCategory = category.name.toLowerCase()
+          
+          // Special case for "Home & Garden" -> "home"
+          if (backendCategory.includes('home')) {
+            backendCategory = 'home'
+          }
+          // Special case for "Art & Crafts" -> "art"
+          if (backendCategory.includes('art')) {
+            backendCategory = 'art'
+          }
+          
+          // Fetch products for this category
+          const response = await productService.getProducts({ 
+            category: backendCategory,
+            limit: 1,
+            page: 1
+          })
+          
+          return { 
+            categoryName: category.name, 
+            count: response.total || 0
+          }
+        } catch (error) {
+          console.error(`Failed to fetch count for ${category.name}:`, error)
+          return { categoryName: category.name, count: 0 }
+        }
+      })
+
+      const counts = await Promise.all(countsPromises)
+      
+      // Update categories with counts
+      const updatedCategories = categories.map(category => {
+        const countData = counts.find(c => c.categoryName === category.name)
+        return {
+          ...category,
+          productCount: countData?.count || 0
+        }
+      })
+      
+      setCategoriesWithCounts(updatedCategories)
+    } catch (error) {
+      console.error('Failed to fetch category counts:', error)
+      toast.error('Failed to load product counts')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredCategories = categoriesWithCounts.filter(category =>
     category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     category.featured.some(sub => sub.toLowerCase().includes(searchQuery.toLowerCase()))
   )
@@ -280,20 +350,22 @@ export default function CategoriesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">250+</div>
-              <div className="text-sm text-muted-foreground">Active Shops</div>
+              <div className="text-3xl font-bold text-primary">{categories.length}</div>
+              <div className="text-sm text-muted-foreground">Categories</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">15K+</div>
-              <div className="text-sm text-muted-foreground">Products</div>
+              <div className="text-3xl font-bold text-primary">
+                {loading ? '-' : totalProducts.toLocaleString()}
+              </div>
+              <div className="text-sm text-muted-foreground">Total Products</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">4.8</div>
-              <div className="text-sm text-muted-foreground">Avg Rating</div>
+              <div className="text-3xl font-bold text-primary">100+</div>
+              <div className="text-sm text-muted-foreground">Active Vendors</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">98%</div>
-              <div className="text-sm text-muted-foreground">Satisfaction</div>
+              <div className="text-3xl font-bold text-primary">24/7</div>
+              <div className="text-sm text-muted-foreground">Shopping</div>
             </div>
           </div>
         </div>
@@ -357,15 +429,21 @@ export default function CategoriesPage() {
                                 <div>
                                   <h3 className="text-2xl font-bold">{category.name}</h3>
                                   <p className="text-sm text-muted-foreground mt-1">
-                                    Avg. price: <span className="font-semibold">{category.avgPrice}</span>
+                                    {loading ? (
+                                      <span className="animate-pulse">Loading...</span>
+                                    ) : (
+                                      <span className="font-semibold">
+                                        {category.productCount?.toLocaleString() || 0} products
+                                      </span>
+                                    )}
                                   </p>
                                 </div>
                               </div>
-                              {/* Best Seller Badge */}
-                              {category.bestSeller && (
+                              {/* Trending Badge */}
+                              {category.productCount && category.productCount > 100 && (
                                 <Badge className="text-xs" variant="default">
-                                  <Sparkles className="mr-1 h-3 w-3" />
-                                  Hot: {category.bestSeller}
+                                  <TrendingUp className="mr-1 h-3 w-3" />
+                                  Popular
                                 </Badge>
                               )}
                             </div>
@@ -373,17 +451,15 @@ export default function CategoriesPage() {
                             {/* Stats Row */}
                             <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="text-xs">
-                                <Store className="mr-1 h-3 w-3" />
-                                {category.stats.shops} Shops
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
                                 <Package className="mr-1 h-3 w-3" />
-                                {category.stats.products} Products
+                                {loading ? '-' : (category.productCount || 0)} Products
                               </Badge>
-                              <Badge variant="outline" className={`text-xs ${category.colorClasses.text} ${category.colorClasses.border}`}>
-                                <TrendingUp className="mr-1 h-3 w-3" />
-                                {category.stats.trending}
-                              </Badge>
+                              {category.productCount && category.productCount > 0 && (
+                                <Badge variant="outline" className={`text-xs ${category.colorClasses.text} ${category.colorClasses.border}`}>
+                                  <Sparkles className="mr-1 h-3 w-3" />
+                                  Available Now
+                                </Badge>
+                              )}
                             </div>
                           </div>
 
@@ -406,35 +482,16 @@ export default function CategoriesPage() {
                             </div>
                           </div>
 
-                          {/* Popular Brands */}
-                          <div className="mb-6">
-                            <p className="text-sm font-medium mb-3">Top Brands:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {category.popularBrands.map((brand) => (
-                                <span
-                                  key={brand}
-                                  className="text-xs px-3 py-1 bg-muted rounded-full"
-                                >
-                                  {brand}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
 
                           {/* Actions */}
                           <div className="flex gap-3">
                             <Link href={category.href} className="flex-1">
-                              <Button className="w-full group/btn relative overflow-hidden" size="lg">
+                              <Button className="w-full group/btn relative overflow-hidden" size="lg" disabled={loading || !category.productCount}>
                                 <span className="relative z-10 flex items-center">
-                                  Browse {category.name} Shops
+                                  Browse {category.name}
                                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
                                 </span>
                                 <div className={`absolute inset-0 bg-gradient-to-r ${category.colorClasses.gradient} opacity-0 group-hover/btn:opacity-10 transition-opacity duration-300`} />
-                              </Button>
-                            </Link>
-                            <Link href={`/products?category=${category.name.toLowerCase()}`}>
-                              <Button variant="outline" size="lg" className="hover:bg-muted">
-                                View Products
                               </Button>
                             </Link>
                           </div>
@@ -479,16 +536,16 @@ export default function CategoriesPage() {
               Browse all shops or use our search to find exactly what you need
             </p>
             <div className="flex gap-4 justify-center">
-              <Link href="/shop">
+              <Link href="/products">
                 <Button size="lg">
-                  <Store className="mr-2 h-5 w-5" />
-                  View All Shops
+                  <Package className="mr-2 h-5 w-5" />
+                  View All Products
                 </Button>
               </Link>
-              <Link href="/products">
+              <Link href="/shop">
                 <Button size="lg" variant="outline">
-                  <Package className="mr-2 h-5 w-5" />
-                  Browse All Products
+                  <Store className="mr-2 h-5 w-5" />
+                  Browse Vendors
                 </Button>
               </Link>
             </div>
