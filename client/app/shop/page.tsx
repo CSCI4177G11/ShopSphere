@@ -68,7 +68,8 @@ export default function ShopPage() {
       const vendorsWithCounts = await Promise.all(
         response.vendors.map(async (vendor) => {
           try {
-            const productData = await productService.getVendorProducts(vendor.vendorId, { limit: 1 })
+            const productData = await productService.getVendorProducts(vendor.vendorId)
+            
             return {
               ...vendor,
               totalProducts: productData.total || 0
@@ -80,8 +81,16 @@ export default function ShopPage() {
         })
       )
       
-      // Client-side filtering for product range only (backend doesn't support this)
+      // Client-side filtering for filters that backend might not support
       let filteredVendors = vendorsWithCounts
+      
+      // Minimum rating filter
+      if (filters.minRating) {
+        filteredVendors = filteredVendors.filter(vendor => {
+          const rating = typeof vendor.rating === 'number' ? vendor.rating : parseFloat(vendor.rating as string) || 0
+          return rating >= filters.minRating!
+        })
+      }
       
       // Product range filter (still client-side)
       // @ts-ignore
@@ -172,6 +181,21 @@ export default function ShopPage() {
                 />
               </div>
               <Button onClick={handleSearch}>Search</Button>
+              {searchQuery && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchQuery("")
+                    setFilters(prev => {
+                      const { search, ...rest } = prev
+                      return rest
+                    })
+                    setPage(1)
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
           </div>
         </div>

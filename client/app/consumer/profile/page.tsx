@@ -203,7 +203,7 @@ export default function ConsumerProfilePage() {
       const formattedAddress = {
         ...addressForm,
         postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'Canada' // Default to Canada
+        country: 'CA' // Default to Canada
       }
       const response = await userService.createAddress(formattedAddress)
       // Refetch addresses to get the proper _id from MongoDB
@@ -238,7 +238,7 @@ export default function ConsumerProfilePage() {
       const formattedAddress = {
         ...addressForm,
         postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'Canada' // Default to Canada
+        country: 'CA' // Default to Canada
       }
       const response = await userService.updateAddress(addressId, formattedAddress)
       setAddresses(addresses.map(addr => 

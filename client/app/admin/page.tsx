@@ -74,10 +74,11 @@ export default function AdminDashboard() {
       const allProducts = await productService.getProducts({ limit: 1000 })
       
       // Fetch all orders
-      const allOrders = await orderService.getOrders()
+      const ordersResponse = await orderService.listOrders({ limit: 1000 })
+      const allOrders = ordersResponse.orders
       
       // Calculate stats
-      const totalRevenue = allOrders.reduce((sum, order) => sum + order.total, 0)
+      const totalRevenue = allOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
       
       setStats(prev => ({
         ...prev,
@@ -229,15 +230,15 @@ export default function AdminDashboard() {
                     {recentOrders.slice(0, 5).map((order) => (
                       <div key={order._id} className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">Order #{order.orderId}</p>
+                          <p className="font-medium">Order #{order.parentOrderId}</p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(order.createdAt!).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${order.total.toFixed(2)}</p>
+                          <p className="font-medium">${(order.subtotalAmount * 1.13).toFixed(2)}</p>
                           <Badge variant="outline" className="text-xs capitalize">
-                            {order.status}
+                            {order.orderStatus}
                           </Badge>
                         </div>
                       </div>

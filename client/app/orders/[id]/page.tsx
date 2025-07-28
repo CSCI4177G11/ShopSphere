@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
+import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,12 +25,13 @@ import {
   ArrowLeft,
   Copy
 } from "lucide-react"
-import type { Order, OrderTracking } from "@/lib/api/order-service"
+import type { Order } from "@/lib/api/order-service"
 
 const statusConfig = {
   pending: { label: "Pending", icon: Clock, color: "bg-yellow-500" },
   processing: { label: "Processing", icon: Package, color: "bg-blue-500" },
   shipped: { label: "Shipped", icon: Truck, color: "bg-purple-500" },
+  out_for_delivery: { label: "Out for Delivery", icon: Truck, color: "bg-indigo-500" },
   delivered: { label: "Delivered", icon: CheckCircle, color: "bg-green-500" },
   cancelled: { label: "Cancelled", icon: XCircle, color: "bg-red-500" },
 }
@@ -39,9 +41,19 @@ export default function OrderDetailPage() {
   const router = useRouter()
   const { user } = useAuth()
   const [order, setOrder] = useState<Order | null>(null)
-  const [tracking, setTracking] = useState<OrderTracking | null>(null)
+  const [tracking, setTracking] = useState<{
+    orderId: string
+    tracking: Array<{
+      status: string
+      timestamp: string
+      note?: string
+      carrier?: string
+      trackingNumber?: string
+    }>
+  } | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [productImages, setProductImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user) {
@@ -55,11 +67,32 @@ export default function OrderDetailPage() {
   const fetchOrderDetails = async () => {
     try {
       const [orderData, trackingData] = await Promise.all([
-        orderService.getOrder(params.id as string),
-        orderService.getOrderTracking(params.id as string)
+        orderService.get(params.id as string),
+        orderService.getTracking(params.id as string)
       ])
-      setOrder(orderData)
+      // Handle both single order and parent order response
+      let actualOrder: Order
+      if ('childOrders' in orderData) {
+        // For now, display the first child order
+        actualOrder = orderData.childOrders[0]
+      } else {
+        actualOrder = orderData
+      }
+      setOrder(actualOrder)
       setTracking(trackingData)
+      
+      // Fetch product images
+      const images: Record<string, string> = {}
+      for (const item of actualOrder.orderItems) {
+        try {
+          const product = await productService.getProduct(item.productId)
+          images[item.productId] = product.images?.[0] || product.thumbnail || '/placeholder.jpg'
+        } catch (error) {
+          console.error(`Failed to fetch product ${item.productId}:`, error)
+          images[item.productId] = '/placeholder.jpg'
+        }
+      }
+      setProductImages(images)
     } catch (error) {
       console.error('Failed to fetch order details:', error)
       toast.error('Failed to load order details')
@@ -69,12 +102,13 @@ export default function OrderDetailPage() {
   }
 
   const handleCancelOrder = async () => {
-    if (!order || order.status !== 'pending') return
+    if (!order || order.orderStatus !== 'pending') return
 
     setCancelling(true)
     try {
-      const updatedOrder = await orderService.cancelOrder(order._id)
-      setOrder(updatedOrder)
+      await orderService.cancel(order._id)
+      // Refetch order details to get updated status
+      await fetchOrderDetails()
       toast.success('Order cancelled successfully')
     } catch (error) {
       toast.error('Failed to cancel order')
@@ -85,7 +119,7 @@ export default function OrderDetailPage() {
 
   const copyOrderId = () => {
     if (order) {
-      navigator.clipboard.writeText(order.orderId)
+      navigator.clipboard.writeText(order.parentOrderId)
       toast.success('Order ID copied to clipboard')
     }
   }
@@ -114,7 +148,12 @@ export default function OrderDetailPage() {
     )
   }
 
-  const StatusIcon = statusConfig[order.status].icon
+  // Early return if no user (prevents render during redirect)
+  if (!user) {
+    return null
+  }
+
+  const StatusIcon = statusConfig[order.orderStatus]?.icon || Clock
 
   return (
     <div className="min-h-screen">
@@ -137,7 +176,7 @@ export default function OrderDetailPage() {
               <div>
                 <h1 className="text-3xl font-bold mb-2">Order Details</h1>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Order #{order.orderId}</span>
+                  <span>Order #{order.parentOrderId.slice(-8)}</span>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -150,10 +189,10 @@ export default function OrderDetailPage() {
               </div>
               <Badge 
                 variant="secondary"
-                className={`${statusConfig[order.status].color} text-white px-4 py-2`}
+                className={`${statusConfig[order.orderStatus]?.color || 'bg-gray-500'} text-white px-4 py-2`}
               >
                 <StatusIcon className="h-4 w-4 mr-2" />
-                {statusConfig[order.status].label}
+                {statusConfig[order.orderStatus]?.label || order.orderStatus}
               </Badge>
             </div>
           </div>
@@ -167,23 +206,24 @@ export default function OrderDetailPage() {
                   <CardTitle>Order Items</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {order.items.map((item) => (
+                  {order.orderItems.map((item) => (
                     <div key={item.productId} className="flex gap-4">
                       <div className="relative h-20 w-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                         <Image
-                          src="/placeholder-product.jpg"
-                          alt={item.productName}
+                          src={productImages[item.productId] || '/placeholder.jpg'}
+                          alt="Product"
                           fill
+                          sizes="80px"
                           className="object-cover"
                         />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-medium">{item.productName}</h4>
+                        <h4 className="font-medium">Product #{item.productId.slice(-6)}</h4>
                         <p className="text-sm text-muted-foreground">
                           ${item.price.toFixed(2)} × {item.quantity}
                         </p>
                       </div>
-                      <p className="font-medium">${item.subtotal.toFixed(2)}</p>
+                      <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   ))}
                   
@@ -192,11 +232,11 @@ export default function OrderDetailPage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>${order.subtotal.toFixed(2)}</span>
+                      <span>${order.subtotalAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Tax</span>
-                      <span>${order.tax.toFixed(2)}</span>
+                      <span>Tax (13%)</span>
+                      <span>${(order.subtotalAmount * 0.13).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -205,7 +245,7 @@ export default function OrderDetailPage() {
                     <Separator />
                     <div className="flex justify-between font-semibold text-base">
                       <span>Total</span>
-                      <span>${order.total.toFixed(2)}</span>
+                      <span>${(order.subtotalAmount * 1.13).toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -215,60 +255,96 @@ export default function OrderDetailPage() {
               {tracking && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Order Tracking</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle>Order Tracking</CardTitle>
+                      {tracking.tracking.length > 0 && (
+                        <Badge variant="outline" className="capitalize">
+                          {tracking.tracking[tracking.tracking.length - 1].status.replace(/_/g, ' ')}
+                        </Badge>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    {tracking.trackingNumber && (
+                    {tracking.tracking[0]?.trackingNumber && (
                       <div className="mb-4">
                         <p className="text-sm text-muted-foreground">Tracking Number</p>
-                        <p className="font-mono">{tracking.trackingNumber}</p>
-                        {tracking.carrier && (
+                        <p className="font-mono">{tracking.tracking[0].trackingNumber}</p>
+                        {tracking.tracking[0].carrier && (
                           <p className="text-sm text-muted-foreground mt-1">
-                            via {tracking.carrier}
+                            via {tracking.tracking[0].carrier}
                           </p>
                         )}
                       </div>
                     )}
                     
-                    {tracking.estimatedDelivery && (
-                      <div className="mb-6">
-                        <p className="text-sm text-muted-foreground">Estimated Delivery</p>
-                        <p className="font-medium">
-                          {new Date(tracking.estimatedDelivery).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </p>
+                    <div className="relative">
+                      <div className="space-y-0">
+                        {tracking.tracking.slice().reverse().map((update, index, array) => {
+                          const isFirst = index === 0
+                          const isLast = index === array.length - 1
+                          const status = update.status as keyof typeof statusConfig | 'cancelled'
+                          const config = statusConfig[status as keyof typeof statusConfig]
+                          const Icon = config?.icon || Clock
+                          
+                          return (
+                            <div key={index} className="relative flex gap-4 pb-8 last:pb-0">
+                              {/* Status icon */}
+                              <div className="relative z-10">
+                                <div className={`
+                                  h-12 w-12 rounded-full flex items-center justify-center
+                                  ${config?.color || 'bg-gray-500'}
+                                  transition-all duration-300
+                                `}>
+                                  <Icon className="h-5 w-5 text-white" />
+                                </div>
+                                {isFirst && (
+                                  <div className="absolute inset-0 animate-ping">
+                                    <div className={`h-12 w-12 rounded-full ${config?.color || 'bg-gray-500'} opacity-25`} />
+                                  </div>
+                                )}
+                                {/* Connecting line */}
+                                {!isLast && (
+                                  <div className={`absolute top-12 left-6 w-0.5 h-[calc(100%-3rem)] -translate-x-1/2 ${
+                                    config?.color || 'bg-gray-500'
+                                  }`} />
+                                )}
+                              </div>
+                              
+                              {/* Content */}
+                              <div className="flex-1 pt-1">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className={`font-medium capitalize ${
+                                      isFirst ? 'text-foreground' : 'text-muted-foreground'
+                                    }`}>
+                                      {update.status.replace(/_/g, ' ')}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-0.5">
+                                      {new Date(update.timestamp).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: 'numeric'
+                                      })}
+                                    </p>
+                                    {update.note && (
+                                      <p className="text-sm mt-2 p-2 bg-muted rounded-md">
+                                        {update.note}
+                                      </p>
+                                    )}
+                                  </div>
+                                  {isFirst && (
+                                    <Badge variant="secondary" className="ml-2">
+                                      Current
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                    )}
-                    
-                    <div className="space-y-4">
-                      {tracking.updates.map((update, index) => (
-                        <div key={index} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className={`h-3 w-3 rounded-full ${
-                              index === 0 ? 'bg-primary' : 'bg-gray-300'
-                            }`} />
-                            {index < tracking.updates.length - 1 && (
-                              <div className="w-0.5 h-16 bg-gray-300" />
-                            )}
-                          </div>
-                          <div className="flex-1 pb-8">
-                            <p className="font-medium">{update.status}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(update.timestamp).toLocaleString()}
-                            </p>
-                            {update.location && (
-                              <p className="text-sm text-muted-foreground">{update.location}</p>
-                            )}
-                            {update.description && (
-                              <p className="text-sm mt-1">{update.description}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
                     </div>
                   </CardContent>
                 </Card>
@@ -287,8 +363,8 @@ export default function OrderDetailPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm">
-                    {order.shippingAddress.street}<br />
-                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}<br />
+                    {order.shippingAddress.line1}<br />
+                    {order.shippingAddress.city}, {order.shippingAddress.postalCode}<br />
                     {order.shippingAddress.country}
                   </p>
                 </CardContent>
@@ -303,12 +379,15 @@ export default function OrderDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">
-                    Payment Method: {order.paymentMethod}<br />
-                    Status: <Badge variant="outline" className="ml-1">
-                      {order.paymentStatus}
-                    </Badge>
-                  </p>
+                  <div className="text-sm space-y-1">
+                    <p>Payment ID: {order.paymentId.slice(-8)}</p>
+                    <div className="flex items-center gap-1">
+                      <span>Status:</span>
+                      <Badge variant="outline">
+                        {order.paymentStatus}
+                      </Badge>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -335,7 +414,7 @@ export default function OrderDetailPage() {
               </Card>
 
               {/* Actions */}
-              {order.status === 'pending' && (
+              {order.orderStatus === 'pending' && (
                 <Card>
                   <CardContent className="pt-6">
                     <Button

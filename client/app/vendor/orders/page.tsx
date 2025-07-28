@@ -37,6 +37,7 @@ const statusConfig = {
   pending: { label: "Pending", icon: Clock, color: "bg-yellow-500" },
   processing: { label: "Processing", icon: Package, color: "bg-blue-500" },
   shipped: { label: "Shipped", icon: Truck, color: "bg-purple-500" },
+  out_for_delivery: { label: "Out for Delivery", icon: Truck, color: "bg-indigo-500" },
   delivered: { label: "Delivered", icon: CheckCircle, color: "bg-green-500" },
   cancelled: { label: "Cancelled", icon: XCircle, color: "bg-red-500" },
 }
@@ -47,7 +48,7 @@ export default function VendorOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<Order['status'] | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<Order['orderStatus'] | 'all'>('all')
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -67,9 +68,10 @@ export default function VendorOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const allOrders = await orderService.getOrders()
+      const ordersResponse = await orderService.listOrders({ limit: 1000 })
+      const allOrders = ordersResponse.orders
       setOrders(allOrders.sort((a, b) => 
-        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       ))
     } catch (error) {
       console.error('Failed to fetch orders:', error)
@@ -79,13 +81,12 @@ export default function VendorOrdersPage() {
     }
   }
 
-  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, newStatus: Order['orderStatus']) => {
     setUpdatingOrderId(orderId)
     try {
-      const updatedOrder = await orderService.updateOrderStatus(orderId, { status: newStatus })
-      setOrders(orders.map(order => 
-        order._id === orderId ? updatedOrder : order
-      ))
+      await orderService.updateStatus(orderId, { orderStatus: newStatus })
+      // Refetch orders to get updated data
+      await fetchOrders()
       toast.success('Order status updated')
     } catch (error) {
       toast.error('Failed to update order status')
@@ -95,12 +96,12 @@ export default function VendorOrdersPage() {
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderId.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter
+    const matchesSearch = order.parentOrderId.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || order.orderStatus === statusFilter
     return matchesSearch && matchesStatus
   })
 
-  const getNextStatus = (currentStatus: Order['status']): Order['status'] | null => {
+  const getNextStatus = (currentStatus: Order['orderStatus']): Order['orderStatus'] | null => {
     switch (currentStatus) {
       case 'pending':
         return 'processing'
@@ -189,30 +190,30 @@ export default function VendorOrdersPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredOrders.map((order) => {
-                      const StatusIcon = statusConfig[order.status].icon
-                      const nextStatus = getNextStatus(order.status)
+                      const StatusIcon = statusConfig[order.orderStatus]?.icon || Clock
+                      const nextStatus = getNextStatus(order.orderStatus)
                       
                       return (
                         <TableRow key={order._id}>
                           <TableCell className="font-medium">
-                            #{order.orderId}
+                            #{order.parentOrderId}
                           </TableCell>
                           <TableCell>
                             {new Date(order.createdAt!).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            {order.items.length} items
+                            {order.orderItems.length} items
                           </TableCell>
                           <TableCell className="font-medium">
-                            ${order.total.toFixed(2)}
+                            ${(order.subtotalAmount * 1.13).toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <Badge 
                               variant="secondary"
-                              className={`${statusConfig[order.status].color} text-white`}
+                              className={`${statusConfig[order.orderStatus]?.color || 'bg-gray-500'} text-white`}
                             >
                               <StatusIcon className="h-3 w-3 mr-1" />
-                              {statusConfig[order.status].label}
+                              {statusConfig[order.orderStatus]?.label || order.orderStatus}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -222,7 +223,7 @@ export default function VendorOrdersPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {nextStatus && order.status !== 'cancelled' && (
+                              {nextStatus && order.orderStatus !== 'cancelled' && (
                                 <Button
                                   size="sm"
                                   variant="outline"

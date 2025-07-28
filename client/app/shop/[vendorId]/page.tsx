@@ -93,6 +93,8 @@ export default function VendorProductsPage() {
     email: ""
   })
   const [isSubmittingReport, setIsSubmittingReport] = useState(false)
+  const [calculatedRating, setCalculatedRating] = useState(0)
+  const [totalReviews, setTotalReviews] = useState(0)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -107,7 +109,7 @@ export default function VendorProductsPage() {
           vendorId: vendorId,
           storeName: "Vendor Shop",
           location: "Online",
-          rating: 4.5,
+          rating: 0,
           totalProducts: productData.total || productData.products.length,
           createdAt: new Date().toISOString()
         }
@@ -139,7 +141,7 @@ export default function VendorProductsPage() {
               tempVendor.location = vendorData.location
               tempVendor.logoUrl = vendorData.logoUrl
               tempVendor.bannerUrl = vendorData.bannerUrl || vendorData.storeBannerUrl
-              tempVendor.rating = vendorData.rating || 4.5
+              tempVendor.rating = vendorData.rating || 0
               tempVendor.phoneNumber = vendorData.phoneNumber
               tempVendor.socialLinks = vendorData.socialLinks
             }
@@ -149,6 +151,10 @@ export default function VendorProductsPage() {
         }
         
         setVendor(tempVendor)
+        
+        // Use the rating from the vendor data
+        setCalculatedRating(tempVendor.rating || 0)
+        setTotalReviews(tempVendor.reviewCount || 0)
       } catch (error) {
         console.error('Failed to fetch vendor data:', error)
       } finally {
@@ -270,6 +276,7 @@ export default function VendorProductsPage() {
             src={vendor.bannerUrl}
             alt={`${vendor.storeName} banner`}
             fill
+            sizes="100vw"
             className="object-cover"
             priority
           />
@@ -302,6 +309,7 @@ export default function VendorProductsPage() {
                   src={vendor.logoUrl}
                   alt={vendor.storeName}
                   fill
+                  sizes="(max-width: 768px) 80px, 128px"
                   className="object-cover"
                 />
               ) : (
@@ -328,8 +336,10 @@ export default function VendorProductsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{(Number(vendor.rating) || 0).toFixed(1)}</span>
-                      <span className="text-muted-foreground">rating</span>
+                      <span className="font-medium">{vendor.rating ? vendor.rating.toFixed(1) : '0.0'}</span>
+                      {vendor.reviewCount && vendor.reviewCount > 0 && (
+                        <span className="text-muted-foreground">({vendor.reviewCount} reviews)</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Package className="h-4 w-4 text-muted-foreground" />
@@ -420,7 +430,7 @@ export default function VendorProductsPage() {
               <ShoppingBag className="h-3 w-3" />
               {products.filter(p => p.quantityInStock > 0).length} Items in Stock
             </Badge>
-            {vendor.rating >= 4.5 && (
+            {vendor.rating >= 4.0 && (
               <Badge variant="secondary" className="gap-1">
                 <Star className="h-3 w-3" />
                 Top Rated

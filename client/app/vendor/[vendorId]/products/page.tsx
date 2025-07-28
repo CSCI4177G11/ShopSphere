@@ -55,7 +55,7 @@ export default function VendorProductsPage() {
           vendorId: vendorId,
           storeName: "Vendor Shop", // This will be updated if we can get it from localStorage
           location: "Online",
-          rating: 4.5,
+          rating: 0,
           totalProducts: productData.total || productData.products.length,
           createdAt: new Date().toISOString()
         }

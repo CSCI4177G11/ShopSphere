@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -26,8 +26,9 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
-  const { signIn } = useAuth()
+  const { signIn, user, isLoading: authLoading } = useAuth()
 
   const {
     register,
@@ -36,6 +37,24 @@ export default function LoginPage() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   })
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    if (!authLoading) {
+      if (user) {
+        // Redirect based on user role
+        if (user.role === 'admin') {
+          router.push('/admin')
+        } else if (user.role === 'vendor') {
+          router.push('/vendor')
+        } else {
+          router.push('/')
+        }
+      } else {
+        setCheckingAuth(false)
+      }
+    }
+  }, [user, authLoading, router])
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
@@ -64,6 +83,15 @@ export default function LoginPage() {
     // For now, show a message that OAuth is not implemented
     // You can implement OAuth later if needed
     toast.info(`${provider} sign-in will be available soon`)
+  }
+
+  // Show loading state while checking authentication
+  if (checkingAuth || authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (

@@ -34,13 +34,13 @@ const checkoutSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zipCode: z.string().optional(),
-  country: z.enum(["USA", "Canada"]).optional(),
+  country: z.literal("CA").optional(),
   
   // Payment
   paymentMethodId: z.string().min(1, "Please select a payment method"),
 }).refine((data) => {
   if (data.useNewAddress) {
-    return data.street && data.city && data.state && data.zipCode && data.country;
+    return data.street && data.city && data.state && data.zipCode;
   }
   return data.savedAddressId;
 }, {
@@ -76,7 +76,7 @@ export default function CheckoutPage() {
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
       useNewAddress: false,
-      country: "USA",
+      country: "CA",
     }
   })
 
@@ -158,9 +158,8 @@ export default function CheckoutPage() {
         shippingAddress = {
           line1: data.street!,
           city: data.city!,
-          state: data.state!,
-          zipCode: data.zipCode!,
-          country: data.country!,
+          postalCode: data.zipCode!,
+          country: 'CA',
         }
       } else {
         const savedAddress = savedAddresses.find(addr => 
@@ -172,8 +171,8 @@ export default function CheckoutPage() {
         shippingAddress = {
           line1: savedAddress.line1,
           city: savedAddress.city,
-          zipCode: savedAddress.postalCode,
-          country: savedAddress.country,
+          postalCode: savedAddress.postalCode,
+          country: 'CA', // Always use CA for Canada
         }
       }
 
@@ -184,12 +183,12 @@ export default function CheckoutPage() {
         currency: 'cad'
       })
 
-      // 2. Create order with payment's orderId as parentOrderId
+      // 2. Create order with payment details
       const orders = await orderService.createOrder({
         consumerId: user?.userId,
-        parentOrderId: payment.orderId,
+        paymentId: payment.id,
+        orderId: payment.orderId,
         shippingAddress,
-        paymentMethod: data.paymentMethodId,
       })
 
       // 3. Clear cart after successful order
@@ -203,9 +202,20 @@ export default function CheckoutPage() {
         router.push('/orders')
       }, 2000)
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout failed:', error)
-      toast.error('Failed to complete checkout. Please try again.')
+      
+      // Provide more specific error messages
+      if (error.message?.includes('502')) {
+        toast.error('Server communication error. Please ensure your cart has items and try again.')
+      } else if (error.message?.includes('payment')) {
+        toast.error('Payment processing failed. Please try again.')
+      } else if (error.message?.includes('Cart is empty')) {
+        toast.error('Your cart is empty. Please add items before checkout.')
+      } else {
+        toast.error(error.message || 'Failed to complete checkout. Please try again.')
+      }
+      
       setProcessing(false)
     }
   }
@@ -363,11 +373,11 @@ export default function CheckoutPage() {
                         </div>
                         
                         <div>
-                          <Label htmlFor="state">{watch("country") === "Canada" ? "Province" : "State"}</Label>
+                          <Label htmlFor="state">Province</Label>
                           <Input
                             id="state"
                             {...register("state")}
-                            placeholder={watch("country") === "Canada" ? "ON" : "NY"}
+                            placeholder="ON"
                             disabled={processing}
                           />
                           {errors.state && (
@@ -376,11 +386,11 @@ export default function CheckoutPage() {
                         </div>
                         
                         <div>
-                          <Label htmlFor="zipCode">{watch("country") === "Canada" ? "Postal Code" : "ZIP Code"}</Label>
+                          <Label htmlFor="zipCode">Postal Code</Label>
                           <Input
                             id="zipCode"
                             {...register("zipCode")}
-                            placeholder={watch("country") === "Canada" ? "M5V 3A8" : "10001"}
+                            placeholder="M5V 3A8"
                             disabled={processing}
                           />
                           {errors.zipCode && (
@@ -390,19 +400,12 @@ export default function CheckoutPage() {
                         
                         <div>
                           <Label htmlFor="country">Country</Label>
-                          <Select
-                            value={watch("country")}
-                            onValueChange={(value) => setValue("country", value as "USA" | "Canada")}
-                            disabled={processing}
-                          >
-                            <SelectTrigger id="country">
-                              <SelectValue placeholder="Select country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="USA">United States</SelectItem>
-                              <SelectItem value="Canada">Canada</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input
+                            id="country"
+                            value="Canada"
+                            disabled
+                            className="bg-muted"
+                          />
                           {errors.country && (
                             <p className="text-sm text-destructive mt-1">{errors.country.message}</p>
                           )}

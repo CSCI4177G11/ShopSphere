@@ -253,6 +253,7 @@ export default function ProductDetailPage() {
                   src={images[selectedImage]}
                   alt={product.name}
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                 />
                 {isOutOfStock && (
@@ -280,6 +281,7 @@ export default function ProductDetailPage() {
                         src={image}
                         alt={`${product.name} ${index + 1}`}
                         fill
+                        sizes="100px"
                         className="object-cover"
                       />
                     </button>

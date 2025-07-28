@@ -255,6 +255,7 @@ export default function CartPage() {
                               src={enrichedItem.productImage}
                               alt={item.productName}
                               fill
+                              sizes="80px"
                               className="object-cover"
                             />
                           ) : (

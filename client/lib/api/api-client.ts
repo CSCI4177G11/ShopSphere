@@ -62,8 +62,21 @@ export class ApiClient {
   }
 
   // Generic CRUD methods
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' })
+  async get<T>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> {
+    let url = endpoint
+    if (options?.params) {
+      const searchParams = new URLSearchParams()
+      Object.entries(options.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, value.toString())
+        }
+      })
+      const queryString = searchParams.toString()
+      if (queryString) {
+        url += (url.includes('?') ? '&' : '?') + queryString
+      }
+    }
+    return this.request<T>(url, { method: 'GET' })
   }
 
   async post<T>(endpoint: string, data?: any): Promise<T> {
@@ -102,7 +115,7 @@ export const cartApi = new ApiClient({
 })
 
 export const orderApi = new ApiClient({
-  baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/api/orders` || 'http://gateway:8080/api/order',
+  baseUrl: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api/orders` : 'http://localhost:8080/api/orders',
 })
 
 export const paymentApi = new ApiClient({

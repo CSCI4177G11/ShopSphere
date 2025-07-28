@@ -36,6 +36,7 @@ export interface VendorProfile {
   logoUrl?: string
   storeBannerUrl?: string
   rating: number | string
+  reviewCount?: number
   isApproved: boolean
   socialLinks?: string[]
 }
