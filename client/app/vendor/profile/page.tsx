@@ -951,11 +951,6 @@ export default function VendorProfilePage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Button variant="outline" className="w-full justify-start">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Two-Factor Authentication
-                  <Badge variant="outline" className="ml-auto">Coming Soon</Badge>
-                </Button>
               </CardContent>
             </Card>
           </TabsContent>
