@@ -137,8 +137,39 @@ export default function VendorOrdersPage() {
         >
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold">Orders</h1>
-            <p className="text-muted-foreground">Manage and track customer orders</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold">Orders</h1>
+                <p className="text-muted-foreground">Manage and track customer orders</p>
+                {/* Order Status Summary */}
+                <div className="flex items-center gap-3 mt-3">
+                  {orders.filter(o => o.orderStatus === 'pending').length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 px-3 py-1.5 rounded-full text-sm font-medium">
+                      <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full animate-pulse" />
+                      <span>{orders.filter(o => o.orderStatus === 'pending').length} Pending</span>
+                    </div>
+                  )}
+                  {orders.filter(o => o.orderStatus === 'processing').length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1.5 rounded-full text-sm font-medium">
+                      <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                      <span>{orders.filter(o => o.orderStatus === 'processing').length} Processing</span>
+                    </div>
+                  )}
+                  {orders.filter(o => o.orderStatus === 'shipped').length > 0 && (
+                    <div className="flex items-center gap-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-3 py-1.5 rounded-full text-sm font-medium">
+                      <div className="w-2.5 h-2.5 bg-purple-500 rounded-full" />
+                      <span>{orders.filter(o => o.orderStatus === 'shipped').length} Shipped</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Link href="/vendor">
+                <Button variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Filters */}

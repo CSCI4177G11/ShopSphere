@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
 import { authService } from "@/lib/api/auth-service"
 import { userService } from "@/lib/api/user-service"           // ← NEW
+import { orderService } from "@/lib/api/order-service"
 import { toast } from "sonner"
 import {
   Home,
@@ -57,6 +58,13 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
   const mounted = useMounted()
   /* ---------------------------------------------------- */
 
+  // Order counts state
+  const [orderCounts, setOrderCounts] = useState({
+    pending: 0,
+    processing: 0,
+    shipped: 0
+  })
+
   /* ---------- ⬇️  Profile‑check effect  ⬇️ ---------- */
   useEffect(() => {
     const checkUserProfile = async () => {
@@ -83,6 +91,34 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
     checkUserProfile()
   }, [user, pathname, router])
   /* ---------------------------------------------------- */
+
+  /* ---------- ⬇️  Fetch order counts  ⬇️ ---------- */
+  useEffect(() => {
+    const fetchOrderCounts = async () => {
+      if (!user || !hasProfile) return
+      
+      try {
+        const ordersResponse = await orderService.listOrders({ limit: 1000 })
+        const orders = ordersResponse.orders || []
+        
+        const counts = {
+          pending: orders.filter(o => o.orderStatus === 'pending').length,
+          processing: orders.filter(o => o.orderStatus === 'processing').length,
+          shipped: orders.filter(o => o.orderStatus === 'shipped').length
+        }
+        
+        setOrderCounts(counts)
+      } catch (error) {
+        console.error('Failed to fetch order counts:', error)
+      }
+    }
+
+    fetchOrderCounts()
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchOrderCounts, 30000)
+    return () => clearInterval(interval)
+  }, [user, hasProfile])
+  /* -------------------------------------------------- */
 
   /* ---------- ⬇️  Guard against FOUC  ⬇️ ---------- */
   if (!mounted) return null
@@ -121,13 +157,17 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
                   key={item.title}
                   href={href}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                    "relative flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
                     isActive && "bg-accent text-accent-foreground"
                   )}
                 >
                   <Icon className="h-4 w-4" />
                   {item.title}
+                  {/* Yellow dot indicator for Orders */}
+                  {item.href === '/vendor/orders' && (orderCounts.pending > 0 || orderCounts.processing > 0 || orderCounts.shipped > 0) && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></span>
+                  )}
                 </Link>
               )
             })}
