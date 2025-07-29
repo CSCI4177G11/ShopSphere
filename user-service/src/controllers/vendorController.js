@@ -158,6 +158,7 @@ export const getVendorProfile = async (req, res) => {
         logoUrl:        profile.logoUrl,
         storeBannerUrl: profile.storeBannerUrl,
         rating:         newRating,
+        isApproved:     profile.isApproved,
         socialLinks:    profile.socialLink, // schema field
       };
       res.status(200).json({ displayProfile });
