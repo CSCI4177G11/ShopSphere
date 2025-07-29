@@ -283,6 +283,8 @@ export const listProductsByVendor = async (req, res) => {
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+        if(!req.user.role && !req.user.role === 'vednor') query.isPublished = true;
+        
         let sortOption = { createdAt: -1 };
         if (sort === 'price:asc') sortOption = { price: 1 };
         if (sort === 'price:desc') sortOption = { price: -1 };
