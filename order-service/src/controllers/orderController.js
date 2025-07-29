@@ -284,6 +284,8 @@ export async function cancelOrder(req, res) {
   }
 
   await Order.appendTracking(id, { status: 'cancelled', note: reason });
+  order.paymentStatus = 'refunded';
+  order.save();
   return res.status(200).json({ message: 'Order cancelled' });
 }
 
