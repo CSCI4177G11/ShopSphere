@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 
 const vendorSettingSchema = new mongoose.Schema(
-    {
-      theme: { type: String, default: 'light' },
-    },
+  {
+    currency: { type: String, default: 'CAD' },
+    theme:    { type: String, default: 'light' },
+  },
     { _id: false }               
   );
 

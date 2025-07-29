@@ -246,14 +246,15 @@ export const getVendorProfile = async (req, res) => {
       export const changeSetting = async (req, res) => {
         const vendorId = requireVendorId(req, res);
         if (!vendorId) return;
-        const { theme } = req.body;
-        if (!theme)
+        const { theme, currency} = req.body;
+        if (!theme && !currency)
           return res.status(400).json({ error: 'Nothing to update.' });
         try {
           const profile = await Vendor.findOne({ vendorId });
           if (!profile)
             return res.status(404).json({ error: 'Vendor not found.' });
           if (theme)    profile.settings.theme    = theme;
+          if (currency)    profile.settings.currency    = currency;
           await profile.save();
           res.status(200).json({ message: 'Settings updated.', settings: profile.settings });
         } catch (err) {
