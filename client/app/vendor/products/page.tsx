@@ -356,47 +356,17 @@ export default function VendorProductsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Link href={`/vendor/products/${product.productId}`}>
-                              <Button
-                                variant="ghost"
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="ghost" 
                                 size="icon"
-                                title="View product details"
+                                disabled={deletingId === product.productId}
                               >
-                                <Eye className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleTogglePublish(product)}
-                              title={product.isPublished ? "Unpublish product" : "Publish product"}
-                            >
-                              {product.isPublished ? (
-                                <Pause className="h-4 w-4" />
-                              ) : (
-                                <Play className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openStockUpdateDialog(product)}
-                              title="Quick stock update"
-                            >
-                              <PlusCircle className="h-4 w-4" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  disabled={deletingId === product.productId}
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
                                   <Link href={`/vendor/products/${product.productId}`}>
                                     <Eye className="mr-2 h-4 w-4" />
@@ -438,8 +408,7 @@ export default function VendorProductsPage() {
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
