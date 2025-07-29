@@ -138,7 +138,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -188,13 +188,13 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Platform Overview</CardTitle>
-                <Shield className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Products across {stats.activeVendors} vendors
+                  Across {stats.activeVendors} vendors
                 </p>
               </CardContent>
             </Card>
@@ -315,16 +315,16 @@ export default function AdminDashboard() {
                     </Card>
                   </Link>
                   
-                  <Link href="/admin/settings" className="block">
+                  <Link href="/admin/products" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
                       <CardContent className="p-6">
                         <div className="flex flex-col items-center text-center gap-3">
                           <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Settings className="h-6 w-6 text-primary" />
+                            <Package className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Platform Settings</p>
-                            <p className="text-sm text-muted-foreground mt-1">Configure system settings</p>
+                            <p className="font-medium text-base">Manage Products</p>
+                            <p className="text-sm text-muted-foreground mt-1">Monitor all products</p>
                           </div>
                         </div>
                       </CardContent>
