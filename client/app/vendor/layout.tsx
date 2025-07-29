@@ -4,6 +4,7 @@ import { VendorHeader } from "@/components/vendor/vendor-header";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { OrderRefreshProvider } from "@/components/order-refresh-context";
 
 export default function VendorLayout({
   children,
@@ -47,12 +48,14 @@ export default function VendorLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <VendorHeader vendorId={user.userId} />
-      
-      <main className="w-full">
-        {children}
-      </main>
-    </div>
+    <OrderRefreshProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-background">
+        <VendorHeader vendorId={user.userId} />
+        
+        <main className="w-full">
+          {children}
+        </main>
+      </div>
+    </OrderRefreshProvider>
   );
 }

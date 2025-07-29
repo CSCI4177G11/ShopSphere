@@ -448,4 +448,59 @@ export const getProductCount = async (req, res) => {
     }
   };
 
+export const getProductsBatch = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: 'Invalid request data' });
+        }
+
+        const { productIds } = req.body;
+        
+        if (!Array.isArray(productIds) || productIds.length === 0) {
+            return res.status(400).json({ error: 'productIds must be a non-empty array' });
+        }
+
+        // Limit to prevent abuse
+        if (productIds.length > 50) {
+            return res.status(400).json({ error: 'Maximum 50 products can be fetched at once' });
+        }
+
+        const products = await Product.find({
+            _id: { $in: productIds },
+            isPublished: true
+        });
+
+        const productMap = {};
+        products.forEach(product => {
+            productMap[product._id.toString()] = {
+                productId: product._id,
+                vendorId: product.vendorId,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                quantityInStock: product.quantityInStock,
+                category: product.category || 'other',
+                images: product.images || [],
+                tags: product.tags,
+                averageRating: product.averageRating,
+                reviewCount: product.reviewCount,
+                isPublished: product.isPublished,
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt,
+                _links: {
+                    self: `/api/product/${product._id}`,
+                    reviews: `/api/product/${product._id}/reviews`,
+                    vendor: `/api/product/vendor/${product.vendorId}`
+                }
+            };
+        });
+
+        res.json({ products: productMap });
+    } catch (error) {
+        console.error('Error fetching products batch:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 const getCloudinaryUrl = (imageId) => `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/products/${imageId}`;

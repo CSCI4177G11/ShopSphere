@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
+import { useOrderRefresh } from "@/components/order-refresh-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -43,6 +44,7 @@ export default function VendorOrderDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { triggerRefresh } = useOrderRefresh()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -103,6 +105,8 @@ export default function VendorOrderDetailPage() {
     try {
       await orderService.updateStatus(order._id, { orderStatus: newStatus })
       await fetchOrderDetails() // Refetch to get updated data
+      // Trigger refresh of header order counts
+      triggerRefresh()
       toast.success(`Order status updated to ${statusConfig[newStatus].label}`)
     } catch (error) {
       toast.error('Failed to update order status')

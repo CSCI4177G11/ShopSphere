@@ -34,6 +34,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useMounted } from "@/hooks/use-mounted"                // ← NEW
 import { CurrencySelector } from "@/components/currency-selector"
+import { useOrderRefresh } from "@/components/order-refresh-context"
 
 const vendorNavItems = [
   { title: "Dashboard", href: "/vendor",         icon: LayoutDashboard },
@@ -51,6 +52,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
   const pathname   = usePathname()
   const router     = useRouter()
   const { user, signOut } = useAuth()
+  const { refreshTrigger } = useOrderRefresh()
 
   /* ---------- ⬇️  NEW profile‑check state  ⬇️ ---------- */
   const [profileChecked, setProfileChecked] = useState(false)
@@ -64,6 +66,26 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
     processing: 0,
     shipped: 0
   })
+
+  // Function to refresh order counts
+  const refreshOrderCounts = async () => {
+    if (!user || !hasProfile) return
+    
+    try {
+      const ordersResponse = await orderService.listOrders({ limit: 1000 })
+      const orders = ordersResponse.orders || []
+      
+      const counts = {
+        pending: orders.filter(o => o.orderStatus === 'pending').length,
+        processing: orders.filter(o => o.orderStatus === 'processing').length,
+        shipped: orders.filter(o => o.orderStatus === 'shipped').length
+      }
+      
+      setOrderCounts(counts)
+    } catch (error) {
+      console.error('Failed to fetch order counts:', error)
+    }
+  }
 
   /* ---------- ⬇️  Profile‑check effect  ⬇️ ---------- */
   useEffect(() => {
@@ -94,30 +116,16 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
 
   /* ---------- ⬇️  Fetch order counts  ⬇️ ---------- */
   useEffect(() => {
-    const fetchOrderCounts = async () => {
-      if (!user || !hasProfile) return
-      
-      try {
-        const ordersResponse = await orderService.listOrders({ limit: 1000 })
-        const orders = ordersResponse.orders || []
-        
-        const counts = {
-          pending: orders.filter(o => o.orderStatus === 'pending').length,
-          processing: orders.filter(o => o.orderStatus === 'processing').length,
-          shipped: orders.filter(o => o.orderStatus === 'shipped').length
-        }
-        
-        setOrderCounts(counts)
-      } catch (error) {
-        console.error('Failed to fetch order counts:', error)
-      }
-    }
-
-    fetchOrderCounts()
+    refreshOrderCounts()
     // Refresh every 30 seconds
-    const interval = setInterval(fetchOrderCounts, 30000)
+    const interval = setInterval(refreshOrderCounts, 30000)
     return () => clearInterval(interval)
   }, [user, hasProfile])
+
+  // Refresh when refreshTrigger changes (e.g., after updating order status)
+  useEffect(() => {
+    refreshOrderCounts()
+  }, [refreshTrigger])
   /* -------------------------------------------------- */
 
   /* ---------- ⬇️  Guard against FOUC  ⬇️ ---------- */
@@ -164,9 +172,11 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
                 >
                   <Icon className="h-4 w-4" />
                   {item.title}
-                  {/* Yellow dot indicator for Orders */}
+                  {/* Glowing yellow dot indicator for Orders */}
                   {item.href === '/vendor/orders' && (orderCounts.pending > 0 || orderCounts.processing > 0 || orderCounts.shipped > 0) && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></span>
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full animate-pulse">
+                      <span className="absolute inset-0 w-full h-full bg-yellow-400 rounded-full animate-ping opacity-75"></span>
+                    </span>
                   )}
                 </Link>
               )

@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { useAuth } from "@/components/auth-provider"
 import { useCurrency } from "@/hooks/use-currency"
+import { useOrderRefresh } from "@/components/order-refresh-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -47,6 +48,7 @@ export default function VendorOrdersPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { formatPrice } = useCurrency()
+  const { triggerRefresh } = useOrderRefresh()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -89,6 +91,8 @@ export default function VendorOrdersPage() {
       await orderService.updateStatus(orderId, { orderStatus: newStatus })
       // Refetch orders to get updated data
       await fetchOrders()
+      // Trigger refresh of header order counts
+      triggerRefresh()
       toast.success('Order status updated')
     } catch (error) {
       toast.error('Failed to update order status')

@@ -43,7 +43,10 @@ export class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
-        console.error('API Error:', response.status, errorData)
+        // Only log non-404 errors to reduce console noise
+        if (response.status !== 404) {
+          console.error('API Error:', response.status, errorData)
+        }
         throw new Error(errorData?.error || errorData?.message || `HTTP ${response.status}`)
       }
 

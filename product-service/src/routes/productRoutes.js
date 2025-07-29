@@ -17,6 +17,10 @@ router.get('/health', (req, res) => {
 });
 
 router.get('/count', productCtrl.getProductCount);
+router.post('/batch', [
+  body('productIds').isArray({ min: 1, max: 50 }).withMessage('productIds must be an array with 1-50 items'),
+  body('productIds.*').isMongoId().withMessage('Each productId must be a valid MongoDB ID')
+], productCtrl.getProductsBatch);
 router.post(
   '/',
   requireAuth,

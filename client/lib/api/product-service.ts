@@ -228,6 +228,11 @@ class ProductService {
   }) {
     return productApi.get<ProductCountResponse>('/count', { params })
   }
+
+  async getProductsBatch(productIds: string[]): Promise<Record<string, Product>> {
+    const response = await productApi.post<{ products: Record<string, Product> }>('/batch', { productIds })
+    return response.products
+  }
 }
 
 export const productService = new ProductService()

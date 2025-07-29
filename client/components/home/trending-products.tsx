@@ -42,24 +42,25 @@ export function TrendingProducts() {
         })
 
         if (topProductsResponse.topProducts.length > 0) {
-          // Fetch product details for each top product
-          const productPromises = topProductsResponse.topProducts.map(async (item) => {
-            try {
-              const product = await productService.getProduct(item.productId)
-              // Add sales data to product for potential display
-              return {
+          // Extract product IDs
+          const productIds = topProductsResponse.topProducts.map(item => item.productId)
+          
+          // Fetch all products in one batch request
+          const productMap = await productService.getProductsBatch(productIds)
+          
+          // Map the products with their sales data
+          const validProducts: Product[] = []
+          topProductsResponse.topProducts.forEach(item => {
+            const product = productMap[item.productId]
+            if (product) {
+              validProducts.push({
                 ...product,
                 recentRevenue: item.revenue,
                 recentUnitsSold: item.unitsSold
-              }
-            } catch (err) {
-              console.error(`Failed to fetch product ${item.productId}:`, err)
-              return null
+              })
             }
           })
-
-          const fetchedProducts = await Promise.all(productPromises)
-          const validProducts = fetchedProducts.filter((p): p is Product => p !== null)
+          
           setProducts(validProducts)
         } else {
           // Fallback to regular products if no trending data
