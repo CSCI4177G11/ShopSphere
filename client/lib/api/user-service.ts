@@ -191,6 +191,20 @@ class UserService {
     // assuming routes are mounted under `/api/user`
     return userApi.get<ConsumerCountResponse>('/consumers/public/count', { params })
   }
+
+  async listAllConsumers(params?: {
+    page?: number
+    limit?: number
+  }) {
+    const response = await userApi.get<{
+      consumers: ConsumerProfile[]
+      page: number
+      limit: number
+      total: number
+      pages: number
+    }>('/consumer/list', { params })
+    return response
+  }
 }
 
 export const userService = new UserService()

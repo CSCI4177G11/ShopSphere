@@ -81,7 +81,28 @@ class VendorService {
     minRating?: number
     search?: string      
   }) {
-    return userApi.get<VendorCountResponse>('/vendors/public/count', { params })
+    // Convert boolean to string for query params
+    const queryParams: any = {}
+    if (params) {
+      if (params.isApproved !== undefined) {
+        queryParams.isApproved = params.isApproved.toString()
+      }
+      if (params.minRating !== undefined) {
+        queryParams.minRating = params.minRating
+      }
+      if (params.search) {
+        queryParams.search = params.search
+      }
+    }
+    return userApi.get<VendorCountResponse>('/vendors/public/count', { params: queryParams })
+  }
+
+  async listVendors(params?: {
+    page?: number
+    limit?: number
+    isApproved?: boolean
+  }) {
+    return userApi.get<VendorResponse>('/vendor/all', { params })
   }
 
 }

@@ -5,6 +5,11 @@ import { requireAuth, requireRole} from '../middleware/auth.js';
 
 const router = Router();
 router.use(requireAuth);
+
+// Admin-only route to list all consumers
+router.get('/list', requireRole(['admin']), consumerCtrl.listAllConsumers);
+
+// All other routes require consumer or admin role
 router.use(requireRole(['consumer', 'admin']));
 
 router.post(

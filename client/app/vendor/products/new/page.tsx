@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
 import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2, Globe } from "lucide-react"
@@ -241,13 +242,48 @@ export default function NewProductPage() {
       }
       
       console.log('Creating product with payload:', createProductPayload)
-      await productService.createProduct(createProductPayload)
+      console.log('isPublished value:', createProductPayload.isPublished)
+      console.log('Stock quantity:', createProductPayload.quantityInStock)
+      
+      const response = await productService.createProduct(createProductPayload)
+      console.log('Product created successfully:', response)
 
-      toast.success("Product created successfully!")
+      toast.success(`Product created successfully! Published: ${publishOnCreate ? 'Yes' : 'No'}`)
       router.push("/vendor/products")
     } catch (error: any) {
       console.error('Failed to create product:', error)
-      toast.error(error.message || "Failed to create product. Please try again.")
+      console.error('Error details:', error.response || error)
+      
+      // More detailed error message with specific validation errors
+      let errorMessage = ""
+      
+      if (error.response?.data?.error) {
+        const serverError = error.response.data.error
+        
+        // Check for specific validation errors
+        if (serverError === 'Invalid request data') {
+          // Common validation issues
+          if (parseInt(data.stock) < 0) {
+            errorMessage = "Stock quantity cannot be negative"
+          } else if (parseFloat(data.price) <= 0) {
+            errorMessage = "Price must be greater than 0"
+          } else if (!data.name || data.name.length < 3) {
+            errorMessage = "Product name must be at least 3 characters"
+          } else if (!data.description || data.description.length < 10) {
+            errorMessage = "Description must be at least 10 characters"
+          } else {
+            errorMessage = "Please check all fields are filled correctly. Stock can be 0 for out-of-stock items."
+          }
+        } else {
+          errorMessage = serverError
+        }
+      } else if (error.message) {
+        errorMessage = error.message
+      } else {
+        errorMessage = "Failed to create product. Please check all fields and try again."
+      }
+      
+      toast.error(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -493,6 +529,9 @@ export default function NewProductPage() {
                         {errors.stock && (
                           <p className="text-sm text-destructive mt-1">{errors.stock.message}</p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter 0 for out-of-stock items
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -588,17 +627,15 @@ export default function NewProductPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground" />
-                        <Label htmlFor="publish-toggle" className="text-sm font-normal">
+                        <Label htmlFor="publish-toggle" className="text-sm font-normal cursor-pointer">
                           Publish immediately
                         </Label>
                       </div>
-                      <input
+                      <Switch
                         id="publish-toggle"
-                        type="checkbox"
                         checked={publishOnCreate}
-                        onChange={(e) => setPublishOnCreate(e.target.checked)}
+                        onCheckedChange={setPublishOnCreate}
                         disabled={isSubmitting}
-                        className="w-4 h-4 cursor-pointer"
                       />
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">

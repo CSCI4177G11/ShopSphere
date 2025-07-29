@@ -288,5 +288,36 @@ export const getSetting = async (req, res) => {
         }
       };
 
+      export const listAllConsumers = async (req, res) => {
+        try {
+          // Only allow admins to list all consumers
+          if (req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Forbidden: Admin access required' });
+          }
+
+          const { page = 1, limit = 50 } = req.query;
+          const skip = (page - 1) * limit;
+
+          const consumers = await Consumer.find({})
+            .select('consumerId fullName email phoneNumber addresses createdAt')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(Number(limit));
+
+          const total = await Consumer.countDocuments({});
+
+          return res.json({
+            consumers,
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            pages: Math.ceil(total / limit)
+          });
+        } catch (err) {
+          console.error('listAllConsumers error:', err);
+          return res.status(500).json({ error: 'Internal server error.' });
+        }
+      };
+
 
     

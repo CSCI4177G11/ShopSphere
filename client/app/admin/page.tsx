@@ -7,6 +7,9 @@ import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
+import { userService } from "@/lib/api/user-service"
+import { vendorService } from "@/lib/api/vendor-service"
+import { analyticsService } from "@/lib/api/analytics-service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -49,11 +52,11 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     totalOrders: 0,
     totalProducts: 0,
-    totalUsers: 156, // Mock data
-    pendingVendors: 3, // Mock data
-    activeVendors: 12, // Mock data
-    revenueChange: 23.5,
-    ordersChange: 15.2
+    totalUsers: 0,
+    pendingVendors: 0,
+    activeVendors: 0,
+    revenueChange: 0,
+    ordersChange: 0
   })
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,25 +78,105 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch all products
-      const allProducts = await productService.getProducts({ limit: 1000 })
+      // Fetch analytics summary for revenue and orders
+      let totalRevenue = 0
+      let totalOrders = 0
+      let averageOrderValue = 0
       
-      // Fetch all orders
-      const ordersResponse = await orderService.listOrders({ limit: 1000 })
-      const allOrders = ordersResponse.orders
+      try {
+        const analyticsResponse = await analyticsService.getSummary()
+        totalRevenue = analyticsResponse.result.totalRevenue
+        totalOrders = analyticsResponse.result.totalOrders
+        averageOrderValue = analyticsResponse.result.averageOrderValue
+      } catch (error) {
+        console.error('Failed to fetch analytics summary:', error)
+        // Fallback to order service
+        const ordersResponse = await orderService.listOrders({ limit: 1000 })
+        const allOrders = ordersResponse.orders
+        totalOrders = allOrders.length
+        totalRevenue = allOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
+      }
       
-      // Calculate stats
-      const totalRevenue = allOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
+      // Fetch all products (use limit of 100 due to API constraints)
+      let totalProducts = 0
+      try {
+        const allProducts = await productService.getProducts({ limit: 100, page: 1 })
+        totalProducts = allProducts.total
+      } catch (error) {
+        console.error('Failed to fetch products:', error)
+        // Set to 0 if fetch fails
+        totalProducts = 0
+      }
       
-      setStats(prev => ({
-        ...prev,
+      // Fetch consumer count
+      let totalConsumers = 0
+      try {
+        const consumerResponse = await userService.getConsumerCount()
+        totalConsumers = consumerResponse.totalConsumers
+      } catch (error) {
+        console.error('Failed to fetch consumer count:', error)
+      }
+      
+      // Fetch vendor counts
+      let totalVendors = 0
+      let activeVendors = 0
+      let pendingVendors = 0
+      
+      try {
+        // Total vendors
+        const totalVendorResponse = await vendorService.getVendorCount()
+        totalVendors = totalVendorResponse.totalVendors
+      } catch (error) {
+        console.error('Failed to fetch total vendor count:', error)
+      }
+      
+      try {
+        // Active vendors (approved)
+        const activeVendorResponse = await vendorService.getVendorCount({ isApproved: true })
+        activeVendors = activeVendorResponse.totalVendors
+      } catch (error) {
+        console.error('Failed to fetch active vendor count:', error)
+      }
+      
+      try {
+        // Pending vendors (not approved)
+        const pendingVendorResponse = await vendorService.getVendorCount({ isApproved: false })
+        pendingVendors = pendingVendorResponse.totalVendors
+      } catch (error) {
+        console.error('Failed to fetch pending vendor count:', error)
+      }
+      
+      // Calculate total users (consumers + vendors)
+      const totalUsers = totalConsumers + totalVendors
+      
+      // Calculate month-over-month changes
+      const now = new Date()
+      const currentMonth = now.getMonth()
+      const currentYear = now.getFullYear()
+      
+      // For now, set to 0 since we don't have historical data APIs
+      // In a real implementation, you'd fetch historical data
+      const revenueChange = 0
+      const ordersChange = 0
+      
+      setStats({
         totalRevenue,
-        totalOrders: allOrders.length,
-        totalProducts: allProducts.total,
-      }))
+        totalOrders,
+        totalProducts,
+        totalUsers,
+        pendingVendors,
+        activeVendors,
+        revenueChange,
+        ordersChange
+      })
       
-      // Get recent orders (last 10)
-      setRecentOrders(allOrders.slice(0, 10))
+      // Get recent orders
+      try {
+        const ordersResponse = await orderService.listOrders({ limit: 10 })
+        setRecentOrders(ordersResponse.orders)
+      } catch (error) {
+        console.error('Failed to fetch recent orders:', error)
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
       toast.error('Failed to load dashboard data')
@@ -147,11 +230,17 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className={stats.revenueChange > 0 ? "text-green-600" : "text-red-600"}>
-                    {stats.revenueChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
-                    {Math.abs(stats.revenueChange)}%
-                  </span>
-                  {" "}from last month
+                  {stats.revenueChange === 0 ? (
+                    <span className="text-gray-500">No change from last month</span>
+                  ) : (
+                    <>
+                      <span className={stats.revenueChange > 0 ? "text-green-600" : "text-red-600"}>
+                        {stats.revenueChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
+                        {Math.abs(stats.revenueChange)}%
+                      </span>
+                      {" "}from last month
+                    </>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -164,11 +253,17 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalOrders}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className={stats.ordersChange > 0 ? "text-green-600" : "text-red-600"}>
-                    {stats.ordersChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
-                    {Math.abs(stats.ordersChange)}%
-                  </span>
-                  {" "}from last month
+                  {stats.ordersChange === 0 ? (
+                    <span className="text-gray-500">No change from last month</span>
+                  ) : (
+                    <>
+                      <span className={stats.ordersChange > 0 ? "text-green-600" : "text-red-600"}>
+                        {stats.ordersChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
+                        {Math.abs(stats.ordersChange)}%
+                      </span>
+                      {" "}from last month
+                    </>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -194,7 +289,7 @@ export default function AdminDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across {stats.activeVendors} vendors
+                  Across {stats.activeVendors} {stats.activeVendors === 1 ? 'vendor' : 'vendors'}
                 </p>
               </CardContent>
             </Card>

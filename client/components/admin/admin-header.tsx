@@ -40,7 +40,7 @@ const adminNavItems = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { title: "Products", href: "/admin/products", icon: Package },
   { title: "Orders", href: "/admin/orders", icon: ShoppingCart },
-  { title: "Users", href: "/admin/users", icon: Users },
+  { title: "Consumers", href: "/admin/users", icon: Users },
   { title: "Vendors", href: "/admin/vendors", icon: Store },
   { title: "Analytics", href: "/admin/analytics", icon: BarChart3 }
 ]
@@ -63,17 +63,26 @@ export function AdminHeader() {
     if (!user) return
     
     try {
-      // Fetch pending vendors
-      const vendorsResponse = await vendorService.listVendors({ status: 'pending' })
-      const pendingVendors = vendorsResponse.vendors?.length || 0
+      // Fetch pending vendors (not approved)
+      let pendingVendors = 0
+      try {
+        const vendorResponse = await vendorService.getVendorCount({ isApproved: false })
+        pendingVendors = vendorResponse.totalVendors
+      } catch (error) {
+        console.error('Failed to fetch pending vendors:', error)
+      }
 
-      // Fetch reported products count
-      const productsResponse = await fetch('/api/products?reported=true')
-      const reportedProducts = productsResponse.ok ? (await productsResponse.json()).total || 0 : 0
+      // Fetch reported products count - for now set to 0
+      const reportedProducts = 0
 
       // Fetch pending orders
-      const ordersResponse = await orderService.listOrders({ status: 'pending', limit: 1000 })
-      const pendingOrders = ordersResponse.orders?.length || 0
+      let pendingOrders = 0
+      try {
+        const ordersResponse = await orderService.listOrders({ orderStatus: 'pending', limit: 1000 })
+        pendingOrders = ordersResponse.orders?.length || 0
+      } catch (error) {
+        console.error('Failed to fetch pending orders:', error)
+      }
       
       setPendingCounts({
         vendors: pendingVendors,
@@ -110,7 +119,7 @@ export function AdminHeader() {
   const totalPending = pendingCounts.vendors + pendingCounts.reports + pendingCounts.orders
 
   return (
-    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="max-w-7xl mx-auto px-4">
         <div className="relative flex h-16 items-center justify-between">
           <Link href="/admin" className="flex items-center gap-2">
@@ -136,13 +145,8 @@ export function AdminHeader() {
                 >
                   <Icon className="h-4 w-4" />
                   {item.title}
-                  {/* Alert indicator for pending items */}
+                  {/* Alert indicator for pending vendors only */}
                   {item.href === '/admin/vendors' && pendingCounts.vendors > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full animate-pulse">
-                      <span className="absolute inset-0 w-full h-full bg-yellow-400 rounded-full animate-ping opacity-75"></span>
-                    </span>
-                  )}
-                  {item.href === '/admin/orders' && pendingCounts.orders > 0 && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full animate-pulse">
                       <span className="absolute inset-0 w-full h-full bg-yellow-400 rounded-full animate-ping opacity-75"></span>
                     </span>
@@ -153,14 +157,6 @@ export function AdminHeader() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Pending Actions Indicator */}
-            {totalPending > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-md">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">{totalPending} Pending</span>
-              </div>
-            )}
-            
             <CurrencySelector />
             <ThemeToggle />
 

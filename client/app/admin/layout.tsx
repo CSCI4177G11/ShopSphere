@@ -32,10 +32,10 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       <AdminHeader />
       
-      <main className="w-full">
+      <main className="flex-1 w-full">
         {children}
       </main>
     </div>

@@ -70,31 +70,41 @@ export default function VendorAnalyticsPage() {
       ])
 
       setAnalytics(summaryData)
-      setTopProducts(topProductsData)
       setSalesTrend(trendData)
 
-      // Fetch product details for top products
+      // Fetch product details more efficiently
+      const validTopProducts = []
+      const productDetailsMap: Record<string, any> = {}
+      
       if (topProductsData.topProducts.length > 0) {
-        const productDetailsPromises = topProductsData.topProducts.map(async (item) => {
-          try {
-            const product = await productService.getProduct(item.productId)
-            return { productId: item.productId, product }
-          } catch (err) {
-            console.error(`Failed to fetch product ${item.productId}:`, err)
-            return { productId: item.productId, product: null }
-          }
-        })
+        try {
+          // Get vendor's products in one request
+          const vendorProductsResponse = await productService.getVendorProducts(
+            vendorProfile.vendorId,
+            { limit: 100, page: 1 }
+          )
+          
+          // Create a map of existing products
+          const existingProductsMap = new Map(
+            vendorProductsResponse.products.map(p => [p._id, p])
+          )
+          
+          // Match top products with existing products
+          topProductsData.topProducts.forEach(topProduct => {
+            const product = existingProductsMap.get(topProduct.productId)
+            if (product) {
+              productDetailsMap[topProduct.productId] = product
+              validTopProducts.push(topProduct)
+            }
+          })
+        } catch (error) {
+          console.error('Failed to fetch products for analytics:', error)
+        }
 
-        const details = await Promise.all(productDetailsPromises)
-        const detailsMap = details.reduce((acc, { productId, product }) => {
-          if (product) {
-            acc[productId] = product
-          }
-          return acc
-        }, {} as Record<string, any>)
-
-        setProductDetails(detailsMap)
+        setProductDetails(productDetailsMap)
       }
+      
+      setTopProducts({ ...topProductsData, topProducts: validTopProducts })
     } catch (err) {
       console.error('Failed to fetch analytics:', err)
       setError('Failed to load analytics data. Please try again.')

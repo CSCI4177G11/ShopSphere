@@ -318,15 +318,50 @@ export const getAllVendors = async (req, res) => {
 
     const total = await Vendor.countDocuments(query);
 
+    // Transform vendors with additional data
+    const vendorsWithDetails = await Promise.all(
+      vendors.map(async (vendor) => {
+        let rating = vendor.rating || 0;
+        let totalProducts = 0;
+        
+        try {
+          // Try to update rating
+          const newRating = await updateVendorRating(vendor.vendorId);
+          if (newRating !== -1) {
+            rating = newRating;
+          }
+        } catch (error) {
+          console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
+        }
+
+        try {
+          // Fetch product count
+          const productResponse = await axios.get(
+            `${PRODUCT_SERVICE_HOST}/api/product/vendor/${vendor.vendorId}/count`
+          );
+          totalProducts = productResponse.data.count || 0;
+        } catch (error) {
+          console.error(`Failed to fetch product count for vendor ${vendor.vendorId}:`, error.message);
+        }
+
+        return {
+          _id: vendor._id,
+          vendorId: vendor.vendorId,
+          storeName: vendor.storeName,
+          location: vendor.location,
+          isApproved: vendor.isApproved,
+          createdAt: vendor.createdAt,
+          phoneNumber: formatPhoneNumber(vendor.phoneNumber),
+          logoUrl: vendor.logoUrl,
+          bannerUrl: vendor.storeBannerUrl,
+          rating: rating,
+          totalProducts: totalProducts,
+        };
+      })
+    );
+
     res.json({
-      vendors: vendors.map(v => ({
-        _id: v._id,
-        vendorId: v.vendorId,
-        storeName: v.storeName,
-        location: v.location,
-        isApproved: v.isApproved,
-        createdAt: v.createdAt,
-      })),
+      vendors: vendorsWithDetails,
       page: Number(page),
       limit: Number(limit),
       total,
@@ -380,14 +415,30 @@ export const listPublicVendors = async (req, res) => {
       .sort(sortOption)
       .skip((page - 1) * limit)
       .limit(Number(limit))
-      .select("-phoneNumber -socialLink -payoutSettings"); // exclude sensitive fields
+      .select("-payoutSettings"); // exclude only payment settings
 
     const total = await Vendor.countDocuments(query);
 
     /* ---------- transform ---------- */
     const transformedVendors = await Promise.all(
       vendors.map(async (vendor) => {
-        const newRating = await updateVendorRating(vendor.vendorId);
+        let newRating = vendor.rating;
+        try {
+          newRating = await updateVendorRating(vendor.vendorId);
+        } catch (error) {
+          console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
+        }
+
+        // Fetch product count from product service
+        let totalProducts = 0;
+        try {
+          const productResponse = await axios.get(
+            `${PRODUCT_SERVICE_HOST}/api/product/vendor/${vendor.vendorId}/count`
+          );
+          totalProducts = productResponse.data.count || 0;
+        } catch (error) {
+          console.error(`Failed to fetch product count for vendor ${vendor.vendorId}:`, error.message);
+        }
 
         return {
           vendorId:      vendor.vendorId,
@@ -395,9 +446,11 @@ export const listPublicVendors = async (req, res) => {
           location:      vendor.location,
           logoUrl:       vendor.logoUrl,
           bannerUrl:     vendor.storeBannerUrl,
-          rating:        newRating,
-          totalProducts: 0, // TODO: fetch from product service
+          rating:        newRating === -1 ? 0 : (newRating || 0),
+          totalProducts: totalProducts,
           createdAt:     vendor.createdAt,
+          phoneNumber:   formatPhoneNumber(vendor.phoneNumber),
+          isApproved:    vendor.isApproved,
           _id:           vendor._id,
         };
       }),
