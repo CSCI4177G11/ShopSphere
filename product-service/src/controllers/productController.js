@@ -424,8 +424,12 @@ export const getProductCount = async (req, res) => {
   
       if (vendorId)       q.vendorId = vendorId;
       if (category)       q.category = category;
-      if (isPublished !== undefined)
+      if (isPublished !== undefined){
         q.isPublished = isPublished === 'true';
+      }
+      else{
+        q.isPublished =true
+      }
   
       if (minPrice !== undefined) q.price = { ...q.price, $gte: Number(minPrice) };
       if (maxPrice !== undefined) q.price = { ...q.price, $lte: Number(maxPrice) };
