@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuthSession, useAuth } from "@/components/auth-provider";
+import { userService } from "@/lib/api/user-service";
 import {
   Menu,
   X,
@@ -38,8 +40,12 @@ export function Header() {
   const { data: session } = useAuthSession();
   const { signOut } = useAuth();
   const { totals } = useCart();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [profileChecked, setProfileChecked] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
   const mounted = useMounted();
 
   useEffect(() => {
@@ -50,9 +56,56 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Profile checking logic
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      if (!session?.user) {
+        setProfileChecked(true);
+        return;
+      }
+
+      // Don't check profile on create account pages to avoid redirect loops
+      if (pathname === '/consumer/create-account' || pathname === '/vendor/create-account') {
+        setProfileChecked(true);
+        return;
+      }
+
+      try {
+        if (session.user.role === 'consumer') {
+          await userService.getConsumerProfile();
+          setHasProfile(true);
+        } else if (session.user.role === 'vendor') {
+          await userService.getVendorProfile();
+          setHasProfile(true);
+        } else {
+          // Admin users don't need profile check
+          setHasProfile(true);
+        }
+      } catch (error) {
+        // Profile doesn't exist
+        setHasProfile(false);
+        
+        // Redirect to appropriate create account page
+        if (session.user.role === 'consumer') {
+          router.push('/consumer/create-account');
+        } else if (session.user.role === 'vendor') {
+          router.push('/vendor/create-account');
+        }
+      } finally {
+        setProfileChecked(true);
+      }
+    };
+
+    checkUserProfile();
+  }, [session, router, pathname]);
 
   if (!mounted) {
     return null; // or a skeleton header
+  }
+
+  // Don't render header while checking profile (prevents flash)
+  if (session?.user && !profileChecked) {
+    return null;
   }
 
   return (

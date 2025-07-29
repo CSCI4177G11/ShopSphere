@@ -2,7 +2,7 @@
 
 import { VendorHeader } from "@/components/vendor/vendor-header";
 import { useAuth } from "@/components/auth-provider";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 export default function VendorLayout({
@@ -12,6 +12,15 @@ export default function VendorLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Pages that should not have vendor header
+  const excludeHeaderRoutes: string[] = [
+    "/vendor/create-account"
+  ];
+
+  // Check if current page should exclude header
+  const shouldExcludeHeader = excludeHeaderRoutes.includes(pathname);
 
   useEffect(() => {
     if (!loading && (!user || user.role !== 'vendor')) {
@@ -32,6 +41,11 @@ export default function VendorLayout({
     return null;
   }
 
+  // If on create account page, render without header
+  if (shouldExcludeHeader) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
       <VendorHeader vendorId={user.userId} />
@@ -41,4 +55,4 @@ export default function VendorLayout({
       </main>
     </div>
   );
-} 
+}

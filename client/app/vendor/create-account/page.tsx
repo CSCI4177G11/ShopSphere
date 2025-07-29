@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, Link2, Image as ImageIcon } from "lucide-react"
 import { toast } from "sonner"
+import { useAuth } from "@/components/auth-provider"
 
 const profileSchema = z.object({
   storeName: z.string().min(2, "Store name is required"),
@@ -40,6 +41,8 @@ export default function CreateVendorAccountPage() {
   const [bannerPreview, setBannerPreview] = useState<string>("")
   const logoInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const { signOut } = useAuth();
+
 
   const {
     register,
@@ -153,6 +156,16 @@ export default function CreateVendorAccountPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4 py-16">
+      {/* ---- Logout button ---- */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="fixed top-4 right-4 z-50"
+        onClick={() => signOut()}
+      >
+        Logout
+      </Button>
+      {/* ----------------------- */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}

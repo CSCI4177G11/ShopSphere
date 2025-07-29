@@ -38,6 +38,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [justSignedUp, setJustSignedUp] = useState(false) // Add this flag
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signUp, user, isLoading: authLoading } = useAuth()
@@ -61,7 +62,7 @@ export default function RegisterPage() {
   useEffect(() => {
     // Check if user is already authenticated
     if (!authLoading) {
-      if (user) {
+      if (user && !justSignedUp) { // Only redirect existing users, not just signed up users
         // Redirect based on user role
         if (user.role === 'admin') {
           router.push('/admin')
@@ -74,18 +75,21 @@ export default function RegisterPage() {
         setCheckingAuth(false)
       }
     }
-  }, [user, authLoading, router])
+  }, [user, authLoading, router, justSignedUp]) // Add justSignedUp to dependencies
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
 
     try {
+      // Set the flag before signup to prevent redirect
+      setJustSignedUp(true)
+      
       // Use the name as username for now (your API requires username)
       const role = isVendorRegistration ? 'vendor' : 'consumer'
       await signUp(data.username, data.email, data.password, role)
       toast.success("Account created successfully!")
       
-      // Redirect based on role
+      // Redirect based on role - this will always happen now
       if (isVendorRegistration) {
         router.push("/vendor/create-account")
       } else {
@@ -93,6 +97,7 @@ export default function RegisterPage() {
       }
     } catch (error: any) {
       console.error('Registration error:', error)
+      setJustSignedUp(false) // Reset flag on error
       toast.error(error.message || "Registration failed. Please try again.")
     } finally {
       setIsLoading(false)

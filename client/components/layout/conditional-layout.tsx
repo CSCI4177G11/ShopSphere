@@ -15,7 +15,9 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const excludeLayout: string[] = [
     // Auth pages now include header for easy navigation
     "/admin",
-    "/vendor"
+    "/vendor",
+    "/consumer/create-account",
+    "/vendor/create-account"
   ];
   
   // Check if current page should exclude layout

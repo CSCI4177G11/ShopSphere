@@ -1,13 +1,15 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
 import { authService } from "@/lib/api/auth-service"
+import { userService } from "@/lib/api/user-service"           // ← NEW
 import { toast } from "sonner"
-import { 
+import {
   Home,
   Package,
   ShoppingCart,
@@ -29,33 +31,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useMounted } from "@/hooks/use-mounted"                // ← NEW
 
 const vendorNavItems = [
-  {
-    title: "Dashboard",
-    href: "/vendor",
-    icon: LayoutDashboard
-  },
-  {
-    title: "Products",
-    href: "/vendor/products",
-    icon: Package
-  },
-  {
-    title: "Orders",
-    href: "/vendor/orders",
-    icon: ShoppingCart
-  },
-  {
-    title: "Analytics",
-    href: "/vendor/analytics",
-    icon: BarChart3
-  },
-  {
-    title: "Profile",
-    href: "/vendor/profile",
-    icon: Settings
-  }
+  { title: "Dashboard", href: "/vendor",         icon: LayoutDashboard },
+  { title: "Products",  href: "/vendor/products",icon: Package        },
+  { title: "Orders",    href: "/vendor/orders",  icon: ShoppingCart   },
+  { title: "Analytics", href: "/vendor/analytics",icon: BarChart3     },
+  { title: "Profile",   href: "/vendor/profile", icon: Settings       }
 ]
 
 interface VendorHeaderProps {
@@ -63,19 +46,57 @@ interface VendorHeaderProps {
 }
 
 export function VendorHeader({ vendorId }: VendorHeaderProps) {
-  const pathname = usePathname()
-  const router = useRouter()
+  const pathname   = usePathname()
+  const router     = useRouter()
   const { user, signOut } = useAuth()
+
+  /* ---------- ⬇️  NEW profile‑check state  ⬇️ ---------- */
+  const [profileChecked, setProfileChecked] = useState(false)
+  const [hasProfile,     setHasProfile]     = useState(false)
+  const mounted = useMounted()
+  /* ---------------------------------------------------- */
+
+  /* ---------- ⬇️  Profile‑check effect  ⬇️ ---------- */
+  useEffect(() => {
+    const checkUserProfile = async () => {
+      if (!user) {
+        setProfileChecked(true)
+        return
+      }
+      // avoid loop on create‑account
+      if (pathname === "/vendor/create-account") {
+        setProfileChecked(true)
+        return
+      }
+      try {
+        await userService.getVendorProfile()
+        setHasProfile(true)
+      } catch (err) {
+        // profile missing → redirect
+        setHasProfile(false)
+        router.push("/vendor/create-account")
+      } finally {
+        setProfileChecked(true)
+      }
+    }
+    checkUserProfile()
+  }, [user, pathname, router])
+  /* ---------------------------------------------------- */
+
+  /* ---------- ⬇️  Guard against FOUC  ⬇️ ---------- */
+  if (!mounted) return null
+  if (user && !profileChecked) return null
+  /* -------------------------------------------------- */
 
   const handleLogout = async () => {
     try {
       await authService.logout()
       signOut()
-      router.push('/auth/login')
-      toast.success('Logged out successfully')
+      router.push("/auth/login")
+      toast.success("Logged out successfully")
     } catch (error) {
-      console.error('Logout error:', error)
-      toast.error('Failed to logout')
+      console.error("Logout error:", error)
+      toast.error("Failed to logout")
     }
   }
 
@@ -87,33 +108,12 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
             <Store className="h-6 w-6" />
             <span className="font-semibold">Vendor Portal</span>
           </Link>
-          
+
           <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
             {vendorNavItems.map((item) => {
-              const href = item.external && vendorId 
-                ? item.href.replace('[vendorId]', vendorId)
-                : item.href
+              const href = item.href
               const isActive = pathname === item.href
               const Icon = item.icon
-
-              if (item.external && vendorId) {
-                return (
-                  <a
-                    key={item.title}
-                    href={href}
-                    target={item.newTab ? "_blank" : undefined}
-                    rel={item.newTab ? "noopener noreferrer" : undefined}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      isActive && "bg-accent text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.title}
-                  </a>
-                )
-              }
 
               return (
                 <Link
@@ -134,7 +134,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -151,7 +151,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">Vendor Account</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || 'vendor@example.com'}
+                      {user?.email || "vendor@example.com"}
                     </p>
                   </div>
                 </DropdownMenuLabel>

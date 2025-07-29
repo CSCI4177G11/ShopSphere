@@ -28,9 +28,10 @@ type ProfileForm = z.infer<typeof profileSchema>
 
 export default function CreateConsumerAccountPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const [submitting, setSubmitting] = useState(false)
   const [checking, setChecking] = useState(true)
+  
 
   const {
     register,
@@ -87,6 +88,16 @@ export default function CreateConsumerAccountPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4 py-16">
+      {/* ---- Logout button ---- */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="fixed top-4 right-4 z-50"
+        onClick={() => signOut()}
+      >
+        Logout
+      </Button>
+      {/* ----------------------- */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
