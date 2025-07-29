@@ -1,10 +1,6 @@
 import Vendor from '../models/vendorModel.js';
 import axios from 'axios';
 
-
-
-
-
 // Format phone number for display
 function formatPhoneNumber(phoneNumber) {
   if (!phoneNumber) return phoneNumber;
@@ -145,7 +141,7 @@ export const addVendorProfile = async (req, res) => {
 export const getVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
-    const newRating = await updateVendorRating(vendorId);
+    // const newRating = await updateVendorRating(vendorId);
     try {
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
@@ -391,7 +387,7 @@ export const listPublicVendors = async (req, res) => {
     /* ---------- transform ---------- */
     const transformedVendors = await Promise.all(
       vendors.map(async (vendor) => {
-        const newRating = await updateVendorRating(vendor.vendorId);
+        // const newRating = await updateVendorRating(vendor.vendorId);
 
         return {
           vendorId:      vendor.vendorId,
@@ -424,7 +420,7 @@ export const listPublicVendors = async (req, res) => {
 export const getPublicVendorProfile = async (req, res) => {
   try {
     const { vendorId } = req.params;
-    const newRating = await updateVendorRating(vendorId);
+    // const newRating = await updateVendorRating(vendorId);
 
     
     const vendor = await Vendor.findOne({ vendorId })
