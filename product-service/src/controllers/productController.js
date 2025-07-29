@@ -210,6 +210,7 @@ export const deleteProduct = async (req, res) => {
       if (tags)       q.tags      = { $in: tags.split(',').map(t => t.trim()) };
       if (category)   q.category  = category;
       if (vendorId)   q.vendorId  = vendorId;
+      q.isPublished = true;
   
       const searchTerm = name || search;
       if (searchTerm) q.name = { $regex: searchTerm, $options: 'i' };
