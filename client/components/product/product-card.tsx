@@ -10,6 +10,7 @@ import { ShoppingCart, Star } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import type { Product } from "@/lib/api/product-service"
 
 interface ProductCardProps {
@@ -19,6 +20,7 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { user } = useAuth()
   const { addToCart } = useCart()
+  const { formatPrice } = useCurrency()
   
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault() // Prevent navigation when clicking the button
@@ -89,7 +91,7 @@ export function ProductCard({ product }: ProductCardProps) {
             
             <div className="flex items-center justify-between mt-auto pt-2">
               <div className="space-y-1">
-                <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
                 <div className="flex items-center gap-1">
                   <Star className={`h-4 w-4 ${product.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                   <span className="text-sm text-muted-foreground">

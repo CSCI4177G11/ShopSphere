@@ -10,6 +10,8 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
+import { CURRENCY_SYMBOLS } from "@/lib/currency"
+import type { Currency } from "@/components/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, Loader2, Save } from "lucide-react"
+import { ArrowLeft, Upload, X, Loader2, Save, Globe, EyeOff } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 
 const productSchema = z.object({
@@ -47,6 +49,35 @@ const categories = [
   "other"
 ]
 
+// Convert price from any currency to CAD (base currency)
+const convertToCAD = (price: number, fromCurrency: Currency): number => {
+  if (fromCurrency === 'CAD') return price
+  
+  // Use the inverse of the rates in currency.ts
+  // currency.ts: 1 CAD = 0.74 USD, so 1 USD = 1/0.74 CAD
+  const exchangeRates: Record<Currency, number> = {
+    CAD: 1.00,
+    USD: 1 / 0.74,  // 1 USD = 1.3514 CAD
+    GBP: 1 / 0.58,  // 1 GBP = 1.7241 CAD
+  }
+  
+  return price * exchangeRates[fromCurrency]
+}
+
+// Convert price from CAD to display currency (for showing existing price)
+const convertFromCAD = (priceInCAD: number, toCurrency: Currency): number => {
+  if (toCurrency === 'CAD') return priceInCAD
+  
+  // Use the same rates as in currency.ts
+  const exchangeRates: Record<Currency, number> = {
+    CAD: 1.00,
+    USD: 0.74,  // 1 CAD = 0.74 USD
+    GBP: 0.58,  // 1 CAD = 0.58 GBP
+  }
+  
+  return priceInCAD * exchangeRates[toCurrency]
+}
+
 export default function EditProductPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -60,6 +91,8 @@ export default function EditProductPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [existingImages, setExistingImages] = useState<string[]>([])
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([])
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('CAD')
+  const [isPublished, setIsPublished] = useState(true)
 
   const {
     register,
@@ -83,6 +116,7 @@ export default function EditProductPage() {
       const productData = await productService.getProduct(productId)
       setProduct(productData)
       setExistingImages(productData.images || [])
+      setIsPublished(productData.isPublished !== false)
       
       // Set form values
       reset({
@@ -193,13 +227,18 @@ export default function EditProductPage() {
 
     setIsSubmitting(true)
     try {
+      // Convert price to CAD before saving
+      const priceInSelectedCurrency = parseFloat(data.price)
+      const priceInCAD = convertToCAD(priceInSelectedCurrency, selectedCurrency)
+      
       // Prepare update data
       const updateData: any = {
         name: data.name,
         description: data.description,
-        price: parseFloat(data.price),
+        price: priceInCAD,
         quantityInStock: parseInt(data.stock),
         category: data.category,
+        isPublished: isPublished,
       }
 
       // Add new images if any
@@ -343,15 +382,55 @@ export default function EditProductPage() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price">Price ($)</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          step="0.01"
-                          {...register("price")}
-                          placeholder="0.00"
-                          disabled={isSubmitting}
-                        />
+                        <Label htmlFor="price">Price</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={selectedCurrency}
+                            onValueChange={(value) => {
+                              const newCurrency = value as Currency
+                              // Convert the current price to the new currency for display
+                              const currentPrice = parseFloat(watch("price") || "0")
+                              const priceInCAD = convertToCAD(currentPrice, selectedCurrency)
+                              const priceInNewCurrency = convertFromCAD(priceInCAD, newCurrency)
+                              setValue("price", priceInNewCurrency.toFixed(2))
+                              setSelectedCurrency(newCurrency)
+                            }}
+                            disabled={isSubmitting}
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CAD">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.CAD}</span>
+                                  <span>CAD</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="USD">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.USD}</span>
+                                  <span>USD</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="GBP">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.GBP}</span>
+                                  <span>GBP</span>
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="price"
+                            type="number"
+                            step="0.01"
+                            {...register("price")}
+                            placeholder="0.00"
+                            disabled={isSubmitting}
+                            className="flex-1"
+                          />
+                        </div>
                         {errors.price && (
                           <p className="text-sm text-destructive mt-1">{errors.price.message}</p>
                         )}
@@ -495,6 +574,44 @@ export default function EditProductPage() {
                         )}
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Actions */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Publication Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {isPublished ? (
+                          <>
+                            <Globe className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium">Published</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm font-medium">Unpublished</span>
+                          </>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant={isPublished ? "outline" : "default"}
+                        size="sm"
+                        onClick={() => setIsPublished(!isPublished)}
+                        disabled={isSubmitting}
+                      >
+                        {isPublished ? "Unpublish" : "Publish"}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isPublished 
+                        ? "Product is visible to customers" 
+                        : "Product is hidden from customers"}
+                    </p>
                   </CardContent>
                 </Card>
 

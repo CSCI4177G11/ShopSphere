@@ -11,6 +11,7 @@ import { paymentService } from "@/lib/api/payment-service"
 import { orderService } from "@/lib/api/order-service"
 import { userService, type Address } from "@/lib/api/user-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -58,6 +59,7 @@ type CheckoutForm = z.infer<typeof checkoutSchema>
 export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [totals, setTotals] = useState<CartTotals | null>(null)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -504,7 +506,7 @@ export default function CheckoutPage() {
                               {item.quantity}x {item.productName}
                             </span>
                             <span className="font-medium">
-                              ${(item.price * item.quantity).toFixed(2)}
+                              {formatPrice(item.price * item.quantity)}
                             </span>
                           </div>
                         ))}
@@ -515,11 +517,11 @@ export default function CheckoutPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Subtotal ({totals?.totalItems || 0} items)</span>
-                        <span>${totals?.subtotal?.toFixed(2) || '0.00'}</span>
+                        <span>{totals ? formatPrice(totals.subtotal) : formatPrice(0)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Tax</span>
-                        <span>${totals?.estimatedTax?.toFixed(2) || '0.00'}</span>
+                        <span>{totals ? formatPrice(totals.estimatedTax) : formatPrice(0)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Shipping</span>
@@ -528,7 +530,7 @@ export default function CheckoutPage() {
                       <Separator />
                       <div className="flex justify-between font-semibold text-lg">
                         <span>Total</span>
-                        <span>${totals?.total?.toFixed(2) || '0.00'}</span>
+                        <span>{totals ? formatPrice(totals.total) : formatPrice(0)}</span>
                       </div>
                     </div>
                     
@@ -544,7 +546,7 @@ export default function CheckoutPage() {
                           Processing...
                         </>
                       ) : (
-                        `Place Order - $${totals?.total?.toFixed(2) || '0.00'}`
+                        `Place Order - ${totals ? formatPrice(totals.total) : formatPrice(0)}`
                       )}
                     </Button>
                     

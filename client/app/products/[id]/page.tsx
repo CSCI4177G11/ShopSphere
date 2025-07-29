@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -32,6 +33,7 @@ export default function ProductDetailPage() {
   const params = useParams()
   const { user } = useAuth()
   const { cart, addItem } = useCart()
+  const { formatPrice } = useCurrency()
   const [product, setProduct] = useState<Product | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
@@ -332,7 +334,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* Price */}
-              <div className="text-3xl font-bold">${product.price.toFixed(2)}</div>
+              <div className="text-3xl font-bold">{formatPrice(product.price)}</div>
 
               {/* Description */}
               <p className="text-muted-foreground">{product.description}</p>

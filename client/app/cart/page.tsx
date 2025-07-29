@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { productService } from "@/lib/api/product-service"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,6 +20,7 @@ import type { CartItemsResponse, CartItem, CartTotals } from "@/lib/api/cart-ser
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
 
   const { cart, totals, loading, updateQuantity: updateCartQuantity, removeItem: removeCartItem, clearCart: clearCartItems } = useCart()
   const [enrichedItems, setEnrichedItems] = useState<CartItem[]>([])
@@ -323,8 +325,8 @@ export default function CartPage() {
                             )
                           })()}
                           <div className="text-right">
-                            <p className="text-sm text-muted-foreground">${item.price.toFixed(2)} each</p>
-                            <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                            <p className="text-sm text-muted-foreground">{formatPrice(item.price)} each</p>
+                            <p className="font-semibold">{formatPrice(item.price * item.quantity)}</p>
                           </div>
                         </div>
                       </div>
@@ -344,16 +346,16 @@ export default function CartPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${totals?.subtotal.toFixed(2) || '0.00'}</span>
+                      <span>{totals ? formatPrice(totals.subtotal) : formatPrice(0)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Tax</span>
-                      <span>${totals?.estimatedTax.toFixed(2) || '0.00'}</span>
+                      <span>{totals ? formatPrice(totals.estimatedTax) : formatPrice(0)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between font-semibold text-lg">
                       <span>Total</span>
-                      <span>${totals?.total.toFixed(2) || '0.00'}</span>
+                      <span>{totals ? formatPrice(totals.total) : formatPrice(0)}</span>
                     </div>
                   </div>
                   
