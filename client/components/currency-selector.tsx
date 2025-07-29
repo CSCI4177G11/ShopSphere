@@ -34,13 +34,6 @@ const currencies = [
     flag: "🇬🇧",
     color: "from-blue-600 to-red-600"
   },
-  { 
-    code: "EUR", 
-    symbol: "€", 
-    name: "Euro",
-    flag: "🇪🇺",
-    color: "from-blue-600 to-yellow-500"
-  },
 ] as const
 
 export function CurrencySelector() {

@@ -11,6 +11,8 @@ import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { userService } from "@/lib/api/user-service"
 import { useAuth } from "@/components/auth-provider"
+import { CURRENCY_SYMBOLS } from "@/lib/currency"
+import type { Currency } from "@/components/settings-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2, Globe } from "lucide-react"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -47,6 +49,21 @@ const categories = [
   "other"
 ]
 
+// Convert price from any currency to CAD (base currency)
+const convertToCAD = (price: number, fromCurrency: Currency): number => {
+  if (fromCurrency === 'CAD') return price
+  
+  // Use the inverse of the rates in currency.ts
+  // currency.ts: 1 CAD = 0.74 USD, so 1 USD = 1/0.74 CAD
+  const exchangeRates: Record<Currency, number> = {
+    CAD: 1.00,
+    USD: 1 / 0.74,  // 1 USD = 1.3514 CAD
+    GBP: 1 / 0.58,  // 1 GBP = 1.7241 CAD
+  }
+  
+  return price * exchangeRates[fromCurrency]
+}
+
 export default function NewProductPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -55,6 +72,8 @@ export default function NewProductPage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [isCheckingApproval, setIsCheckingApproval] = useState(true)
   const [isApproved, setIsApproved] = useState<boolean | null>(null)
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('CAD')
+  const [publishOnCreate, setPublishOnCreate] = useState(true)
 
   const {
     register,
@@ -204,17 +223,21 @@ export default function NewProductPage() {
         selectedImages.map(file => compressImage(file))
       )
 
+      // Convert price to CAD before saving
+      const priceInSelectedCurrency = parseFloat(data.price)
+      const priceInCAD = convertToCAD(priceInSelectedCurrency, selectedCurrency)
+      
       const createProductPayload = {
         name: data.name,
         description: data.description,
-        price: parseFloat(data.price),
+        price: priceInCAD,
         quantityInStock: parseInt(data.stock),
         category: data.category,
         vendorId: user.userId,
         vendorName: user.username,
         images: compressedImages,
         tags: [data.category], // Add category as a tag
-        isPublished: true
+        isPublished: publishOnCreate
       }
       
       console.log('Creating product with payload:', createProductPayload)
@@ -412,15 +435,47 @@ export default function NewProductPage() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="price">Price ($)</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          step="0.01"
-                          {...register("price")}
-                          placeholder="0.00"
-                          disabled={isSubmitting}
-                        />
+                        <Label htmlFor="price">Price</Label>
+                        <div className="flex gap-2">
+                          <Select
+                            value={selectedCurrency}
+                            onValueChange={(value) => setSelectedCurrency(value as Currency)}
+                            disabled={isSubmitting}
+                          >
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CAD">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.CAD}</span>
+                                  <span>CAD</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="USD">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.USD}</span>
+                                  <span>USD</span>
+                                </span>
+                              </SelectItem>
+                              <SelectItem value="GBP">
+                                <span className="flex items-center gap-1">
+                                  <span className="font-mono">{CURRENCY_SYMBOLS.GBP}</span>
+                                  <span>GBP</span>
+                                </span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            id="price"
+                            type="number"
+                            step="0.01"
+                            {...register("price")}
+                            placeholder="0.00"
+                            disabled={isSubmitting}
+                            className="flex-1"
+                          />
+                        </div>
                         {errors.price && (
                           <p className="text-sm text-destructive mt-1">{errors.price.message}</p>
                         )}
@@ -521,6 +576,36 @@ export default function NewProductPage() {
                         First image will be used as the main product image
                       </p>
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Publication Options */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Publication Options</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-muted-foreground" />
+                        <Label htmlFor="publish-toggle" className="text-sm font-normal">
+                          Publish immediately
+                        </Label>
+                      </div>
+                      <input
+                        id="publish-toggle"
+                        type="checkbox"
+                        checked={publishOnCreate}
+                        onChange={(e) => setPublishOnCreate(e.target.checked)}
+                        disabled={isSubmitting}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {publishOnCreate 
+                        ? "Product will be visible to customers immediately" 
+                        : "Product will be saved as draft and hidden from customers"}
+                    </p>
                   </CardContent>
                 </Card>
 

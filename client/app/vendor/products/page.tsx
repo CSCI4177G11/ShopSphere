@@ -47,7 +47,9 @@ import {
   RefreshCw,
   PlusCircle,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  Pause,
+  Play
 } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 
@@ -105,6 +107,28 @@ export default function VendorProductsPage() {
       toast.error('Failed to delete product')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleTogglePublish = async (product: Product) => {
+    const newPublishedState = !product.isPublished
+    const action = newPublishedState ? 'published' : 'unpublished'
+    
+    try {
+      await productService.updateProduct(product.productId, {
+        isPublished: newPublishedState
+      })
+      
+      setProducts(products.map(p => 
+        p.productId === product.productId 
+          ? { ...p, isPublished: newPublishedState }
+          : p
+      ))
+      
+      toast.success(`Product ${action} successfully`)
+    } catch (error) {
+      console.error('Failed to toggle publish status:', error)
+      toast.error(`Failed to ${action.slice(0, -2)} product`)
     }
   }
 
@@ -320,9 +344,16 @@ export default function VendorProductsPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={product.quantityInStock > 0 ? "default" : "destructive"}>
-                            {product.quantityInStock > 0 ? 'In Stock' : 'Out of Stock'}
-                          </Badge>
+                          <div className="flex flex-col items-start gap-1">
+                            <Badge variant={product.quantityInStock > 0 ? "default" : "destructive"} className="w-fit">
+                              {product.quantityInStock > 0 ? 'In Stock' : 'Out of Stock'}
+                            </Badge>
+                            {product.isPublished === false && (
+                              <Badge variant="secondary" className="w-fit">
+                                Unpublished
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
@@ -335,6 +366,18 @@ export default function VendorProductsPage() {
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </Link>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleTogglePublish(product)}
+                              title={product.isPublished ? "Unpublish product" : "Publish product"}
+                            >
+                              {product.isPublished ? (
+                                <Pause className="h-4 w-4" />
+                              ) : (
+                                <Play className="h-4 w-4" />
+                              )}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -371,6 +414,21 @@ export default function VendorProductsPage() {
                                 >
                                   <PlusCircle className="mr-2 h-4 w-4" />
                                   Update Stock
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleTogglePublish(product)}
+                                >
+                                  {product.isPublished ? (
+                                    <>
+                                      <Pause className="mr-2 h-4 w-4" />
+                                      Unpublish
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="mr-2 h-4 w-4" />
+                                      Publish
+                                    </>
+                                  )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-destructive"

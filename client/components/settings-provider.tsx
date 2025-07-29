@@ -6,7 +6,7 @@ import { userService } from '@/lib/api/user-service'
 import { useAuth } from '@/components/auth-provider'
 import { toast } from 'sonner'
 
-export type Currency = "USD" | "CAD" | "GBP" | "EUR"
+export type Currency = "USD" | "CAD" | "GBP"
 
 interface SettingsContextType {
   currency: Currency
@@ -25,9 +25,9 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   const [currency, setCurrencyState] = useState<Currency>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('currency') as Currency
-      return saved && ['USD', 'CAD', 'GBP', 'EUR'].includes(saved) ? saved : 'USD'
+      return saved && ['USD', 'CAD', 'GBP'].includes(saved) ? saved : 'CAD'
     }
-    return 'USD'
+    return 'CAD'
   })
   const { theme, setTheme } = useTheme()
   const { user, loading: authLoading } = useAuth()
@@ -43,7 +43,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         } else {
           // Load from localStorage for non-authenticated users
           const savedCurrency = localStorage.getItem('currency') as Currency
-          if (savedCurrency && ['USD', 'CAD', 'GBP', 'EUR'].includes(savedCurrency)) {
+          if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
             setCurrencyState(savedCurrency)
           }
         }
@@ -60,7 +60,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       if (user.role === 'consumer') {
         try {
           const settings = await userService.getConsumerSettings()
-          if (settings && settings.currency && ['USD', 'CAD', 'GBP', 'EUR'].includes(settings.currency)) {
+          if (settings && settings.currency && ['USD', 'CAD', 'GBP'].includes(settings.currency)) {
             setCurrencyState(settings.currency as Currency)
             // Also update localStorage to keep in sync
             localStorage.setItem('currency', settings.currency)
@@ -72,7 +72,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           console.error('Failed to load consumer settings, using localStorage:', error)
           // Fallback to localStorage if API fails
           const savedCurrency = localStorage.getItem('currency') as Currency
-          if (savedCurrency && ['USD', 'CAD', 'GBP', 'EUR'].includes(savedCurrency)) {
+          if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
             setCurrencyState(savedCurrency)
           }
         }
@@ -92,7 +92,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
         }
         // Vendors don't have currency settings, just use localStorage
         const savedCurrency = localStorage.getItem('currency') as Currency
-        if (savedCurrency && ['USD', 'CAD', 'GBP', 'EUR'].includes(savedCurrency)) {
+        if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
           setCurrencyState(savedCurrency)
         }
       }
@@ -100,7 +100,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       console.error('Failed to load user settings:', error)
       // Always fallback to localStorage
       const savedCurrency = localStorage.getItem('currency') as Currency
-      if (savedCurrency && ['USD', 'CAD', 'GBP', 'EUR'].includes(savedCurrency)) {
+      if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
         setCurrencyState(savedCurrency)
       }
     } finally {
