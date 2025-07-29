@@ -336,7 +336,7 @@ export default function VendorProductsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{vendor.rating >= 0  ? vendor.rating.toFixed(1) : 'Not review'}</span>
+                      <span className="font-medium">{vendor.rating >= 0  ? vendor.rating.toFixed(1) : 'No reviews'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Package className="h-4 w-4 text-muted-foreground" />
