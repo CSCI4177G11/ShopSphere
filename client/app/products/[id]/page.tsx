@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
 import { useCurrency } from "@/hooks/use-currency"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -251,7 +251,7 @@ export default function ProductDetailPage() {
             {/* Product Images */}
             <div className="space-y-4">
               <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-                <Image
+                <ImageWithFallback
                   src={images[selectedImage]}
                   alt={product.name}
                   fill
@@ -279,7 +279,7 @@ export default function ProductDetailPage() {
                           : 'border-transparent hover:border-gray-300'
                       }`}
                     >
-                      <Image
+                      <ImageWithFallback
                         src={image}
                         alt={`${product.name} ${index + 1}`}
                         fill

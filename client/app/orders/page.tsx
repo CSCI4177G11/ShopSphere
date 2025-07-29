@@ -24,6 +24,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 
 const statusConfig = {
   pending: { label: "Pending", icon: Clock, color: "bg-yellow-500" },
@@ -49,6 +50,8 @@ export default function OrdersPage() {
   const [productReviews, setProductReviews] = useState<Record<string, any>>({})
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const [productNames, setProductNames] = useState<Record<string, string>>({})
+  const [productImages, setProductImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +69,26 @@ export default function OrdersPage() {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       setOrders(sortedOrders)
+      
+      // Get all unique product IDs
+      const allProductIds = [...new Set(sortedOrders.flatMap(order => 
+        order.orderItems.map(item => item.productId)
+      ))]
+      
+      // Fetch product names and images using batch endpoint
+      try {
+        const productMap = await productService.getProductsBatch(allProductIds)
+        const names: Record<string, string> = {}
+        const images: Record<string, string> = {}
+        Object.entries(productMap).forEach(([id, product]) => {
+          names[id] = product.name
+          images[id] = product.thumbnail || product.images?.[0] || '/placeholder.jpg'
+        })
+        setProductNames(names)
+        setProductImages(images)
+      } catch (error) {
+        console.error('Failed to fetch product details:', error)
+      }
       
       // Check for existing reviews on delivered orders
       const reviews: Record<string, any> = {}
@@ -336,11 +359,18 @@ export default function OrdersPage() {
                               <div key={item.productId} className="group">
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                                   <div className="flex items-center gap-3">
-                                    <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center">
-                                      <Package className="h-6 w-6 text-muted-foreground" />
+                                    <div className="relative h-12 w-12 rounded-md overflow-hidden bg-muted">
+                                      <ImageWithFallback
+                                        src={productImages[item.productId]}
+                                        alt={productNames[item.productId] || `Product #${item.productId.slice(-6)}`}
+                                        fill
+                                        className="object-cover"
+                                      />
                                     </div>
                                     <div>
-                                      <p className="font-medium">Product #{item.productId.slice(-6)}</p>
+                                      <p className="font-medium">
+                                        {productNames[item.productId] || `Product #${item.productId.slice(-6)}`}
+                                      </p>
                                       <p className="text-sm text-muted-foreground">
                                         ${item.price.toFixed(2)} × {item.quantity}
                                       </p>

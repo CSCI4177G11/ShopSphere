@@ -11,6 +11,7 @@ import { paymentService } from "@/lib/api/payment-service"
 import { orderService } from "@/lib/api/order-service"
 import { userService, type Address } from "@/lib/api/user-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCart } from "@/components/cart-provider"
 import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,6 +61,7 @@ export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { formatPrice } = useCurrency()
+  const { clearCart } = useCart()
   const [totals, setTotals] = useState<CartTotals | null>(null)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -193,8 +195,8 @@ export default function CheckoutPage() {
         shippingAddress,
       })
 
-      // 3. Clear cart after successful order
-      await cartService.clearCart()
+      // 3. Clear cart after successful order using the cart provider
+      await clearCart()
 
       setOrderComplete(true)
       toast.success('Order placed successfully!')

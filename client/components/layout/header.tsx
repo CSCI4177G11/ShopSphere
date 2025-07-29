@@ -81,15 +81,17 @@ export function Header() {
           // Admin users don't need profile check
           setHasProfile(true);
         }
-      } catch (error) {
+      } catch (error: any) {
         // Profile doesn't exist
         setHasProfile(false);
         
-        // Redirect to appropriate create account page
-        if (session.user.role === 'consumer') {
-          router.push('/consumer/create-account');
-        } else if (session.user.role === 'vendor') {
-          router.push('/vendor/create-account');
+        // Only redirect if we're not already on the create account page
+        if (pathname !== '/consumer/create-account' && pathname !== '/vendor/create-account') {
+          if (session.user.role === 'consumer') {
+            router.push('/consumer/create-account');
+          } else if (session.user.role === 'vendor') {
+            router.push('/vendor/create-account');
+          }
         }
       } finally {
         setProfileChecked(true);

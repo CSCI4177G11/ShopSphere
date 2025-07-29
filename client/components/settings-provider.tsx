@@ -69,7 +69,10 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
             setTheme(settings.theme)
           }
         } catch (error: any) {
-          console.error('Failed to load consumer settings, using localStorage:', error)
+          // Only log non-404 errors (404 means profile doesn't exist yet, which is normal)
+          if (!error.message?.includes('404') && !error.message?.includes('not found')) {
+            console.error('Failed to load consumer settings, using localStorage:', error)
+          }
           // Fallback to localStorage if API fails
           const savedCurrency = localStorage.getItem('currency') as Currency
           if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
@@ -88,7 +91,10 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
             setTheme(settings.theme)
           }
         } catch (error: any) {
-          console.error('Failed to load vendor settings, using localStorage:', error)
+          // Only log non-404 errors (404 means profile doesn't exist yet, which is normal)
+          if (!error.message?.includes('404') && !error.message?.includes('not found')) {
+            console.error('Failed to load vendor settings, using localStorage:', error)
+          }
           // Fallback to localStorage if API fails
           const savedTheme = localStorage.getItem('theme')
           if (savedTheme) {

@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef  } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
 import { useCurrency } from "@/hooks/use-currency"
 import { productService } from "@/lib/api/product-service"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -252,19 +252,13 @@ export default function CartPage() {
                     <CardContent className="p-6">
                       <div className="flex gap-4">
                         <Link href={`/products/${item.productId}`} className="relative h-24 w-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 hover:opacity-80 transition-opacity">
-                          {enrichedItem.productImage ? (
-                            <Image
-                              src={enrichedItem.productImage}
-                              alt={item.productName}
-                              fill
-                              sizes="80px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                              <ShoppingBag className="h-8 w-8 text-gray-400" />
-                            </div>
-                          )}
+                          <ImageWithFallback
+                            src={enrichedItem.productImage}
+                            alt={item.productName}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
                         </Link>
                       
                       <div className="flex-1">

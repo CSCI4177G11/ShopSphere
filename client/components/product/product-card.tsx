@@ -1,11 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ImageWithFallback } from "@/components/ui/image-with-fallback"
 import { ShoppingCart, Star } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
@@ -51,7 +51,7 @@ export function ProductCard({ product }: ProductCardProps) {
     <Link href={`/products/${product.productId}`} className="h-full">
       <Card className="group h-full flex flex-col overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer">
         <div className="relative aspect-square overflow-hidden bg-gray-100 flex-shrink-0">
-          <Image
+          <ImageWithFallback
             src={productImage}
             alt={product.name}
             fill
