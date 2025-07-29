@@ -279,6 +279,7 @@ export async function cancelOrder(req, res) {
     }
   }
 
+
   if (['shipped', 'out_for_delivery', 'delivered'].includes(order.orderStatus)) {
     return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
   }
@@ -286,6 +287,10 @@ export async function cancelOrder(req, res) {
   await Order.appendTracking(id, { status: 'cancelled', note: reason });
   order.paymentStatus = 'refunded';
   order.save();
+  const paymentRes = await axios.post(
+    `http://payment-service:4500/api/payments/${paymentId}/refund'`,
+    {headers: { Authorization: `Bearer ${PAYMENTS_SERVICE_TOKEN}` }}
+  );
   return res.status(200).json({ message: 'Order cancelled' });
 }
 

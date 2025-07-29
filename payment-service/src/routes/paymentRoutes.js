@@ -111,8 +111,7 @@ router.post(
         param('paymentId').isMongoId().withMessage('Invalid payment id'),
         handleValidationErrors,
     ],
-    requireAuth,
-    getPaymentById, 
+    requireRole(['admin']),
     refundPayment
 );
 
