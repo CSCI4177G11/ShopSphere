@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { useCurrency } from "@/hooks/use-currency"
 import { 
   Package, 
   DollarSign, 
@@ -22,7 +23,10 @@ import {
   ArrowDownRight,
   UserCheck,
   AlertCircle,
-  Settings
+  Settings,
+  Shield,
+  Store,
+  FileText
 } from "lucide-react"
 import type { Order } from "@/lib/api/order-service"
 
@@ -40,6 +44,7 @@ interface AdminStats {
 export default function AdminDashboard() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [stats, setStats] = useState<AdminStats>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -117,20 +122,30 @@ export default function AdminDashboard() {
           transition={{ duration: 0.5 }}
         >
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Oversee and manage the entire platform</p>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Welcome back, {user?.username || 'Administrator'}</p>
+            </div>
+            <div className="flex gap-2">
+              <Link href="/">
+                <Button variant="outline">
+                  <Store className="mr-2 h-4 w-4" />
+                  Marketplace
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className={stats.revenueChange > 0 ? "text-green-600" : "text-red-600"}>
                     {stats.revenueChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
@@ -173,13 +188,13 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Platform Overview</CardTitle>
+                <Shield className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across all vendors
+                  Products across {stats.activeVendors} vendors
                 </p>
               </CardContent>
             </Card>
@@ -236,7 +251,7 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${(order.subtotalAmount * 1.13).toFixed(2)}</p>
+                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.13)}</p>
                           <Badge variant="outline" className="text-xs capitalize">
                             {order.orderStatus}
                           </Badge>
@@ -248,36 +263,74 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Quick Actions */}
+            {/* Navigation */}
             <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Link href="/admin/vendors" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <UserCheck className="mr-2 h-4 w-4" />
-                    Manage Vendors
-                  </Button>
-                </Link>
-                <Link href="/admin/users" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Users className="mr-2 h-4 w-4" />
-                    Manage Users
-                  </Button>
-                </Link>
-                <Link href="/admin/analytics" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    Platform Analytics
-                  </Button>
-                </Link>
-                <Link href="/admin/settings" className="block">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Platform Settings
-                  </Button>
-                </Link>
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link href="/admin/vendors" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <UserCheck className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Manage Vendors</p>
+                            <p className="text-sm text-muted-foreground mt-1">Approve and monitor vendors</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/admin/users" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Manage Users</p>
+                            <p className="text-sm text-muted-foreground mt-1">Monitor user accounts</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/admin/analytics" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <BarChart3 className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Platform Analytics</p>
+                            <p className="text-sm text-muted-foreground mt-1">View system metrics</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  
+                  <Link href="/admin/settings" className="block">
+                    <Card className="cursor-pointer hover:border-primary transition-colors h-full">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col items-center text-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Settings className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-base">Platform Settings</p>
+                            <p className="text-sm text-muted-foreground mt-1">Configure system settings</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           </div>

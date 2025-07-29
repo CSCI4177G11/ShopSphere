@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { AdminHeader } from "@/components/admin/admin-header";
 import { useAuth } from "@/components/auth-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -33,13 +33,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <DashboardHeader 
-        type="admin"
-        title="Admin Console"
-        subtitle="System Management"
-        userName={user.username}
-        userRole="Administrator"
-      />
+      <AdminHeader />
       
       <main className="w-full">
         {children}
