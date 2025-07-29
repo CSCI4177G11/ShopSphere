@@ -16,8 +16,8 @@ import { Upload, Link2, Image as ImageIcon } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
 
-// raw JSON array
-import countryRegionData from "country-region-data/data.json"
+// Import country data - use the default export
+import { allCountries } from "country-region-data"
 
 import {
   Select,
@@ -40,20 +40,17 @@ const profileSchema = z.object({
 })
 
 type ProfileForm = z.infer<typeof profileSchema>
-type Country = {
-  countryName: string
-  countryShortCode: string
-  regions: { name: string; shortCode: string }[]
-}
 type Option = { label: string; value: string }
 
 const ALLOWED = ["CA", "US", "GB"]
-const countries: Country[] = (countryRegionData as Country[]).filter((c) =>
-  ALLOWED.includes(c.countryShortCode)
+// CountryData format is: [countryName, countryCode, regions[]]
+// where regions is array of [regionName, regionCode]
+const countries = allCountries.filter((country) =>
+  ALLOWED.includes(country[1])
 )
-const countryOptions: Option[] = countries.map((c) => ({
-  label: c.countryName,
-  value: c.countryShortCode,
+const countryOptions: Option[] = countries.map((country) => ({
+  label: country[0], // countryName
+  value: country[1], // countryCode
 }))
 
 const compressImage = (file: File, max: number) =>
@@ -117,8 +114,11 @@ export default function CreateVendorAccountPage() {
   /* ------------------------ effects: regions ----------------------------- */
 
   useEffect(() => {
-    const c = countries.find((c) => c.countryShortCode === countryCode)!
-    const regs = c.regions.map((r) => ({ label: r.name, value: r.shortCode }))
+    const country = countries.find((c) => c[1] === countryCode)
+    if (!country) return
+    
+    const regions = country[2] // regions array
+    const regs = regions.map((r) => ({ label: r[0], value: r[1] }))
     setRegionOptions(regs)
     setRegionCode(regs[0]?.value)            // safe even if empty
     setValue("location", regs[0]?.label || "")
