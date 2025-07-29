@@ -17,6 +17,7 @@ export interface UserSettings {
 
 export interface VendorSettings {
   theme: 'light' | 'dark'
+  currency: string
 }
 
 export interface ConsumerProfile {
