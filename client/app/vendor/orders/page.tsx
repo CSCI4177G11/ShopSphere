@@ -6,6 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +46,7 @@ const statusConfig = {
 export default function VendorOrdersPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -205,7 +207,7 @@ export default function VendorOrdersPage() {
                             {order.orderItems.length} items
                           </TableCell>
                           <TableCell className="font-medium">
-                            ${(order.subtotalAmount * 1.13).toFixed(2)}
+                            {formatPrice(order.subtotalAmount * 1.13)}
                           </TableCell>
                           <TableCell>
                             <Badge 

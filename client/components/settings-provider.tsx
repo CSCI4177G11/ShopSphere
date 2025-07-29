@@ -79,6 +79,11 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       } else if (user.role === 'vendor') {
         try {
           const settings = await userService.getVendorSettings()
+          if (settings && settings.currency && ['USD', 'CAD', 'GBP'].includes(settings.currency)) {
+            setCurrencyState(settings.currency as Currency)
+            // Also update localStorage to keep in sync
+            localStorage.setItem('currency', settings.currency)
+          }
           if (settings && settings.theme) {
             setTheme(settings.theme)
           }
@@ -89,11 +94,10 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           if (savedTheme) {
             setTheme(savedTheme)
           }
-        }
-        // Vendors don't have currency settings, just use localStorage
-        const savedCurrency = localStorage.getItem('currency') as Currency
-        if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
-          setCurrencyState(savedCurrency)
+          const savedCurrency = localStorage.getItem('currency') as Currency
+          if (savedCurrency && ['USD', 'CAD', 'GBP'].includes(savedCurrency)) {
+            setCurrencyState(savedCurrency)
+          }
         }
       }
     } catch (error) {
@@ -120,8 +124,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
           await userService.updateConsumerSettings({ currency: newCurrency })
           toast.success('Currency preference saved')
         } else if (user.role === 'vendor') {
-          // For now, vendors don't have settings endpoint, just use localStorage
-          localStorage.setItem('currency', newCurrency)
+          await userService.updateVendorSettings({ currency: newCurrency })
+          toast.success('Currency preference saved')
         }
       } catch (error) {
         console.error('Failed to update currency:', error)

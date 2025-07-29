@@ -7,6 +7,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -56,6 +57,7 @@ import type { Product } from "@/lib/api/product-service"
 export default function VendorProductsPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -259,7 +261,7 @@ export default function VendorProductsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${totalValue.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatPrice(totalValue)}</div>
               </CardContent>
             </Card>
           </div>
@@ -337,7 +339,7 @@ export default function VendorProductsPage() {
                             <span className="text-muted-foreground text-sm">Uncategorized</span>
                           )}
                         </TableCell>
-                        <TableCell>${product.price.toFixed(2)}</TableCell>
+                        <TableCell>{formatPrice(product.price)}</TableCell>
                         <TableCell>
                           <span className={product.quantityInStock === 0 ? 'text-red-600 font-medium' : ''}>
                             {product.quantityInStock}

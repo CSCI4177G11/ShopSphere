@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils"
 export default function VendorAnalyticsPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice, convertPrice, currency } = useCurrency()
   const [loading, setLoading] = useState(true)
   const [analytics, setAnalytics] = useState<SummaryResponse | null>(null)
   const [topProducts, setTopProducts] = useState<TopProductsResponse | null>(null)
@@ -175,7 +176,7 @@ export default function VendorAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${analytics?.result.totalRevenue ? parseFloat(analytics.result.totalRevenue.toString()).toFixed(2) : '0.00'}
+                  {analytics?.result.totalRevenue ? formatPrice(parseFloat(analytics.result.totalRevenue.toString())) : formatPrice(0)}
                 </div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <CalendarDays className="h-3 w-3" />
@@ -208,7 +209,7 @@ export default function VendorAnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${analytics?.result.averageOrderValue ? parseFloat(analytics.result.averageOrderValue.toString()).toFixed(2) : '0.00'}
+                  {analytics?.result.averageOrderValue ? formatPrice(parseFloat(analytics.result.averageOrderValue.toString())) : formatPrice(0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Revenue per order
@@ -259,7 +260,7 @@ export default function VendorAnalyticsPage() {
                         <LineChart
                           data={salesTrend.trend.slice(-7).map(point => ({
                             date: new Date(point.period).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                            revenue: parseFloat(point.revenue.toString())
+                            revenue: convertPrice(parseFloat(point.revenue.toString()))
                           }))}
                           margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
                         >
@@ -275,12 +276,12 @@ export default function VendorAnalyticsPage() {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => `$${value}`}
+                            tickFormatter={(value) => formatPrice(value)}
                           />
                           <ChartTooltip
                             content={
                               <ChartTooltipContent 
-                                formatter={(value) => `$${value.toFixed(2)}`}
+                                formatter={(value) => formatPrice(Number(value))}
                               />
                             }
                           />
@@ -349,7 +350,7 @@ export default function VendorAnalyticsPage() {
                                 <p className="font-medium truncate">{product?.name || `Product ${item.productId.slice(-6)}`}</p>
                                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                   <span>{item.unitsSold} units sold</span>
-                                  <span className="font-medium text-foreground">${parseFloat(item.revenue.toString()).toFixed(2)}</span>
+                                  <span className="font-medium text-foreground">{formatPrice(parseFloat(item.revenue.toString()))}</span>
                                 </div>
                               </div>
                             </div>
@@ -387,17 +388,17 @@ export default function VendorAnalyticsPage() {
                   <div className="text-center p-4 rounded-lg bg-muted/30">
                     <p className="text-sm text-muted-foreground mb-2">Revenue per Product</p>
                     <p className="text-2xl font-bold">
-                      ${analytics?.result.totalOrders && topProducts?.topProducts.length 
-                        ? (parseFloat(analytics.result.totalRevenue.toString()) / topProducts.topProducts.length).toFixed(2)
-                        : '0.00'}
+                      {analytics?.result.totalOrders && topProducts?.topProducts.length 
+                        ? formatPrice(parseFloat(analytics.result.totalRevenue.toString()) / topProducts.topProducts.length)
+                        : formatPrice(0)}
                     </p>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/30">
                     <p className="text-sm text-muted-foreground mb-2">Best Product Revenue</p>
                     <p className="text-2xl font-bold">
-                      ${topProducts?.topProducts[0]?.revenue 
-                        ? parseFloat(topProducts.topProducts[0].revenue.toString()).toFixed(2)
-                        : '0.00'}
+                      {topProducts?.topProducts[0]?.revenue 
+                        ? formatPrice(parseFloat(topProducts.topProducts[0].revenue.toString()))
+                        : formatPrice(0)}
                     </p>
                   </div>
                   <div className="text-center p-4 rounded-lg bg-muted/30">

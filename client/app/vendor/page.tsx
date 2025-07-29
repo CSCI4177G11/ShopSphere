@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
@@ -39,6 +40,7 @@ interface DashboardStats {
 export default function VendorDashboard() {
   const { user } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [stats, setStats] = useState<DashboardStats>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -126,11 +128,12 @@ export default function VendorDashboard() {
       
       const totalRevenue = allOrders.reduce((sum, order) => sum + order.subtotalAmount, 0)
       const pendingOrders = allOrders.filter(order => order.orderStatus === 'pending').length
+      const publishedProducts = vendorProducts.filter(product => product.isPublished !== false).length
       
       setStats({
         totalRevenue,
         totalOrders: allOrders.length,
-        totalProducts: vendorProducts.length,
+        totalProducts: publishedProducts,
         pendingOrders,
         revenueChange: parseFloat(revenueChange.toFixed(1)),
         ordersChange: parseFloat(ordersChange.toFixed(1))
@@ -156,10 +159,11 @@ export default function VendorDashboard() {
       }
       
       // Set empty data to prevent errors
+      const publishedCount = products.filter(p => p.isPublished !== false).length
       setStats({
         totalRevenue: 0,
         totalOrders: 0,
-        totalProducts: products.length || 0,
+        totalProducts: publishedCount || 0,
         pendingOrders: 0,
         revenueChange: 0,
         ordersChange: 0
@@ -218,24 +222,7 @@ export default function VendorDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className={stats.revenueChange > 0 ? "text-green-600" : "text-red-600"}>
-                    {stats.revenueChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
-                    {Math.abs(stats.revenueChange)}%
-                  </span>
-                  {" "}from last month
-                </p>
-              </CardContent>
-            </Card>
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
@@ -261,7 +248,7 @@ export default function VendorDashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
-                  Products in your catalog
+                  Published products
                 </p>
               </CardContent>
             </Card>
@@ -307,7 +294,7 @@ export default function VendorDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">${(order.subtotalAmount * 1.13).toFixed(2)}</p>
+                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.13)}</p>
                           <p className="text-sm text-muted-foreground capitalize">{order.orderStatus}</p>
                         </div>
                       </div>

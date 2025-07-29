@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useMounted } from "@/hooks/use-mounted"                // ← NEW
+import { CurrencySelector } from "@/components/currency-selector"
 
 const vendorNavItems = [
   { title: "Dashboard", href: "/vendor",         icon: LayoutDashboard },
@@ -133,6 +134,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
           </nav>
 
           <div className="flex items-center gap-3">
+            <CurrencySelector />
             <ThemeToggle />
 
             <DropdownMenu>
