@@ -164,6 +164,13 @@ class UserService {
     }>(`/vendor/${vendorId}/approve`, { isApproved })
   }
 
+  getIsApproved(vendorId: String) {
+    return userApi.get<{
+      isApproved: boolean 
+    }>(`/vendor/${vendorId}/approve`)
+  }
+
+
   async getVendorSettings() {
     const response = await userApi.get<{ settings: VendorSettings }>('/vendor/settings')
     return response.settings

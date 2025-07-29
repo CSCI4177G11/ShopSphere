@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -9,6 +9,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
+import { userService } from "@/lib/api/user-service"
 import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,8 +17,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, ImageIcon, Loader2 } from "lucide-react"
+import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -51,6 +53,8 @@ export default function NewProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true)
+  const [isApproved, setIsApproved] = useState<boolean | null>(null)
 
   const {
     register,
@@ -70,6 +74,29 @@ export default function NewProductPage() {
   })
 
   const selectedCategory = watch("category")
+
+  // Check vendor approval status on component mount
+  useEffect(() => {
+    const checkVendorApproval = async () => {
+      if (!user?.userId) {
+        setIsCheckingApproval(false)
+        return
+      }
+
+      try {
+        const response = await userService.getIsApproved(user.userId)
+        setIsApproved(response.isApproved)
+      } catch (error) {
+        console.error('Failed to check vendor approval status:', error)
+        toast.error("Failed to verify vendor status")
+        setIsApproved(false)
+      } finally {
+        setIsCheckingApproval(false)
+      }
+    }
+
+    checkVendorApproval()
+  }, [user?.userId])
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -159,6 +186,11 @@ export default function NewProductPage() {
       return
     }
 
+    if (!isApproved) {
+      toast.error("Your vendor account must be approved before creating products")
+      return
+    }
+
     if (selectedImages.length === 0) {
       toast.error("Please upload at least one product image")
       return
@@ -198,6 +230,92 @@ export default function NewProductPage() {
     }
   }
 
+  // Show loading state while checking approval
+  if (isCheckingApproval) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Verifying vendor status...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show approval required message if not approved
+  if (isApproved === false) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-background">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* Header */}
+            <div className="mb-8">
+              <Link href="/vendor/products">
+                <Button variant="ghost" size="sm" className="mb-4">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Products
+                </Button>
+              </Link>
+              <h1 className="text-3xl font-bold">Add New Product</h1>
+              <p className="text-muted-foreground">Fill in the details to list a new product</p>
+            </div>
+
+            {/* Approval Required Alert */}
+            <Card className="max-w-2xl mx-auto">
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
+                    <Clock className="h-8 w-8 text-yellow-600 dark:text-yellow-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">Vendor Approval Required</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Your vendor account is currently pending approval. You'll be able to create and list products once your account has been approved by our team.
+                    </p>
+                  </div>
+                  <Alert className="text-left">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>What happens next?</strong>
+                      <ul className="mt-2 space-y-1 text-sm">
+                        <li>• Our team will review your vendor application</li>
+                        <li>• You'll receive an email notification once approved</li>
+                        <li>• Approval typically takes 1-3 business days</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={() => router.push("/vendor/")}
+                      variant="default"
+                    >
+                      Go to Dashboard
+                    </Button>
+                    <Button 
+                      onClick={() => router.push("/vendor/profile")}
+                      variant="outline"
+                    >
+                      Update Profile
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show the form if approved
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -214,7 +332,13 @@ export default function NewProductPage() {
                 Back to Products
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold">Add New Product</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold">Add New Product</h1>
+              <div className="flex items-center gap-1 text-green-600 dark:text-green-500">
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="text-sm font-medium">Approved Vendor</span>
+              </div>
+            </div>
             <p className="text-muted-foreground">Fill in the details to list a new product</p>
           </div>
 

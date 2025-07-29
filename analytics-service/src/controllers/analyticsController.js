@@ -5,6 +5,10 @@ function getVendorId(req) {
     return req.user.vendorId || req.user.sub || req.user.id;
 }
 
+const isAdmin = (req) =>{
+return req.user.role === 'admin';
+}
+
 export async function getSummary(req, res) {
     const where = { orderStatus: 'delivered' };
   
