@@ -262,18 +262,25 @@ export const getSetting = async (req, res) => {
             return res.status(400).json({ error: 'Invalid query parameters' });
           }
       
-          // Optional date window
-          const startDate = req.query.startDate || '1970-01-01';
-          const endDate   = req.query.endDate   || new Date().toISOString().slice(0, 10);
+          let query = {};
+          
+          // Only apply date filter if dates are provided
+          if (req.query.startDate || req.query.endDate) {
+            const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date('1970-01-01');
+            const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59.999Z') : new Date();
+            
+            query.createdAt = {
+              $gte: startDate,
+              $lte: endDate
+            };
+          }
       
-          const q = {
-            createdAt: {
-              $gte: new Date(startDate),
-              $lte: new Date(endDate),
-            },
-          };
-      
-          const totalConsumers = await Consumer.countDocuments(q);
+          const totalConsumers = await Consumer.countDocuments(query);
+          
+          // Debug logging
+          console.log('Consumer count query:', query);
+          console.log('Total consumers found:', totalConsumers);
+          
           return res.json({ totalConsumers });
         } catch (err) {
           console.error('getConsumerCount error:', err);
