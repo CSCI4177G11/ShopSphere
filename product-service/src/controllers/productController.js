@@ -3,6 +3,27 @@ import mongoose from 'mongoose';
 import Product from '../models/product.js';
 import { uploadImage, deleteImage } from '../services/cloudinary.js';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';    
+
+const USER_SERVICE_HOST =
+  process.env.USER_SERVICE_HOST || 'http://user-service:4200'; 
+
+
+
+  export const isVendorApproved = async (vendorId, req) => {
+  try{
+    const { data } = await axios.get(
+      `${USER_SERVICE_HOST}/api/user/vendor/${vendorId}/approve`,   
+      { headers: { Authorization: req.headers.authorization }, timeout: 3000 },                                     
+    );
+    console.log("approved: ",data);
+    return data?.isApproved === true;
+
+  }catch(err){
+    console.error('isVendorApproved‑call failed:', err.message);
+    return false;
+  }
+};
 
 export const createProduct = async (req, res) => {
     try {
@@ -19,9 +40,13 @@ export const createProduct = async (req, res) => {
             category,
             tags,
             isPublished = false,
-            images = [], // array of paths/urls
+            images = [], 
         } = req.body;
-        // Vendor validation
+      
+        if (!(await isVendorApproved(req.user.userId, req))) {
+          return res.status(403).json({ error: 'You can\'t add products with out approval' });
+        }
+
         if (req.user.role !== 'admin' && req.user.userId !== vendorId) {
             return res.status(403).json({ error: 'You can only create products for your own vendor account' });
         }
