@@ -525,7 +525,6 @@ export const getProductsBatch = async (req, res) => {
 
         const products = await Product.find({
             _id: { $in: productIds },
-            isPublished: true
         });
 
         const productMap = {};
