@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
-import { authService } from "@/lib/api/auth-service"
 import { orderService } from "@/lib/api/order-service"
 import { userService } from "@/lib/api/user-service"
 import { vendorService } from "@/lib/api/vendor-service"
@@ -106,8 +105,7 @@ export function AdminHeader() {
 
   const handleLogout = async () => {
     try {
-      await authService.logout()
-      signOut()
+      await signOut()
       router.push("/")
       toast.success("Logged out successfully")
     } catch (error) {

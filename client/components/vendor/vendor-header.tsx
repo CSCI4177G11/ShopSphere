@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/components/auth-provider"
-import { authService } from "@/lib/api/auth-service"
 import { userService } from "@/lib/api/user-service"           // ← NEW
 import { orderService } from "@/lib/api/order-service"
 import { toast } from "sonner"
@@ -135,8 +134,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
 
   const handleLogout = async () => {
     try {
-      await authService.logout()
-      signOut()
+      await signOut()
       router.push("/")
       toast.success("Logged out successfully")
     } catch (error) {
