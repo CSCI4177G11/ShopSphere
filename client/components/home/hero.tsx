@@ -49,6 +49,7 @@ export function Hero() {
   const isAuthenticated = !!user
   const isVendor = user?.role === 'vendor'
   const isConsumer = user?.role === 'consumer'
+  const isAdmin = user?.role === 'admin'
 
   const [heroStats, setHeroStats] = useState([
     { label: "Verified Sellers", value: "...", icon: Shield },
@@ -138,6 +139,11 @@ export function Hero() {
                   Welcome back to your marketplace! Manage your store, track orders, 
                   and grow your business with powerful tools designed for success.
                 </>
+              ) : isAdmin ? (
+                <>
+                  Welcome back, Administrator! Monitor platform activity, manage vendors, 
+                  and ensure a seamless marketplace experience for all users.
+                </>
               ) : (
                 <>
                   Connect with verified independent sellers from around the world. 
@@ -223,6 +229,49 @@ export function Hero() {
                       >
                         <ArrowRight className="h-5 w-5" />
                       </motion.div>
+                    </Link>
+                  </Button>
+                </motion.div>
+              </>
+            ) : isAdmin ? (
+              // Admin-specific buttons
+              <>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/admin">
+                      <Shield className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Admin Dashboard
+                      <motion.div
+                        className="ml-3"
+                        animate={{ x: [0, 4, 0] }}
+                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                      >
+                        <ArrowRight className="h-5 w-5" />
+                      </motion.div>
+                    </Link>
+                  </Button>
+                </motion.div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button 
+                    asChild 
+                    variant="outline"
+                    size="lg" 
+                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                  >
+                    <Link href="/products">
+                      <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                      Browse Marketplace
                     </Link>
                   </Button>
                 </motion.div>

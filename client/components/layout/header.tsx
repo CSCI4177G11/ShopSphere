@@ -156,6 +156,7 @@ export function Header() {
 
             {/* Navigation Links - Centered */}
             <nav className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 items-center gap-8">
+              {/* Show consumer navigation for everyone on main pages */}
               <Link href="/shop" className="text-sm font-medium hover:text-primary transition-colors">
                 Shops
               </Link>
@@ -165,14 +166,18 @@ export function Header() {
               <Link href="/categories" className="text-sm font-medium hover:text-primary transition-colors">
                 Categories
               </Link>
+              
+              {/* Admin-specific link */}
+              {session?.user?.role === 'admin' && (
+                <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">
+                  Admin Dashboard
+                </Link>
+              )}
+              
+              {/* Vendor-specific link */}
               {session?.user?.role === 'vendor' && (
                 <Link href="/vendor" className="text-sm font-medium hover:text-primary transition-colors">
                   Vendor Dashboard
-                </Link>
-              )}
-              {session?.user?.role === 'admin' && (
-                <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">
-                  Admin Panel
                 </Link>
               )}
             </nav>
@@ -436,6 +441,7 @@ export function Header() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
               {/* Mobile Navigation Links */}
               <nav className="flex flex-col gap-2">
+                {/* Show consumer navigation for everyone */}
                 <Link 
                   href="/shop" 
                   className="text-base font-medium hover:text-primary transition-colors py-2"
@@ -457,6 +463,8 @@ export function Header() {
                 >
                   Categories
                 </Link>
+                
+                {/* Consumer-specific links */}
                 {session?.user?.role === 'consumer' && (
                   <>
                     <Link 
@@ -482,6 +490,28 @@ export function Header() {
                     </Link>
                   </>
                 )}
+                
+                {/* Admin-specific management links */}
+                {session?.user?.role === 'admin' && (
+                  <>
+                    <Link 
+                      href="/admin/vendors" 
+                      className="text-base font-medium hover:text-primary transition-colors py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Manage Vendors
+                    </Link>
+                    <Link 
+                      href="/admin/analytics" 
+                      className="text-base font-medium hover:text-primary transition-colors py-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Analytics
+                    </Link>
+                  </>
+                )}
+                
+                {/* Vendor-specific links */}
                 {session?.user?.role === 'vendor' && (
                   <Link 
                     href="/vendor" 
@@ -491,13 +521,15 @@ export function Header() {
                     Vendor Dashboard
                   </Link>
                 )}
+                
+                {/* Admin-specific link */}
                 {session?.user?.role === 'admin' && (
                   <Link 
                     href="/admin" 
                     className="text-base font-medium hover:text-primary transition-colors py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Admin Panel
+                    Admin Dashboard
                   </Link>
                 )}
               </nav>

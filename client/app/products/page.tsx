@@ -70,7 +70,11 @@ export default function ProductsPage() {
       const vendor = searchParams.get("vendor");
       if (vendor) query.vendorId = vendor;
 
-      const response = await productService.getProducts(query);
+      // Always filter for published products on public pages
+      const response = await productService.getProducts({
+        ...query,
+        isPublished: true
+      });
       setProducts(response.products);
       setTotalPages(response.pages);
     } catch (error) {

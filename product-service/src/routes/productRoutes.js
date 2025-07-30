@@ -95,6 +95,7 @@ router.get(
     query('maxPrice').optional().isFloat({ min: 0 }).toFloat(),
     query('tags').optional().isString(),
     query('sort').optional().isString(),
+    query('isPublished').optional().isBoolean().toBoolean(),
   ],
   productCtrl.listProductsByVendor
 );

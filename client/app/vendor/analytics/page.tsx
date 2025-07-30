@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth-provider"
 import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { 
   ArrowLeft,
@@ -76,17 +77,17 @@ export default function VendorAnalyticsPage() {
       const validTopProducts = []
       const productDetailsMap: Record<string, any> = {}
       
-      if (topProductsData.topProducts.length > 0) {
+      if (topProductsData.topProducts.length > 0 && user?.vendorId) {
         try {
           // Get vendor's products in one request
           const vendorProductsResponse = await productService.getVendorProducts(
-            vendorProfile.vendorId,
+            user.vendorId,
             { limit: 100, page: 1 }
           )
           
-          // Create a map of existing products
+          // Create a map of existing products using productId
           const existingProductsMap = new Map(
-            vendorProductsResponse.products.map(p => [p._id, p])
+            vendorProductsResponse.products.map(p => [p.productId, p])
           )
           
           // Match top products with existing products
@@ -245,19 +246,19 @@ export default function VendorAnalyticsPage() {
 
           {/* Performance Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm overflow-hidden">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <BarChart3 className="h-4 w-4" />
+                    <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
                     <span>Last 7 days</span>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {salesTrend && salesTrend.trend.length > 0 ? (
-                  <div className="h-[300px] w-full">
+                  <div className="h-[350px] w-full -mx-4">
                     <ChartContainer
                       config={{
                         revenue: {
@@ -272,8 +273,14 @@ export default function VendorAnalyticsPage() {
                             date: new Date(point.period).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                             revenue: convertPrice(parseFloat(point.revenue.toString()))
                           }))}
-                          margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                          margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
                         >
+                          <defs>
+                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="rgb(99, 102, 241)" stopOpacity={0.4}/>
+                              <stop offset="95%" stopColor="rgb(99, 102, 241)" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
                           <XAxis 
                             dataKey="date" 
                             stroke="hsl(var(--muted-foreground))"
@@ -286,28 +293,36 @@ export default function VendorAnalyticsPage() {
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
-                            tickFormatter={(value) => formatPrice(value)}
+                            tickFormatter={(value) => '$' + value.toLocaleString()}
                           />
                           <ChartTooltip
                             content={
                               <ChartTooltipContent 
                                 formatter={(value) => formatPrice(Number(value))}
+                                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                                contentStyle={{ 
+                                  backgroundColor: 'hsl(var(--background))',
+                                  border: '1px solid hsl(var(--border))',
+                                  borderRadius: '8px'
+                                }}
                               />
                             }
                           />
                           <Line
                             type="monotone"
                             dataKey="revenue"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                            dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                            stroke="rgb(99, 102, 241)"
+                            strokeWidth={3}
+                            fill="url(#colorRevenue)"
+                            dot={false}
+                            activeDot={{ r: 6, strokeWidth: 2, stroke: '#fff' }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
                     </ChartContainer>
                   </div>
                 ) : (
-                  <div className="h-[300px] bg-muted/50 rounded-lg flex items-center justify-center">
+                  <div className="h-[350px] bg-muted/50 rounded-lg flex items-center justify-center">
                     <div className="text-center">
                       <TrendingDown className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-muted-foreground">No revenue data available</p>
@@ -317,14 +332,13 @@ export default function VendorAnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm overflow-hidden">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">Top Products</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Package className="h-4 w-4" />
-                    <span>By revenue</span>
-                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {topProducts?.topProducts.length || 0} products
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -336,47 +350,78 @@ export default function VendorAnalyticsPage() {
                         ? (parseFloat(item.revenue.toString()) / parseFloat(topProducts.topProducts[0].revenue.toString())) * 100
                         : 0
                       
+                      const colors = [
+                        'from-indigo-500 to-indigo-600',
+                        'from-blue-500 to-blue-600',
+                        'from-purple-500 to-purple-600',
+                        'from-pink-500 to-pink-600',
+                        'from-red-400 to-red-500'
+                      ]
+                      
                       return (
-                        <div key={index} className="space-y-2">
+                        <motion.div 
+                          key={index} 
+                          className="space-y-3"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 flex-1">
-                              {product?.images && product.images.length > 0 ? (
-                                <img 
-                                  src={product.images[0]} 
-                                  alt={product.name}
-                                  className="h-12 w-12 rounded-lg object-cover border"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none'
-                                    e.currentTarget.nextElementSibling?.classList.remove('hidden')
-                                  }}
-                                />
-                              ) : null}
-                              <div 
-                                className={`h-12 w-12 bg-gradient-to-br from-muted to-muted/50 rounded-lg flex items-center justify-center ${product?.images && product.images.length > 0 ? 'hidden' : ''}`}
-                              >
-                                <Package className="h-6 w-6 text-muted-foreground" />
+                              <div className="relative">
+                                {product?.images && product.images.length > 0 ? (
+                                  <img 
+                                    src={product.images[0]} 
+                                    alt={product.name}
+                                    className="h-14 w-14 rounded-xl object-cover border-2 border-gray-100 dark:border-gray-800"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none'
+                                      e.currentTarget.nextElementSibling?.classList.remove('hidden')
+                                    }}
+                                  />
+                                ) : null}
+                                <div 
+                                  className={`h-14 w-14 bg-gradient-to-br ${colors[index]} rounded-xl flex items-center justify-center ${product?.images && product.images.length > 0 ? 'hidden' : ''}`}
+                                >
+                                  <Package className="h-7 w-7 text-white" />
+                                </div>
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center text-xs font-bold border-2 border-gray-100 dark:border-gray-800">
+                                  {index + 1}
+                                </div>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{product?.name || `Product ${item.productId.slice(-6)}`}</p>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                  <span>{item.unitsSold} units sold</span>
-                                  <span className="font-medium text-foreground">{formatPrice(parseFloat(item.revenue.toString()))}</span>
+                                <p className="font-semibold truncate text-base">{product?.name || `Product ${item.productId.slice(-6)}`}</p>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Package className="h-3 w-3" />
+                                    {item.unitsSold} sold
+                                  </span>
+                                  <span className="font-semibold text-foreground">
+                                    {formatPrice(parseFloat(item.revenue.toString()))}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                           </div>
-                          <div className="w-full bg-muted/30 rounded-full h-2">
-                            <div 
-                              className="bg-gradient-to-r from-primary to-primary/70 h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${percentage}%` }}
-                            />
+                          <div className="relative">
+                            <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                              <motion.div 
+                                className={`bg-gradient-to-r ${colors[index]} h-2.5 rounded-full`}
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{ duration: 0.8, delay: index * 0.1 }}
+                              />
+                            </div>
+                            <span className="absolute -top-6 right-0 text-xs font-medium text-muted-foreground">
+                              {percentage.toFixed(0)}%
+                            </span>
                           </div>
-                        </div>
+                        </motion.div>
                       )
                     })}
                   </div>
                 ) : (
-                  <div className="h-[300px] bg-muted/50 rounded-lg flex items-center justify-center">
+                  <div className="h-[350px] bg-muted/50 rounded-lg flex items-center justify-center">
                     <div className="text-center">
                       <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                       <p className="text-muted-foreground">No product sales data available</p>
