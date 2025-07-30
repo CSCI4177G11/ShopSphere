@@ -47,6 +47,7 @@ serviceEndpoints:
 
 policies:
   - cors
+  - rate-limit
   - proxy
 
 pipelines:
@@ -58,6 +59,12 @@ pipelines:
           - action:
               origin: "*"
               methods: "GET,POST,PUT,DELETE"
+      - rate-limit:
+          - action:
+              max: 100
+              windowMs: 60000
+              rateLimitBy: "${req.ip}"
+              message: "Too many requests from this IP, please try again later."
       - proxy:
           - action:
               serviceEndpoint: auth-service
