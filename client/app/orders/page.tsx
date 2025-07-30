@@ -36,7 +36,7 @@ const statusConfig = {
 }
 
 export default function OrdersPage() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,13 +54,16 @@ export default function OrdersPage() {
   const [productImages, setProductImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
+    // Wait for auth to finish loading before redirecting
+    if (authLoading) return
+    
     if (!user) {
       router.push('/auth/login')
       return
     }
 
     fetchOrders()
-  }, [user, router])
+  }, [user, authLoading, router])
 
   const fetchOrders = async () => {
     try {
@@ -223,6 +226,18 @@ export default function OrdersPage() {
     } finally {
       setSubmittingReview(false)
     }
+  }
+
+  // Show loading state while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-48" />
+          <div className="h-32 bg-muted rounded w-96" />
+        </div>
+      </div>
+    )
   }
 
   // Early return if no user (prevents render during redirect)
