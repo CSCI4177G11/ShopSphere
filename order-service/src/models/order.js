@@ -28,6 +28,7 @@ const trackingEventSchema = new Schema(
   {
     status: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
+    note: { type: String },
     carrier: { type: String },
     trackingNumber: { type: String },
   },

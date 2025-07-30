@@ -64,6 +64,16 @@ export default function VendorOrderDetailPage() {
   const [productImages, setProductImages] = useState<Record<string, string>>({})
   const [showCancelDialog, setShowCancelDialog] = useState(false)
   const [cancelReason, setCancelReason] = useState("")
+  const [tracking, setTracking] = useState<{
+    orderId: string
+    tracking: Array<{
+      status: string
+      timestamp: string
+      note?: string
+      carrier?: string
+      trackingNumber?: string
+    }>
+  } | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -92,6 +102,14 @@ export default function VendorOrderDetailPage() {
         actualOrder = orderData
       }
       setOrder(actualOrder)
+      
+      // Fetch tracking information
+      try {
+        const trackingData = await orderService.getTracking(actualOrder._id)
+        setTracking(trackingData)
+      } catch (error) {
+        console.error('Failed to fetch tracking:', error)
+      }
       
       // Fetch product images
       const images: Record<string, string> = {}
@@ -138,7 +156,9 @@ export default function VendorOrderDetailPage() {
       await orderService.cancel(order._id, { 
         reason: cancelReason.trim() || 'Cancelled by vendor' 
       })
-      await fetchOrderDetails() // Refetch to get updated data
+      // Small delay to ensure backend has updated the tracking
+      await new Promise(resolve => setTimeout(resolve, 500))
+      await fetchOrderDetails() // Refetch to get updated data including tracking
       // Trigger refresh of header order counts
       triggerRefresh()
       toast.success('Order cancelled successfully')
@@ -677,6 +697,53 @@ export default function VendorOrderDetailPage() {
                   </p>
                 </CardContent>
               </Card>
+
+              {/* Order Tracking - Show cancellation reasons */}
+              {tracking && tracking.tracking.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Order History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {tracking.tracking.slice().reverse().map((update, index) => {
+                        const status = update.status as keyof typeof statusConfig | 'cancelled'
+                        const config = statusConfig[status as keyof typeof statusConfig]
+                        const Icon = config?.icon || Clock
+                        
+                        return (
+                          <div key={index} className="flex gap-3">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center ${config?.color || 'bg-gray-500'} flex-shrink-0`}>
+                              <Icon className="h-4 w-4 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium capitalize">
+                                {update.status.replace(/_/g, ' ')}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(update.timestamp).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: 'numeric',
+                                  minute: 'numeric'
+                                })}
+                              </p>
+                              {update.note && (
+                                <p className="text-sm mt-1 p-2 bg-muted rounded-md">
+                                  {update.note}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </motion.div>

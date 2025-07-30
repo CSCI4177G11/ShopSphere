@@ -81,10 +81,7 @@ export default function OrderDetailPage() {
 
   const fetchOrderDetails = async () => {
     try {
-      const [orderData, trackingData] = await Promise.all([
-        orderService.get(params.id as string),
-        orderService.getTracking(params.id as string)
-      ])
+      const orderData = await orderService.get(params.id as string)
       // Handle both single order and parent order response
       let actualOrder: Order
       if ('childOrders' in orderData) {
@@ -94,7 +91,14 @@ export default function OrderDetailPage() {
         actualOrder = orderData
       }
       setOrder(actualOrder)
-      setTracking(trackingData)
+      
+      // Fetch tracking separately
+      try {
+        const trackingData = await orderService.getTracking(actualOrder._id)
+        setTracking(trackingData)
+      } catch (error) {
+        console.error('Failed to fetch tracking:', error)
+      }
       
       // Fetch product images
       const images: Record<string, string> = {}
@@ -116,21 +120,6 @@ export default function OrderDetailPage() {
     }
   }
 
-  const handleCancelOrder = async () => {
-    if (!order || order.orderStatus !== 'pending') return
-
-    setCancelling(true)
-    try {
-      await orderService.cancel(order._id)
-      // Refetch order details to get updated status
-      await fetchOrderDetails()
-      toast.success('Order cancelled successfully')
-    } catch (error) {
-      toast.error('Failed to cancel order')
-    } finally {
-      setCancelling(false)
-    }
-  }
 
   const copyOrderId = () => {
     if (order) {
@@ -147,6 +136,8 @@ export default function OrderDetailPage() {
       await orderService.cancel(order._id, { 
         reason: cancelReason.trim() || 'Cancelled by customer' 
       })
+      // Small delay to ensure backend has updated the tracking
+      await new Promise(resolve => setTimeout(resolve, 500))
       // Refetch order details
       const orderData = await orderService.get(params.id as string)
       let actualOrder: Order
@@ -298,21 +289,6 @@ export default function OrderDetailPage() {
                 </CardContent>
               </Card>
 
-              {/* Cancel Order Button */}
-              {order.orderStatus === 'pending' && (
-                <Card>
-                  <CardContent className="pt-6">
-                    <Button
-                      className="w-full"
-                      variant="destructive"
-                      onClick={() => setShowCancelDialog(true)}
-                      disabled={cancelling}
-                    >
-                      Cancel Order
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Order Tracking */}
               {tracking && (
@@ -483,10 +459,10 @@ export default function OrderDetailPage() {
                     <Button
                       variant="destructive"
                       className="w-full"
-                      onClick={handleCancelOrder}
+                      onClick={() => setShowCancelDialog(true)}
                       disabled={cancelling}
                     >
-                      {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                      Cancel Order
                     </Button>
                   </CardContent>
                 </Card>
