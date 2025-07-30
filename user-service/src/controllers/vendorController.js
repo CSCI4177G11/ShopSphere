@@ -60,6 +60,8 @@ export const updateVendorRating = async (vendorId) => {
     );
 
     if (ratedProducts.length === 0) {
+      profile.rating = newRating;
+      await profile.save();
       return -1;
     }
     const avg =
@@ -142,8 +144,9 @@ export const addVendorProfile = async (req, res) => {
 export const getVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
-    const newRating = await updateVendorRating(vendorId);
     try {
+      const newRating = await updateVendorRating(vendorId);
+
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
         return res.status(404).json({ error: 'Vendor profile not found.' });
@@ -322,15 +325,11 @@ export const getAllVendors = async (req, res) => {
     // Transform vendors with additional data
     const vendorsWithDetails = await Promise.all(
       vendors.map(async (vendor) => {
-        let rating = vendor.rating || 0;
         let totalProducts = 0;
-        
+        let newRating;
         try {
           // Try to update rating
-          const newRating = await updateVendorRating(vendor.vendorId);
-          if (newRating !== -1) {
-            rating = newRating;
-          }
+          newRating = await updateVendorRating(vendor.vendorId);
         } catch (error) {
           console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
         }
@@ -355,7 +354,7 @@ export const getAllVendors = async (req, res) => {
           phoneNumber: formatPhoneNumber(vendor.phoneNumber),
           logoUrl: vendor.logoUrl,
           bannerUrl: vendor.storeBannerUrl,
-          rating: rating,
+          rating: newRating,
           totalProducts: totalProducts,
         };
       })
@@ -447,7 +446,7 @@ export const listPublicVendors = async (req, res) => {
           location:      vendor.location,
           logoUrl:       vendor.logoUrl,
           bannerUrl:     vendor.storeBannerUrl,
-          rating:        newRating === -1 ? 0 : (newRating || 0),
+          rating:        newRating ,
           totalProducts: totalProducts,
           createdAt:     vendor.createdAt,
           phoneNumber:   formatPhoneNumber(vendor.phoneNumber),
