@@ -29,6 +29,7 @@ import {
   DollarSign,
   Users,
   Eye,
+  EyeOff,
   ArrowLeft,
   Upload,
   Github,
@@ -167,6 +168,9 @@ export default function VendorProfilePage() {
 
   // Password change states
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [showOldPassword, setShowOldPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
     newPassword: "",
@@ -881,48 +885,81 @@ export default function VendorProfilePage() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="oldPassword">Current Password</Label>
-                        <Input
-                          id="oldPassword"
-                          type="password"
-                          value={passwordForm.oldPassword}
-                          onChange={(e) => {
-                            setPasswordForm({ ...passwordForm, oldPassword: e.target.value })
-                            setPasswordErrors({ ...passwordErrors, oldPassword: undefined })
-                          }}
-                          placeholder="Enter current password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="oldPassword"
+                            type={showOldPassword ? "text" : "password"}
+                            value={passwordForm.oldPassword}
+                            onChange={(e) => {
+                              setPasswordForm({ ...passwordForm, oldPassword: e.target.value })
+                              setPasswordErrors({ ...passwordErrors, oldPassword: undefined })
+                            }}
+                            placeholder="Enter current password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowOldPassword(!showOldPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         {passwordErrors.oldPassword && (
                           <p className="text-sm text-destructive">{passwordErrors.oldPassword}</p>
                         )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="newPassword">New Password</Label>
-                        <Input
-                          id="newPassword"
-                          type="password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => {
-                            setPasswordForm({ ...passwordForm, newPassword: e.target.value })
-                            setPasswordErrors({ ...passwordErrors, newPassword: undefined })
-                          }}
-                          placeholder="Enter new password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="newPassword"
+                            type={showNewPassword ? "text" : "password"}
+                            value={passwordForm.newPassword}
+                            onChange={(e) => {
+                              setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                              setPasswordErrors({ ...passwordErrors, newPassword: undefined })
+                            }}
+                            placeholder="Enter new password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         {passwordErrors.newPassword && (
                           <p className="text-sm text-destructive">{passwordErrors.newPassword}</p>
                         )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input
-                          id="confirmPassword"
-                          type="password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => {
-                            setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
-                            setPasswordErrors({ ...passwordErrors, confirmPassword: undefined })
-                          }}
-                          placeholder="Confirm new password"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) => {
+                              setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                              setPasswordErrors({ ...passwordErrors, confirmPassword: undefined })
+                            }}
+                            placeholder="Confirm new password"
+                            className="pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         {passwordErrors.confirmPassword && (
                           <p className="text-sm text-destructive">{passwordErrors.confirmPassword}</p>
                         )}
@@ -939,6 +976,9 @@ export default function VendorProfilePage() {
                             confirmPassword: ""
                           })
                           setPasswordErrors({})
+                          setShowOldPassword(false)
+                          setShowNewPassword(false)
+                          setShowConfirmPassword(false)
                         }}
                       >
                         Cancel

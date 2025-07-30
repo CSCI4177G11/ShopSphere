@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react"
 
 const registerSchema = z
   .object({
@@ -39,6 +39,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [justSignedUp, setJustSignedUp] = useState(false) // Add this flag
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { signUp, user, isLoading: authLoading } = useAuth()
@@ -213,29 +215,49 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Create a password"
-                  {...register("password")}
-                  disabled={isLoading}
-                  data-testid="password-input"
-                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    {...register("password")}
+                    disabled={isLoading}
+                    data-testid="password-input"
+                    className="h-11 pr-10 border-border/50 focus:border-primary/50 transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm your password"
-                  {...register("confirmPassword")}
-                  disabled={isLoading}
-                  data-testid="confirm-password-input"
-                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
-                />
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    {...register("confirmPassword")}
+                    disabled={isLoading}
+                    data-testid="confirm-password-input"
+                    className="h-11 pr-10 border-border/50 focus:border-primary/50 transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
               </div>
 
