@@ -153,6 +153,23 @@ class ProductService {
     return productApi.get<ProductsResponse>(endpoint)
   }
 
+  async getMyVendorProducts(query?: ProductQuery): Promise<ProductsResponse> {
+    const params = new URLSearchParams()
+
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, String(value))
+        }
+      })
+    }
+
+    const qs = params.toString()
+    const endpoint = qs ? `/vendors?${qs}` : `/vendors`
+
+    return productApi.get<ProductsResponse>(endpoint)
+  }
+
   async createProduct(data: CreateProductDto): Promise<Product> {
     return productApi.post<Product>('/', data)
   }

@@ -86,7 +86,7 @@ export default function VendorProductsPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await productService.getVendorProducts(user!.userId)
+      const response = await productService.getMyVendorProducts()
       // console.log('Vendor products response:', response)
       // console.log('First product data:', JSON.stringify(response.products?.[0], null, 2))
       setProducts(response.products || [])
