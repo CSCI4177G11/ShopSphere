@@ -83,11 +83,9 @@ export default function AdminConsumersPage() {
       // Get all consumers using the new API endpoint
       const consumersResponse = await userService.listAllConsumers({ page: 1, limit: 100 })
       const allConsumers = consumersResponse.consumers
-      console.log('All consumers:', allConsumers)
 
       // Get order stats - fetch all orders
       const ordersResponse = await orderService.listOrders({ limit: 1000, page: 1 })
-      console.log('Orders response:', ordersResponse)
       
       // Create a map of consumer orders for quick lookup
       const consumerOrdersMap = new Map<string, typeof ordersResponse.orders>()
@@ -134,7 +132,6 @@ export default function AdminConsumersPage() {
         }
       })
 
-      console.log('Setting users:', usersWithStats.length, 'consumers')
       setUsers(usersWithStats)
     } catch (error) {
       console.error('Failed to fetch users:', error)

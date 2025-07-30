@@ -277,9 +277,6 @@ export const getSetting = async (req, res) => {
       
           const totalConsumers = await Consumer.countDocuments(query);
           
-          // Debug logging
-          console.log('Consumer count query:', query);
-          console.log('Total consumers found:', totalConsumers);
           
           return res.json({ totalConsumers });
         } catch (err) {

@@ -16,7 +16,6 @@ const USER_SERVICE_HOST =
       `${USER_SERVICE_HOST}/api/user/vendor/${vendorId}/approve`,   
       { headers: { Authorization: req.headers.authorization }, timeout: 3000 },                                     
     );
-    console.log("approved: ",data);
     return data?.isApproved === true;
 
   }catch(err){
@@ -59,17 +58,6 @@ export const createProduct = async (req, res) => {
             });
             imageUrls = await Promise.all(uploadPromises);
         }
-        console.log('Creating product with data:', {
-            vendorId,
-            name,
-            description,
-            price,
-            quantityInStock,
-            category,
-            images: imageUrls,
-            tags: tags || [],
-            isPublished,
-        });
         
         const product = await Product.create({
             vendorId,
@@ -82,7 +70,6 @@ export const createProduct = async (req, res) => {
             tags: tags || [],
             isPublished,
         });
-        console.log('Created product:', product.toObject());
         res.status(201).json({
             message: "Product created successfully.",
             productId: product._id
@@ -298,7 +285,6 @@ export const listProductsByVendor = async (req, res) => {
             .limit(Number(limit));
         const total = await Product.countDocuments(query);
         
-        console.log('Raw product from DB (vendor):', products[0]?.toObject());
         
         const transformedProducts = products.map(product => {
             const images = product.images || [];

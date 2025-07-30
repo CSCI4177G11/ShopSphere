@@ -190,7 +190,6 @@ export default function VendorProfilePage() {
     try {
       setLoading(true)
       const profileData = await userService.getVendorProfile()
-      console.log(profileData.isApproved);
       setProfile(profileData)
       setEditedProfile({
         storeName: profileData.storeName,

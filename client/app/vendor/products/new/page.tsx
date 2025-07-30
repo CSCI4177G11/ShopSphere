@@ -241,12 +241,7 @@ export default function NewProductPage() {
         isPublished: publishOnCreate
       }
       
-      console.log('Creating product with payload:', createProductPayload)
-      console.log('isPublished value:', createProductPayload.isPublished)
-      console.log('Stock quantity:', createProductPayload.quantityInStock)
-      
       const response = await productService.createProduct(createProductPayload)
-      console.log('Product created successfully:', response)
 
       toast.success(`Product created successfully! Published: ${publishOnCreate ? 'Yes' : 'No'}`)
       router.push("/vendor/products")
