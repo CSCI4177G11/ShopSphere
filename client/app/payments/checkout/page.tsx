@@ -14,13 +14,14 @@ import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
 import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { CreditCard, Loader2, CheckCircle, MapPin, Plus, Star } from "lucide-react"
 import type { CartTotals, CartItem } from "@/lib/api/cart-service"
@@ -28,26 +29,10 @@ import type { PaymentMethod } from "@/lib/api/payment-service"
 
 const checkoutSchema = z.object({
   // Address selection
-  useNewAddress: z.boolean(),
-  savedAddressId: z.string().optional(),
-  
-  // Shipping Address
-  street: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  zipCode: z.string().optional(),
-  country: z.enum(["CA", "US", "GB"]).optional(),
+  savedAddressId: z.string().min(1, "Please select a shipping address"),
   
   // Payment
   paymentMethodId: z.string().min(1, "Please select a payment method"),
-}).refine((data) => {
-  if (data.useNewAddress) {
-    return data.street && data.city && data.state && data.zipCode;
-  }
-  return data.savedAddressId;
-}, {
-  message: "Please complete the shipping address or select a saved address",
-  path: ["street"],
 })
 
 const formatExpiry = (m?: number, y?: number) =>
@@ -56,6 +41,101 @@ const formatExpiry = (m?: number, y?: number) =>
     : "— / —";
 
 type CheckoutForm = z.infer<typeof checkoutSchema>
+
+// Address Form Component
+function AddressForm({ 
+  form, 
+  onChange, 
+  onSubmit, 
+  onCancel, 
+  isSaving 
+}: {
+  form: any
+  onChange: (form: any) => void
+  onSubmit: () => void
+  onCancel: () => void
+  isSaving: boolean
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="label">Label (e.g., Home, Office)</Label>
+        <Input
+          id="label"
+          value={form.label}
+          onChange={(e) => onChange({ ...form, label: e.target.value })}
+          placeholder="Home"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="line1">Address</Label>
+        <Input
+          id="line1"
+          value={form.line1}
+          onChange={(e) => onChange({ ...form, line1: e.target.value })}
+          placeholder="123 Main Street"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="city">City</Label>
+          <Input
+            id="city"
+            value={form.city}
+            onChange={(e) => onChange({ ...form, city: e.target.value })}
+            placeholder="Toronto"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="country">Country</Label>
+          <Select
+            value={form.country}
+            onValueChange={(value) => onChange({ ...form, country: value, postalCode: '' })}
+          >
+            <SelectTrigger id="country">
+              <SelectValue placeholder="Select a country" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CA">Canada</SelectItem>
+              <SelectItem value="US">United States</SelectItem>
+              <SelectItem value="GB">United Kingdom</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="postalCode">
+          {form.country === 'US' ? 'ZIP Code' : form.country === 'GB' ? 'Postcode' : 'Postal Code'}
+        </Label>
+        <Input
+          id="postalCode"
+          value={form.postalCode}
+          onChange={(e) => onChange({ ...form, postalCode: e.target.value })}
+          placeholder={
+            form.country === 'US' ? '10001' : 
+            form.country === 'GB' ? 'SW1A 1AA' : 
+            'K1A 0B1'
+          }
+        />
+      </div>
+      <div className="flex gap-2 pt-4">
+        <Button onClick={onSubmit} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            'Save Address'
+          )}
+        </Button>
+        <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export default function CheckoutPage() {
   const { user } = useAuth()
@@ -69,6 +149,15 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [orderComplete, setOrderComplete] = useState(false)
+  const [isAddingAddress, setIsAddingAddress] = useState(false)
+  const [addressForm, setAddressForm] = useState({
+    label: "",
+    line1: "",
+    city: "",
+    postalCode: "",
+    country: "CA" as "CA" | "US" | "GB"
+  })
+  const [savingAddress, setSavingAddress] = useState(false)
 
   const {
     register,
@@ -79,13 +168,13 @@ export default function CheckoutPage() {
   } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      useNewAddress: false,
-      country: "CA",
+      savedAddressId: "",
+      paymentMethodId: "",
     }
   })
 
   const selectedPaymentMethod = watch("paymentMethodId")
-  const useNewAddress = watch("useNewAddress")
+  const selectedAddressId = watch("savedAddressId")
 
   useEffect(() => {
     if (!user) {
@@ -101,6 +190,44 @@ export default function CheckoutPage() {
 
     fetchCheckoutData()
   }, [user, router])
+
+  const handleAddAddress = async () => {
+    setSavingAddress(true)
+    try {
+      const newAddress = await userService.createAddress({
+        label: addressForm.label,
+        line1: addressForm.line1,
+        city: addressForm.city,
+        postalCode: addressForm.postalCode,
+        country: addressForm.country,
+      })
+      
+      // Refresh addresses
+      const addressData = await userService.getAddresses()
+      setSavedAddresses(addressData.addresses)
+      
+      // Select the newly added address
+      const newAddressId = newAddress._id || newAddress.addressId
+      if (newAddressId) {
+        setValue("savedAddressId", newAddressId)
+      }
+      
+      // Reset form and close dialog
+      setAddressForm({
+        label: "",
+        line1: "",
+        city: "",
+        postalCode: "",
+        country: "CA"
+      })
+      setIsAddingAddress(false)
+      toast.success('Address added successfully')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add address')
+    } finally {
+      setSavingAddress(false)
+    }
+  }
 
   const fetchCheckoutData = async () => {
     try {
@@ -140,9 +267,6 @@ export default function CheckoutPage() {
       // If user has saved addresses, select the first one by default
       if (addressData.addresses.length > 0) {
         setValue("savedAddressId", addressData.addresses[0]._id || addressData.addresses[0].addressId || '')
-      } else {
-        // If no saved addresses, default to new address
-        setValue("useNewAddress", true)
       }
     } catch (error) {
       console.error('Failed to fetch checkout data:', error)
@@ -156,28 +280,19 @@ export default function CheckoutPage() {
     setProcessing(true)
 
     try {
-      // Determine the shipping address
-      let shippingAddress;
-      if (data.useNewAddress) {
-        shippingAddress = {
-          line1: data.street!,
-          city: data.city!,
-          postalCode: data.zipCode!,
-          country: data.country || 'CA',
-        }
-      } else {
-        const savedAddress = savedAddresses.find(addr => 
-          (addr._id || addr.addressId) === data.savedAddressId
-        )
-        if (!savedAddress) {
-          throw new Error('Selected address not found')
-        }
-        shippingAddress = {
-          line1: savedAddress.line1,
-          city: savedAddress.city,
-          postalCode: savedAddress.postalCode,
-          country: savedAddress.country || 'CA',
-        }
+      // Get the selected address
+      const savedAddress = savedAddresses.find(addr => 
+        (addr._id || addr.addressId) === data.savedAddressId
+      )
+      if (!savedAddress) {
+        throw new Error('Please select a shipping address')
+      }
+      
+      const shippingAddress = {
+        line1: savedAddress.line1,
+        city: savedAddress.city,
+        postalCode: savedAddress.postalCode,
+        country: savedAddress.country || 'CA',
       }
 
       // 1. Create payment
@@ -267,160 +382,135 @@ export default function CheckoutPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Shipping Address</CardTitle>
-                      {savedAddresses.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push('/consumer/profile')}
-                          className="text-xs"
-                        >
-                          Manage
-                        </Button>
-                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push('/consumer/profile')}
+                        className="text-xs"
+                      >
+                        Manage
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {savedAddresses.length > 0 ? (
-                      <div className="space-y-3">
-                        {/* Saved Addresses Grid */}
-                        <div className="grid gap-3">
-                          {savedAddresses.map((address) => {
-                            const addressId = address._id || address.addressId || ''
-                            const isSelected = !useNewAddress && watch("savedAddressId") === addressId
-                            return (
-                              <div
-                                key={addressId}
-                                onClick={() => {
-                                  setValue("useNewAddress", false)
-                                  setValue("savedAddressId", addressId)
-                                }}
-                                className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                  isSelected 
-                                    ? 'border-primary bg-primary/5' 
-                                    : 'border-border hover:border-primary/50'
-                                }`}
-                              >
-                                {isSelected && (
-                                  <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                                    <CheckCircle className="h-3 w-3 text-primary-foreground" />
-                                  </div>
-                                )}
-                                <div className="pr-8">
-                                  <p className="font-medium mb-1">{address.label}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    {address.line1}, {address.city}, {address.postalCode}, {address.country}
-                                  </p>
-                                </div>
-                              </div>
-                            )
-                          })}
-                          
-                          {/* Add New Address Option */}
-                          <div
-                            onClick={() => setValue("useNewAddress", true)}
-                            className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center justify-center ${
-                              useNewAddress 
-                                ? 'border-primary bg-primary/5' 
-                                : 'border-border hover:border-primary/50 border-dashed'
-                            }`}
-                          >
-                            {useNewAddress && (
-                              <div className="absolute top-3 right-3 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                                <CheckCircle className="h-3 w-3 text-primary-foreground" />
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Plus className="h-4 w-4" />
-                              <span className="font-medium">Add new address</span>
-                            </div>
-                          </div>
-                        </div>
+                    {savedAddresses.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground mb-4">No addresses saved yet</p>
+                        <Dialog open={isAddingAddress} onOpenChange={setIsAddingAddress}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Address
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Add New Address</DialogTitle>
+                              <DialogDescription>
+                                Enter your delivery address details
+                              </DialogDescription>
+                            </DialogHeader>
+                            <AddressForm 
+                              form={addressForm}
+                              onChange={setAddressForm}
+                              onSubmit={handleAddAddress}
+                              onCancel={() => {
+                                setIsAddingAddress(false)
+                                setAddressForm({
+                                  label: "",
+                                  line1: "",
+                                  city: "",
+                                  postalCode: "",
+                                  country: "CA"
+                                })
+                              }}
+                              isSaving={savingAddress}
+                            />
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     ) : (
-                      <div className="text-center py-4 text-muted-foreground">
-                        <MapPin className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">No saved addresses</p>
-                        <p className="text-xs mt-1">Enter your shipping address below</p>
-                      </div>
-                    )}
-
-                    {/* New Address Form */}
-                    {(useNewAddress || savedAddresses.length === 0) && (
-                      <div className="space-y-4 pt-4 border-t">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                          <Label htmlFor="street">Street Address</Label>
-                          <Input
-                            id="street"
-                            {...register("street")}
-                            placeholder="123 Main St"
-                            disabled={processing}
-                          />
-                          {errors.street && (
-                            <p className="text-sm text-destructive mt-1">{errors.street.message}</p>
-                          )}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-muted-foreground">Select a delivery address</p>
+                          <Dialog open={isAddingAddress} onOpenChange={setIsAddingAddress}>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add New
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Add New Address</DialogTitle>
+                                <DialogDescription>
+                                  Enter your delivery address details
+                                </DialogDescription>
+                              </DialogHeader>
+                              <AddressForm 
+                                form={addressForm}
+                                onChange={setAddressForm}
+                                onSubmit={handleAddAddress}
+                                onCancel={() => {
+                                  setIsAddingAddress(false)
+                                  setAddressForm({
+                                    label: "",
+                                    line1: "",
+                                    city: "",
+                                    postalCode: "",
+                                    country: "CA"
+                                  })
+                                }}
+                                isSaving={savingAddress}
+                              />
+                            </DialogContent>
+                          </Dialog>
                         </div>
                         
-                        <div>
-                          <Label htmlFor="city">City</Label>
-                          <Input
-                            id="city"
-                            {...register("city")}
-                            placeholder="Toronto or New York"
-                            disabled={processing}
-                          />
-                          {errors.city && (
-                            <p className="text-sm text-destructive mt-1">{errors.city.message}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="state">Province</Label>
-                          <Input
-                            id="state"
-                            {...register("state")}
-                            placeholder="ON"
-                            disabled={processing}
-                          />
-                          {errors.state && (
-                            <p className="text-sm text-destructive mt-1">{errors.state.message}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="zipCode">Postal Code</Label>
-                          <Input
-                            id="zipCode"
-                            {...register("zipCode")}
-                            placeholder="M5V 3A8"
-                            disabled={processing}
-                          />
-                          {errors.zipCode && (
-                            <p className="text-sm text-destructive mt-1">{errors.zipCode.message}</p>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <Label htmlFor="country">Country</Label>
-                          <Select
-                            value={watch("country")}
-                            onValueChange={(value) => setValue("country", value as "CA" | "US" | "GB")}
-                          >
-                            <SelectTrigger id="country">
-                              <SelectValue placeholder="Select country" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="CA">Canada</SelectItem>
-                              <SelectItem value="US">United States</SelectItem>
-                              <SelectItem value="GB">United Kingdom</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {errors.country && (
-                            <p className="text-sm text-destructive mt-1">{errors.country.message}</p>
-                          )}
-                        </div>
-                      </div>
+                        {/* Saved Addresses Grid */}
+                        <RadioGroup
+                          value={selectedAddressId}
+                          onValueChange={(value) => setValue("savedAddressId", value)}
+                        >
+                          <div className="grid gap-3">
+                            {savedAddresses.map((address) => {
+                              const addressId = address._id || address.addressId || ''
+                              return (
+                                <label
+                                  key={addressId}
+                                  htmlFor={addressId}
+                                  className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all flex items-start gap-3 ${
+                                    selectedAddressId === addressId
+                                      ? 'border-primary bg-primary/5' 
+                                      : 'border-border hover:border-primary/50'
+                                  }`}
+                                >
+                                  <RadioGroupItem value={addressId} id={addressId} className="mt-1" />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                                      <p className="font-medium">{address.label}</p>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                      {address.line1}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {address.city}, {address.postalCode}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {address.country === 'CA' ? 'Canada' : address.country === 'US' ? 'United States' : 'United Kingdom'}
+                                    </p>
+                                  </div>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        </RadioGroup>
+                        {errors.savedAddressId && (
+                          <p className="text-sm text-destructive">{errors.savedAddressId.message}</p>
+                        )}
                       </div>
                     )}
                   </CardContent>
