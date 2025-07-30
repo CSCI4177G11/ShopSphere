@@ -266,6 +266,28 @@ export async function updateOrderStatus(req, res) {
   return res.json({ message: 'Status updated', newStatus: orderStatus });
 }
 
+async function refundPayment(paymentId) {
+  try {
+    const url = `http://payment-service:4500/api/payments/${paymentId}/refund`;
+
+    // If your refund endpoint takes no body, you can pass `null` or `{}` here:
+    const body = {};
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${process.env.PAYMENTS_SERVICE_TOKEN}`
+      }
+    };
+
+    const paymentRes = await axios.post(url, body, config);
+
+    console.log('refund succeeded:', paymentRes.data);
+    return paymentRes.data;
+  } catch (err) {
+    console.error('refundPayment failed:', err.response?.data || err.message);
+    throw err;
+  }
+}
 export async function cancelOrder(req, res) {
   const { id } = req.params;
   const { reason } = req.body || {};
@@ -279,20 +301,25 @@ export async function cancelOrder(req, res) {
     }
   }
 
+  try{
+    if (['shipped', 'out_for_delivery', 'delivered'].includes(order.orderStatus)) {
+      return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
+    }
+    
+    // await refundPayment(order.paymentId);
+    await Order.appendTracking(id, { status: 'cancelled', note: reason });
+    order.paymentStatus = 'refunded';
+    order.save();
+    return res.status(200).json({ message: 'Order cancelled' });
+  }catch(err){
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
 
-  if (['shipped', 'out_for_delivery', 'delivered'].includes(order.orderStatus)) {
-    return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
   }
-
-  await Order.appendTracking(id, { status: 'cancelled', note: reason });
-  order.paymentStatus = 'refunded';
-  order.save();
-  const paymentRes = await axios.post(
-    `http://payment-service:4500/api/payments/${paymentId}/refund'`,
-    {headers: { Authorization: `Bearer ${PAYMENTS_SERVICE_TOKEN}` }}
-  );
-  return res.status(200).json({ message: 'Order cancelled' });
+  
 }
+
+
 
 export async function getOrderTracking(req, res) {
   const { id } = req.params;
