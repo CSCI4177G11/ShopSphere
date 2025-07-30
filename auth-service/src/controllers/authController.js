@@ -8,7 +8,8 @@ import validator from 'validator';
 const {
   JWT_SECRET = 'super-secret-super-secret-super-secret-super-secret',
   JWT_ALGORITHM = 'HS256',
-  JWT_EXPIRES_IN = '1d' 
+  JWT_EXPIRES_IN = '1d',
+  ADMIN_SECRET='admin-very-secret',
 } = process.env;
 
 const tokenBlacklist = new Set();
@@ -31,6 +32,14 @@ const buildPublicUser = (u) => ({
 
 export const register = async (req, res) => {
   const { username, email, password, role } = req.body;
+
+  const allowedRoles = ['consumer', 'vendor'];
+  
+  if (!allowedRoles.includes(role)) {
+    return res.status(400).json({ 
+      error: 'Invalid or missing role. Must be consumer or vendor' 
+    });
+  }
 
   try {
     const user = await User.create({ username, email, password, role });
