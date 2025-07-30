@@ -28,6 +28,17 @@ function requireConsumerId(req, res) {
   return consumerId;
 }
 
+// Validate phone number for different countries
+const isValidPhoneNumber = (phoneNumber) => {
+  // North American format (Canada/US)
+  const northAmericanFormat = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
+  
+  // UK format - handles various formats including +44, 44, and 0 prefixes
+  const ukFormat = /^(?:(?:\+?44\s?|0)(?:\d{2}\s?\d{4}\s?\d{4}|\d{3}\s?\d{3}\s?\d{4}|\d{4}\s?\d{3}\s?\d{3}|\d{4}\s?\d{6}|\d{3}\s?\d{7}))$/;
+  
+  return northAmericanFormat.test(phoneNumber) || ukFormat.test(phoneNumber);
+};
+
 export const addConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
     if (!consumerId) return;
@@ -35,9 +46,8 @@ export const addConsumerProfile = async (req, res) => {
     if (!fullName || !phoneNumber) {
       return res.status(400).json({ error: 'fullName and phoneNumber are required.' });
     }
-    const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!phoneNumberFormat.test(phoneNumber)) {
-      return res.status(400).json({ error: 'Invalid phone number format.' });
+    if (!isValidPhoneNumber(phoneNumber)) {
+      return res.status(400).json({ error: 'Invalid phone number format. Accepts Canadian, US, and UK formats.' });
     }
     try {
     if (await Consumer.findOne({ consumerId })) {
@@ -92,9 +102,8 @@ export const getConsumerProfile = async (req, res) => {
 export const updateConsumerProfile = async (req, res) => {
     const consumerId = requireConsumerId(req, res);
     const {fullName, phoneNumber} = req.body;
-    const phoneNumberFormat = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (phoneNumber && !phoneNumberFormat.test(phoneNumber)) {
-        return res.status(400).json({ error: 'Invalid phone number format.' });
+    if (phoneNumber && !isValidPhoneNumber(phoneNumber)) {
+        return res.status(400).json({ error: 'Invalid phone number format. Accepts Canadian, US, and UK formats.' });
     }
     try {
         const profile = await Consumer.findOne({ consumerId });

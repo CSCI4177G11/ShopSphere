@@ -566,7 +566,7 @@ export default function VendorProfilePage() {
                           })}
                           placeholder="(416) 555-0123"
                         />
-                        <p className="text-xs text-muted-foreground">Canadian phone number format</p>
+                        <p className="text-xs text-muted-foreground">Accepts Canadian, US, and UK phone numbers</p>
                       </div>
                     </div>
                     <div className="flex gap-2 pt-4">

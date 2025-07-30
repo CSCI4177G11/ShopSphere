@@ -31,6 +31,35 @@ import {
 /*                              schema / helpers                              */
 /* -------------------------------------------------------------------------- */
 
+// Phone number validation based on country
+const validatePhoneNumber = (phone: string, country: string): boolean => {
+  switch (country) {
+    case 'CA':
+    case 'US':
+      // North American format: (123) 456-7890, 123-456-7890, 1234567890, +1 123 456 7890
+      return /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/.test(phone)
+    case 'GB':
+      // UK format: +44 20 7946 0958, 020 7946 0958, 07700 900123
+      return /^(?:(?:\+?44\s?|0)(?:\d{2}\s?\d{4}\s?\d{4}|\d{3}\s?\d{3}\s?\d{4}|\d{4}\s?\d{3}\s?\d{3}))$/.test(phone)
+    default:
+      return phone.length >= 5
+  }
+}
+
+// Get phone placeholder based on country
+const getPhonePlaceholder = (country: string): string => {
+  switch (country) {
+    case 'CA':
+      return '(416) 555-1234'
+    case 'US':
+      return '(555) 123-4567'
+    case 'GB':
+      return '020 7946 0958'
+    default:
+      return ''
+  }
+}
+
 const profileSchema = z.object({
   storeName: z.string().min(2, "Store name is required"),
   location: z.string().min(2, "Location is required"),
@@ -245,12 +274,28 @@ export default function CreateVendorAccountPage() {
               {/* Phone */}
               <div className="space-y-2">
                 <Label>Phone number</Label>
-                <Input {...register("phoneNumber")} disabled={submitting} />
+                <Input 
+                  {...register("phoneNumber", {
+                    validate: (value) => {
+                      if (!validatePhoneNumber(value, countryCode)) {
+                        return `Please enter a valid ${countryCode === 'GB' ? 'UK' : countryCode === 'US' ? 'US' : 'Canadian'} phone number`
+                      }
+                      return true
+                    }
+                  })} 
+                  placeholder={getPhonePlaceholder(countryCode)}
+                  disabled={submitting} 
+                />
                 {errors.phoneNumber && (
                   <p className="text-sm text-destructive">
                     {errors.phoneNumber.message}
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  {countryCode === 'CA' && 'Format: (416) 555-1234 or 416-555-1234'}
+                  {countryCode === 'US' && 'Format: (555) 123-4567 or 555-123-4567'}
+                  {countryCode === 'GB' && 'Format: 020 7946 0958 or 07700 900123'}
+                </p>
               </div>
 
               {/* Logo */}
