@@ -10,7 +10,8 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'out_for_delivery'
-  | 'delivered'          // “cancelled” is only used inside tracking entries
+  | 'delivered'
+  | 'cancelled'
 
 export type PaymentStatus =
   | 'succeeded'          // controller sets this literal value

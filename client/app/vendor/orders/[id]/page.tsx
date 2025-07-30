@@ -13,7 +13,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { 
   Package, 
   Truck, 
@@ -27,7 +39,8 @@ import {
   Copy,
   Printer,
   FileText,
-  User
+  User,
+  AlertTriangle
 } from "lucide-react"
 import type { Order } from "@/lib/api/order-service"
 
@@ -49,6 +62,8 @@ export default function VendorOrderDetailPage() {
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [productImages, setProductImages] = useState<Record<string, string>>({})
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
 
   useEffect(() => {
     if (!user) {
@@ -110,6 +125,27 @@ export default function VendorOrderDetailPage() {
       toast.success(`Order status updated to ${statusConfig[newStatus].label}`)
     } catch (error) {
       toast.error('Failed to update order status')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const cancelOrder = async () => {
+    if (!order) return
+
+    setUpdatingStatus(true)
+    try {
+      await orderService.cancel(order._id, { 
+        reason: cancelReason.trim() || 'Cancelled by vendor' 
+      })
+      await fetchOrderDetails() // Refetch to get updated data
+      // Trigger refresh of header order counts
+      triggerRefresh()
+      toast.success('Order cancelled successfully')
+      setShowCancelDialog(false)
+      setCancelReason("") // Reset reason
+    } catch (error) {
+      toast.error('Failed to cancel order')
     } finally {
       setUpdatingStatus(false)
     }
@@ -538,16 +574,28 @@ export default function VendorOrderDetailPage() {
               </Card>
 
               {/* Status Update */}
-              {nextStatus && order.orderStatus !== 'cancelled' && order.orderStatus !== 'delivered' && (
+              {order.orderStatus !== 'cancelled' && order.orderStatus !== 'delivered' && (
                 <Card>
-                  <CardContent className="pt-6">
-                    <Button
-                      className="w-full"
-                      onClick={() => updateOrderStatus(nextStatus)}
-                      disabled={updatingStatus}
-                    >
-                      {updatingStatus ? 'Updating...' : `Mark as ${statusConfig[nextStatus].label}`}
-                    </Button>
+                  <CardContent className="pt-6 space-y-3">
+                    {nextStatus && (
+                      <Button
+                        className="w-full"
+                        onClick={() => updateOrderStatus(nextStatus)}
+                        disabled={updatingStatus}
+                      >
+                        {updatingStatus ? 'Updating...' : `Mark as ${statusConfig[nextStatus].label}`}
+                      </Button>
+                    )}
+                    {order.orderStatus === 'pending' && (
+                      <Button
+                        className="w-full"
+                        variant="destructive"
+                        onClick={() => setShowCancelDialog(true)}
+                        disabled={updatingStatus}
+                      >
+                        Cancel Order
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               )}
@@ -633,6 +681,50 @@ export default function VendorOrderDetailPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Cancel Order Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Cancel Order?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This action cannot be undone.
+              The customer will be notified and refunded.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4">
+            <Label htmlFor="cancel-reason" className="text-sm font-medium">
+              Cancellation Reason (Optional)
+            </Label>
+            <Textarea
+              id="cancel-reason"
+              placeholder="Please provide a reason for cancelling this order..."
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="mt-2"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This reason will be visible to the customer
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setCancelReason("")
+            }}>Keep Order</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={cancelOrder}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={updatingStatus}
+            >
+              {updatingStatus ? 'Cancelling...' : 'Yes, Cancel Order'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
