@@ -283,6 +283,7 @@ export const listProductsByVendor = async (req, res) => {
         if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
         if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
         if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+        query.isPublished = true;
         
         let sortOption = { createdAt: -1 };
         if (sort === 'price:asc') sortOption = { price: 1 };
@@ -333,6 +334,77 @@ export const listProductsByVendor = async (req, res) => {
         console.error('Error listing products by vendor:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
+};
+
+export const listProductsForVendor = async (req, res) => {
+  try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+          return res.status(400).json({ error: 'Invalid query parameters' });
+      }
+      const vendorId = req.user.userId;
+      const {
+          page = 1,
+          limit = 30,
+          minPrice,
+          maxPrice,
+          tags,
+          sort = 'createdAt:desc',
+      } = req.query;
+      const query = { vendorId };
+      if (minPrice) query.price = { ...query.price, $gte: parseFloat(minPrice) };
+      if (maxPrice) query.price = { ...query.price, $lte: parseFloat(maxPrice) };
+      if (tags) query.tags = { $in: tags.split(',').map(tag => tag.trim()) };
+      
+      let sortOption = { createdAt: -1 };
+      if (sort === 'price:asc') sortOption = { price: 1 };
+      if (sort === 'price:desc') sortOption = { price: -1 };
+      if (sort === 'name:asc') sortOption = { name: 1 };
+      if (sort === 'name:desc') sortOption = { name: -1 };
+      if (sort === 'createdAt:asc') sortOption = { createdAt: 1 };
+      if (sort === 'createdAt:desc') sortOption = { createdAt: -1 };
+      const products = await Product.find(query)
+          .sort(sortOption)
+          .skip((page - 1) * limit)
+          .limit(Number(limit));
+      const total = await Product.countDocuments(query);
+      
+      console.log('Raw product from DB (vendor):', products[0]?.toObject());
+      
+      const transformedProducts = products.map(product => {
+          const images = product.images || [];
+          return {
+              productId: product._id,
+              name: product.name,
+              description: product.description,
+              price: product.price,
+              quantityInStock: product.quantityInStock,
+              category: product.category || 'other',
+              thumbnail: images.length > 0 ? images[0] : null,
+              averageRating: product.averageRating,
+              reviewCount: product.reviewCount,
+              images,
+              tags: product.tags,
+              isPublished: product.isPublished,
+              vendorId: product.vendorId,
+              _links: {
+                  self: `api/product/${product._id}`,
+                  reviews: `api/product/${product._id}/reviews`,
+                  vendor: `api/product/vendor/${product.vendorId}`
+              }
+          };
+      });
+      res.json({
+          vendorId,
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          products: transformedProducts
+      });
+  } catch (error) {
+      console.error('Error listing products by vendor:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 export const getProductById = async (req, res) => {

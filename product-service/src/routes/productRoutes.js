@@ -17,6 +17,8 @@ router.get('/health', (req, res) => {
 });
 
 router.get('/count', productCtrl.getProductCount);
+
+
 router.post('/batch', [
   body('productIds').isArray({ min: 1, max: 50 }).withMessage('productIds must be an array with 1-50 items'),
   body('productIds.*').isMongoId().withMessage('Each productId must be a valid MongoDB ID')
@@ -95,9 +97,27 @@ router.get(
     query('maxPrice').optional().isFloat({ min: 0 }).toFloat(),
     query('tags').optional().isString(),
     query('sort').optional().isString(),
+    query('isPublished').optional().isBoolean().toBoolean(),
   ],
   productCtrl.listProductsByVendor
 );
+
+router.get(
+  '/vendors',
+  [
+    query('page').optional().isInt({ min: 1 }).toInt(),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('minPrice').optional().isFloat({ min: 0 }).toFloat(),
+    query('maxPrice').optional().isFloat({ min: 0 }).toFloat(),
+    query('tags').optional().isString(),
+    query('sort').optional().isString(),
+  ],
+  requireAuth,
+  requireRole(['vendor', 'admin']),
+  productCtrl.listProductsForVendor
+);
+
+
 
 router.get(
   '/:id',
