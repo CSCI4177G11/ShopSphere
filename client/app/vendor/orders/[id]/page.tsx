@@ -9,6 +9,7 @@ import { orderService } from "@/lib/api/order-service"
 import { productService } from "@/lib/api/product-service"
 import { useAuth } from "@/components/auth-provider"
 import { useOrderRefresh } from "@/components/order-refresh-context"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +59,7 @@ export default function VendorOrderDetailPage() {
   const router = useRouter()
   const { user } = useAuth()
   const { triggerRefresh } = useOrderRefresh()
+  const { formatPrice } = useCurrency()
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -562,10 +564,10 @@ export default function VendorOrderDetailPage() {
                       <div className="flex-1">
                         <h4 className="font-medium">Product #{item.productId.slice(-6)}</h4>
                         <p className="text-sm text-muted-foreground">
-                          ${item.price.toFixed(2)} × {item.quantity}
+                          {formatPrice(item.price)} × {item.quantity}
                         </p>
                       </div>
-                      <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
                     </div>
                   ))}
                   
@@ -574,11 +576,11 @@ export default function VendorOrderDetailPage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>${order.subtotalAmount.toFixed(2)}</span>
+                      <span>{formatPrice(order.subtotalAmount)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tax (15%)</span>
-                      <span>${(order.subtotalAmount * 0.15).toFixed(2)}</span>
+                      <span>{formatPrice(order.subtotalAmount * 0.15)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -587,7 +589,7 @@ export default function VendorOrderDetailPage() {
                     <Separator />
                     <div className="flex justify-between font-semibold text-base">
                       <span>Total</span>
-                      <span>${(order.subtotalAmount * 1.15).toFixed(2)}</span>
+                      <span>{formatPrice(order.subtotalAmount * 1.15)}</span>
                     </div>
                   </div>
                 </CardContent>

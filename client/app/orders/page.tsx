@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { orderService } from "@/lib/api/order-service"
 import { useAuth } from "@/components/auth-provider"
+import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,6 +39,7 @@ const statusConfig = {
 export default function OrdersPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
+  const { formatPrice } = useCurrency()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<Order['orderStatus'] | 'all'>('all')
@@ -389,12 +391,12 @@ export default function OrdersPage() {
                                         {productNames[item.productId] || `Product #${item.productId.slice(-6)}`}
                                       </p>
                                       <p className="text-sm text-muted-foreground">
-                                        ${item.price.toFixed(2)} × {item.quantity}
+                                        {formatPrice(item.price)} × {item.quantity}
                                       </p>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                                    <p className="font-semibold">{formatPrice(item.price * item.quantity)}</p>
                                   </div>
                                 </div>
                                 
@@ -448,11 +450,11 @@ export default function OrdersPage() {
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span>${order.subtotalAmount.toFixed(2)}</span>
+                                <span>{formatPrice(order.subtotalAmount)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax (15%)</span>
-                                <span>${(order.subtotalAmount * 0.15).toFixed(2)}</span>
+                                <span>{formatPrice(order.subtotalAmount * 0.15)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Shipping</span>
@@ -461,7 +463,7 @@ export default function OrdersPage() {
                               <Separator className="my-2" />
                               <div className="flex justify-between">
                                 <span className="font-semibold">Total</span>
-                                <span className="font-semibold text-lg">${(order.subtotalAmount * 1.15).toFixed(2)}</span>
+                                <span className="font-semibold text-lg">{formatPrice(order.subtotalAmount * 1.15)}</span>
                               </div>
                             </div>
                           </div>

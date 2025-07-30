@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { userService, type ConsumerProfile, type Address } from "@/lib/api/user-service"
 import { authService } from "@/lib/api/auth-service"
+import { useSettings } from "@/components/settings-provider"
+import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { 
   User, 
@@ -24,7 +26,13 @@ import {
   ChevronRight,
   ArrowLeft,
   Eye,
-  EyeOff
+  EyeOff,
+  Palette,
+  DollarSign,
+  Moon,
+  Sun,
+  Monitor,
+  Check
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -186,6 +194,8 @@ const formatPhoneNumber = (phoneNumber: string): string => {
 export default function ConsumerProfilePage() {
   const router = useRouter()
   const { user } = useAuth()
+  const { currency, setCurrency } = useSettings()
+  const { theme, setTheme } = useTheme()
   const [profile, setProfile] = useState<ConsumerProfile | null>(null)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
@@ -689,30 +699,66 @@ export default function ConsumerProfilePage() {
                 <CardDescription>Customize your shopping experience</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Email Notifications</p>
-                      <p className="text-sm text-muted-foreground">Receive updates about orders and promotions</p>
-                    </div>
-                    <Badge variant="outline">Coming Soon</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Language</p>
-                      <p className="text-sm text-muted-foreground">Choose your preferred language</p>
-                    </div>
-                    <Badge variant="outline">English</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Currency & Theme</p>
-                      <p className="text-sm text-muted-foreground">Set from the header menu</p>
-                    </div>
-                    <Badge variant="secondary">Configured</Badge>
-                  </div>
+                {/* Currency Preference */}
+                <div>
+                  <Label htmlFor="currency" className="text-sm font-medium">Currency</Label>
+                  <Select value={currency} onValueChange={(value) => setCurrency(value as "USD" | "CAD" | "GBP")}>
+                    <SelectTrigger id="currency" className="w-full mt-2">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">
+                        <div className="flex items-center gap-2">
+                          <span>🇺🇸</span>
+                          <span>USD - US Dollar ($)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="CAD">
+                        <div className="flex items-center gap-2">
+                          <span>🇨🇦</span>
+                          <span>CAD - Canadian Dollar (C$)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="GBP">
+                        <div className="flex items-center gap-2">
+                          <span>🇬🇧</span>
+                          <span>GBP - British Pound (£)</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Theme Preference */}
+                <div>
+                  <Label htmlFor="theme" className="text-sm font-medium">Theme</Label>
+                  <Select value={theme} onValueChange={setTheme}>
+                    <SelectTrigger id="theme" className="w-full mt-2">
+                      <SelectValue placeholder="Select theme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">
+                        <div className="flex items-center gap-2">
+                          <Sun className="h-4 w-4" />
+                          <span>Light</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dark">
+                        <div className="flex items-center gap-2">
+                          <Moon className="h-4 w-4" />
+                          <span>Dark</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="system">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4" />
+                          <span>System</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
