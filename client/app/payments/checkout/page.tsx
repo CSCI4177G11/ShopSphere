@@ -36,7 +36,7 @@ const checkoutSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   zipCode: z.string().optional(),
-  country: z.literal("CA").optional(),
+  country: z.enum(["CA", "US", "GB"]).optional(),
   
   // Payment
   paymentMethodId: z.string().min(1, "Please select a payment method"),
@@ -61,7 +61,7 @@ export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
   const { formatPrice } = useCurrency()
-  const { clearCart } = useCart()
+  const { refreshCart } = useCart()
   const [totals, setTotals] = useState<CartTotals | null>(null)
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -163,7 +163,7 @@ export default function CheckoutPage() {
           line1: data.street!,
           city: data.city!,
           postalCode: data.zipCode!,
-          country: 'CA',
+          country: data.country || 'CA',
         }
       } else {
         const savedAddress = savedAddresses.find(addr => 
@@ -176,7 +176,7 @@ export default function CheckoutPage() {
           line1: savedAddress.line1,
           city: savedAddress.city,
           postalCode: savedAddress.postalCode,
-          country: 'CA', // Always use CA for Canada
+          country: savedAddress.country || 'CA',
         }
       }
 
@@ -195,8 +195,8 @@ export default function CheckoutPage() {
         shippingAddress,
       })
 
-      // 3. Clear cart after successful order using the cart provider
-      await clearCart()
+      // 3. Refresh cart after successful order (it's already cleared on the backend)
+      await refreshCart()
 
       setOrderComplete(true)
       toast.success('Order placed successfully!')
@@ -207,7 +207,6 @@ export default function CheckoutPage() {
       }, 2000)
 
     } catch (error: any) {
-      console.error('Checkout failed:', error)
       
       // Provide more specific error messages
       if (error.message?.includes('502')) {
@@ -404,12 +403,19 @@ export default function CheckoutPage() {
                         
                         <div>
                           <Label htmlFor="country">Country</Label>
-                          <Input
-                            id="country"
-                            value="Canada"
-                            disabled
-                            className="bg-muted"
-                          />
+                          <Select
+                            value={watch("country")}
+                            onValueChange={(value) => setValue("country", value as "CA" | "US" | "GB")}
+                          >
+                            <SelectTrigger id="country">
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="CA">Canada</SelectItem>
+                              <SelectItem value="US">United States</SelectItem>
+                              <SelectItem value="GB">United Kingdom</SelectItem>
+                            </SelectContent>
+                          </Select>
                           {errors.country && (
                             <p className="text-sm text-destructive mt-1">{errors.country.message}</p>
                           )}

@@ -74,7 +74,6 @@ export default function CartPage() {
         
         setEnrichedItems(enriched)
       } catch (error) {
-        console.error('Failed to fetch product images:', error)
         // Use original cart items without images
         setEnrichedItems(cart.items)
       } finally {
@@ -145,8 +144,8 @@ export default function CartPage() {
     return null
   }
 
-  // Show loading state while cart is loading
-  if (loading) {
+  // Show loading state while cart is loading or images are being fetched
+  if (loading || (loadingImages && cart?.items && cart.items.length > 0)) {
     return (
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">

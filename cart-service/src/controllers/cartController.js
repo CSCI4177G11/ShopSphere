@@ -194,7 +194,6 @@ export const clearCart = async (req, res) => {
     );
     res.status(200).json({ message: 'Cart cleared successfully.' });
   } catch (err) {
-    console.error('clearCart error:', err);
     res.status(500).json({ error: 'Server error while clearing cart' });
   }
 };

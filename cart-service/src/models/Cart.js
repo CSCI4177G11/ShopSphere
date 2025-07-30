@@ -4,8 +4,7 @@ const { Schema, model, Types } = mongoose;
 const ItemSchema = new Schema({
   itemId: {
     type: String,
-    default: () => new Types.ObjectId().toString(),
-    unique: true
+    default: () => new Types.ObjectId().toString()
   },
   productId: String,
   productName: String,
