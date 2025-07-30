@@ -450,6 +450,7 @@ export const listPublicVendors = async (req, res) => {
           totalProducts: totalProducts,
           createdAt:     vendor.createdAt,
           phoneNumber:   formatPhoneNumber(vendor.phoneNumber),
+          socialLinks:   vendor.socialLink || [],
           isApproved:    vendor.isApproved,
           _id:           vendor._id,
         };
@@ -491,7 +492,7 @@ export const getPublicVendorProfile = async (req, res) => {
       phoneNumber: formatPhoneNumber(vendor.phoneNumber),
       logoUrl: vendor.logoUrl,
       bannerUrl: vendor.storeBannerUrl,
-      socialLinks: vendor.socialLink,
+      socialLinks: vendor.socialLink || [],
       rating: newRating,
       isApproved: vendor.isApproved,
       createdAt: vendor.createdAt,
