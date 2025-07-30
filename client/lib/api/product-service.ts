@@ -90,6 +90,12 @@ export interface UpdateProductDto extends Partial<CreateProductDto> {
 }
 
 export interface CreateReviewDto {
+  username: string
+  rating: number
+  comment: string
+}
+
+export interface UpdateReviewDto {
   rating: number
   comment: string
 }
@@ -227,7 +233,7 @@ class ProductService {
   async updateReview(
     productId: string,
     reviewId: string,
-    data: CreateReviewDto
+    data: UpdateReviewDto
   ): Promise<Review> {
     return productApi.put<Review>(`/${productId}/reviews/${reviewId}`, data)
   }

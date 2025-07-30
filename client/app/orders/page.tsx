@@ -164,6 +164,7 @@ export default function OrdersPage() {
           toast.success('Review updated successfully!')
         } else {
           await productService.createReview(selectedProduct, {
+            username: user.username,
             rating: reviewRating,
             comment: reviewComment
           })
@@ -187,6 +188,7 @@ export default function OrdersPage() {
           try {
             if (!productReviews[item.productId]) {
               await productService.createReview(item.productId, {
+                username: user.username,
                 rating: reviewRating,
                 comment: reviewComment
               })

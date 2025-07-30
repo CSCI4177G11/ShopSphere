@@ -58,9 +58,10 @@ export const updateVendorRating = async (vendorId) => {
     const ratedProducts = products.filter(
       (p) => typeof p.reviewCount === 'number' && p.reviewCount > 0,
     );
+    const profile = await Vendor.findOne({ vendorId });
 
     if (ratedProducts.length === 0) {
-      profile.rating = newRating;
+      profile.rating = -1;
       await profile.save();
       return -1;
     }
@@ -71,7 +72,6 @@ export const updateVendorRating = async (vendorId) => {
       ) / ratedProducts.length;
 
     const newRating = Number(avg.toFixed(2)); 
-    const profile = await Vendor.findOne({ vendorId });
 
     profile.rating = newRating;
     await profile.save();
