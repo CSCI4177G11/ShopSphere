@@ -55,31 +55,121 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 // Helper function to get address ID
 const getAddressId = (address: Address): string => {
   return address._id || address.addressId || ''
 }
 
-// Canadian postal code validation (e.g., K1A 0B1, k1a0b1)
-const isValidCanadianPostalCode = (postalCode: string): boolean => {
-  const postalCodeRegex = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
-  return postalCodeRegex.test(postalCode)
-}
-
-// Canadian phone number validation (e.g., (416) 555-0123, 416-555-0123, 4165550123)
-const isValidCanadianPhoneNumber = (phoneNumber: string): boolean => {
-  const phoneRegex = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/
-  return phoneRegex.test(phoneNumber)
-}
-
-// Format postal code to standard format
-const formatPostalCode = (postalCode: string): string => {
-  const cleaned = postalCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  if (cleaned.length >= 6) {
-    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)}`
+// Postal code validation for different countries
+const isValidPostalCode = (postalCode: string, country: string): boolean => {
+  switch (country) {
+    case 'CA':
+      // Canadian postal code (e.g., K1A 0B1, k1a0b1)
+      return /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(postalCode)
+    case 'US':
+      // US ZIP code (e.g., 12345 or 12345-6789)
+      return /^\d{5}(-\d{4})?$/.test(postalCode)
+    case 'GB':
+      // UK postcode (e.g., SW1A 1AA, EC1A 1BB, W1A 0AX)
+      return /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(postalCode)
+    default:
+      return false
   }
-  return postalCode.toUpperCase()
+}
+
+// Get postal code label based on country
+const getPostalCodeLabel = (country: string): string => {
+  switch (country) {
+    case 'CA':
+      return 'Postal Code'
+    case 'US':
+      return 'ZIP Code'
+    case 'GB':
+      return 'Postcode'
+    default:
+      return 'Postal Code'
+  }
+}
+
+// Get postal code placeholder based on country
+const getPostalCodePlaceholder = (country: string): string => {
+  switch (country) {
+    case 'CA':
+      return 'K1A 0B1'
+    case 'US':
+      return '12345'
+    case 'GB':
+      return 'SW1A 1AA'
+    default:
+      return ''
+  }
+}
+
+// Get full country name from code
+const getCountryName = (code: string): string => {
+  switch (code) {
+    case 'CA':
+      return 'Canada'
+    case 'US':
+      return 'United States'
+    case 'GB':
+      return 'United Kingdom'
+    default:
+      return code
+  }
+}
+
+// Phone number validation for different countries
+const isValidPhoneNumber = (phoneNumber: string, country: string): boolean => {
+  switch (country) {
+    case 'CA':
+    case 'US':
+      // North American phone number format
+      return /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/.test(phoneNumber)
+    case 'GB':
+      // UK phone number (various formats)
+      return /^(?:(?:\+?44\s?|0)(?:\d{2}\s?\d{4}\s?\d{4}|\d{3}\s?\d{3}\s?\d{4}|\d{4}\s?\d{3}\s?\d{3}))$/.test(phoneNumber)
+    default:
+      return true // Allow any format for other countries
+  }
+}
+
+// Format postal code based on country
+const formatPostalCode = (postalCode: string, country: string): string => {
+  switch (country) {
+    case 'CA': {
+      const cleaned = postalCode.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (cleaned.length >= 6) {
+        return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)}`
+      }
+      return postalCode.toUpperCase()
+    }
+    case 'US': {
+      const cleaned = postalCode.replace(/[^0-9-]/g, '')
+      if (cleaned.length === 9 && !cleaned.includes('-')) {
+        return `${cleaned.slice(0, 5)}-${cleaned.slice(5)}`
+      }
+      return cleaned
+    }
+    case 'GB': {
+      // Format UK postcodes with space before last 3 characters
+      const ukCleaned = postalCode.replace(/\s+/g, '').toUpperCase()
+      if (ukCleaned.length >= 5) {
+        return `${ukCleaned.slice(0, -3)} ${ukCleaned.slice(-3)}`
+      }
+      return ukCleaned
+    }
+    default:
+      return postalCode
+  }
 }
 
 // Format phone number to standard format
@@ -167,9 +257,13 @@ export default function ConsumerProfilePage() {
   }
 
   const handleUpdateProfile = async () => {
-    // Validate phone number
-    if (!isValidCanadianPhoneNumber(editedProfile.phoneNumber)) {
-      toast.error('Please enter a valid Canadian phone number')
+    // Validate phone number - try multiple formats
+    const isValidCA = isValidPhoneNumber(editedProfile.phoneNumber, 'CA')
+    const isValidUS = isValidPhoneNumber(editedProfile.phoneNumber, 'US')
+    const isValidGB = isValidPhoneNumber(editedProfile.phoneNumber, 'GB')
+    
+    if (!isValidCA && !isValidUS && !isValidGB) {
+      toast.error('Please enter a valid Canadian, US, or UK phone number')
       return
     }
 
@@ -198,7 +292,7 @@ export default function ConsumerProfilePage() {
 
   const handleAddAddress = async () => {
     // Validate postal code
-    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
+    if (!isValidPostalCode(addressForm.postalCode, 'CA')) {
       toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
       return
     }
@@ -233,7 +327,7 @@ export default function ConsumerProfilePage() {
 
   const handleUpdateAddress = async (addressId: string) => {
     // Validate postal code
-    if (!isValidCanadianPostalCode(addressForm.postalCode)) {
+    if (!isValidPostalCode(addressForm.postalCode, 'CA')) {
       toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
       return
     }
@@ -418,7 +512,7 @@ export default function ConsumerProfilePage() {
                           })}
                           placeholder="(416) 555-0123"
                         />
-                        <p className="text-xs text-muted-foreground">Canadian phone number format</p>
+                        <p className="text-xs text-muted-foreground">Accepts Canadian, US, and UK phone numbers</p>
                       </div>
                     </div>
                     <div className="flex gap-2 pt-4">
@@ -811,29 +905,39 @@ function AddressForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="postalCode">Postal Code</Label>
-          <Input
-            id="postalCode"
-            value={form.postalCode}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase()
-              onChange({ ...form, postalCode: value })
-            }}
-            placeholder="K1A 0B1"
-            maxLength={7}
-          />
-          <p className="text-xs text-muted-foreground">Canadian postal code format</p>
+          <Label htmlFor="country">Country</Label>
+          <Select
+            value={form.country}
+            onValueChange={(value) => onChange({ ...form, country: value, postalCode: '' })}
+          >
+            <SelectTrigger id="country">
+              <SelectValue placeholder="Select a country" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="CA">Canada</SelectItem>
+              <SelectItem value="US">United States</SelectItem>
+              <SelectItem value="GB">United Kingdom</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="country">Country</Label>
+        <Label htmlFor="postalCode">{getPostalCodeLabel(form.country)}</Label>
         <Input
-          id="country"
-          value="Canada"
-          readOnly
-          disabled
-          className="bg-muted"
+          id="postalCode"
+          value={form.postalCode}
+          onChange={(e) => {
+            const value = form.country === 'US' ? e.target.value : e.target.value.toUpperCase()
+            onChange({ ...form, postalCode: value })
+          }}
+          placeholder={getPostalCodePlaceholder(form.country)}
+          maxLength={form.country === 'CA' ? 7 : form.country === 'US' ? 10 : 8}
         />
+        <p className="text-xs text-muted-foreground">
+          {form.country === 'CA' && 'Format: A1A 1A1'}
+          {form.country === 'US' && 'Format: 12345 or 12345-6789'}
+          {form.country === 'GB' && 'Format: SW1A 1AA'}
+        </p>
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
@@ -899,7 +1003,7 @@ function AddressCard({
             <p className="text-sm">
               {address.city}, {address.postalCode}
             </p>
-            <p className="text-sm">{address.country}</p>
+            <p className="text-sm">{getCountryName(address.country)}</p>
           </div>
           <div className="flex gap-1">
             <Button

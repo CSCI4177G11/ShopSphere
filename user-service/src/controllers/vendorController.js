@@ -96,9 +96,12 @@ export const addVendorProfile = async (req, res) => {
     if (!storeName || !location || !logoUrl || !storeBannerUrl || !phoneNumber) {
       return res.status(400).json({ error: 'All fields are required.' });
     }
-    const phoneRegex = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      return res.status(400).json({ error: 'Invalid phone number format.' });
+    // Validate phone number for different countries
+    const northAmericanFormat = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
+    const ukFormat = /^(?:(?:\+?44\s?|0)(?:\d{2}\s?\d{4}\s?\d{4}|\d{3}\s?\d{3}\s?\d{4}|\d{4}\s?\d{3}\s?\d{3}|\d{4}\s?\d{6}|\d{3}\s?\d{7}))$/;
+    
+    if (!northAmericanFormat.test(phoneNumber) && !ukFormat.test(phoneNumber)) {
+      return res.status(400).json({ error: 'Invalid phone number format. Accepts Canadian, US, and UK formats.' });
     }
     
     // Clean phone number - remove all non-digit characters
@@ -178,9 +181,12 @@ export const getVendorProfile = async (req, res) => {
     } = req.body;
   
     if (phoneNumber !== undefined) {
-      const phoneRe = /^(?:\+1\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$/;
-      if (!phoneRe.test(phoneNumber)) {
-        return res.status(400).json({ error: 'Invalid phone number format.' });
+      // Validate phone number for different countries
+      const northAmericanFormat = /^(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})$/;
+      const ukFormat = /^(?:(?:\+?44\s?|0)(?:\d{2}\s?\d{4}\s?\d{4}|\d{3}\s?\d{3}\s?\d{4}|\d{4}\s?\d{3}\s?\d{3}|\d{4}\s?\d{6}|\d{3}\s?\d{7}))$/;
+      
+      if (!northAmericanFormat.test(phoneNumber) && !ukFormat.test(phoneNumber)) {
+        return res.status(400).json({ error: 'Invalid phone number format. Accepts Canadian, US, and UK formats.' });
       }
     }
   
