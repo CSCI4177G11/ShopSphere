@@ -66,7 +66,8 @@ export function TrendingProducts() {
           // Fallback to regular products if no trending data
           const response = await productService.getProducts({
             limit: 8,
-            sort: '-createdAt' // Sort by newest
+            sort: '-createdAt', // Sort by newest
+            isPublished: true // Only show published products
           })
           setProducts(response.products)
         }
@@ -76,7 +77,8 @@ export function TrendingProducts() {
         try {
           const response = await productService.getProducts({
             limit: 8,
-            sort: '-createdAt'
+            sort: '-createdAt',
+            isPublished: true // Only show published products
           })
           setProducts(response.products)
         } catch (fallbackError) {

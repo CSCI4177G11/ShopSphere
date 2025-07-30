@@ -13,6 +13,7 @@ import { useCurrency } from "@/hooks/use-currency"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { 
   BarChart3,
@@ -29,31 +30,22 @@ import {
   Eye
 } from "lucide-react"
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  ArcElement
-} from "chart.js"
-import { Line, Bar, Doughnut } from "react-chartjs-2"
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts"
 import type { SummaryResult, TopProduct, TrendPoint } from "@/lib/api/analytics-service"
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-)
 
 export default function AdminAnalyticsPage() {
   const { user } = useAuth()
@@ -116,9 +108,9 @@ export default function AdminAnalyticsPage() {
           page: 1 
         })
         
-        // Create a map of existing products
+        // Create a map of existing products using productId
         const existingProductsMap = new Map(
-          allProductsResponse.products.map(p => [p._id, p])
+          allProductsResponse.products.map(p => [p.productId, p])
         )
         
         // Match top products with existing products
@@ -181,54 +173,87 @@ export default function AdminAnalyticsPage() {
   }
 
   // Prepare chart data
-  const salesChartData = {
-    labels: salesTrend.map(point => point.period),
-    datasets: [
-      {
-        label: 'Revenue',
-        data: salesTrend.map(point => point.revenue),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.1
-      }
-    ]
-  }
+  const salesChartData = salesTrend.map(point => {
+    const date = new Date(point.period)
+    return {
+      date: timeRange === 'day' 
+        ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      revenue: point.revenue
+    }
+  })
 
-  const topProductsChartData = {
-    labels: topProducts.slice(0, 5).map(p => {
-      const product = productDetails.get(p.productId)
-      return product?.name || `Product ${p.productId.slice(-6)}`
-    }),
-    datasets: [
-      {
-        label: 'Revenue',
-        data: topProducts.slice(0, 5).map(p => p.revenue),
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(251, 146, 60, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(251, 113, 133, 0.8)'
-        ]
-      }
-    ]
-  }
+  const COLORS = [
+    '#6366f1',
+    '#3b82f6', 
+    '#8b5cf6',
+    '#ec4899',
+    '#f87171'
+  ]
 
-  const categoryData = {
-    labels: ['Electronics', 'Clothing', 'Home & Garden', 'Sports', 'Other'],
-    datasets: [
-      {
-        data: [30, 25, 20, 15, 10], // Mock data - would be calculated from real data
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(34, 197, 94, 0.8)',
-          'rgba(251, 146, 60, 0.8)',
-          'rgba(168, 85, 247, 0.8)',
-          'rgba(107, 114, 128, 0.8)'
-        ]
+  const topProductsChartData = topProducts.slice(0, 5).map((p, index) => {
+    const product = productDetails.get(p.productId)
+    const name = product?.name || `Product ${p.productId.slice(-6)}`
+    return {
+      name: name.length > 25 ? name.substring(0, 25) + '...' : name,
+      revenue: p.revenue,
+      units: p.unitsSold,
+      fill: COLORS[index]
+    }
+  })
+
+  // Calculate category data from actual sales
+  const categoryRevenue = new Map<string, number>()
+  const categoryCount = new Map<string, number>()
+  
+  // Process all products that have sales data
+  topProducts.forEach(topProduct => {
+    const product = productDetails.get(topProduct.productId)
+    // Check if we have product details and valid revenue
+    if (product) {
+      // Use the actual category or "Uncategorized" if not set or is "other"
+      let category = product.category?.trim() || 'Uncategorized'
+      if (category.toLowerCase() === 'other') {
+        category = 'Uncategorized'
       }
-    ]
+      
+      // Use the revenue from topProduct, not from product
+      const revenue = Number(topProduct.revenue) || 0
+      const units = Number(topProduct.unitsSold) || 0
+      
+      if (revenue > 0 || units > 0) {
+        const currentRevenue = categoryRevenue.get(category) || 0
+        const currentCount = categoryCount.get(category) || 0
+        categoryRevenue.set(category, currentRevenue + revenue)
+        categoryCount.set(category, currentCount + units)
+      }
+    }
+  })
+  
+  // If no categories were found but we have top products, create a default category
+  if (categoryRevenue.size === 0 && topProducts.length > 0) {
+    const totalRevenue = topProducts.reduce((sum, p) => sum + (Number(p.revenue) || 0), 0)
+    const totalUnits = topProducts.reduce((sum, p) => sum + (Number(p.unitsSold) || 0), 0)
+    if (totalRevenue > 0 || totalUnits > 0) {
+      categoryRevenue.set('Uncategorized', totalRevenue)
+      categoryCount.set('Uncategorized', totalUnits)
+    }
   }
+  
+  const sortedCategories = Array.from(categoryRevenue.entries())
+    .filter(([, revenue]) => revenue >= 0) // Include categories with 0 or positive revenue
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+  
+  const totalCategoryRevenue = sortedCategories.reduce((sum, [, revenue]) => sum + revenue, 0)
+  
+  const categoryData = sortedCategories.map(([category, revenue], index) => ({
+    name: category,
+    value: revenue,
+    percentage: totalCategoryRevenue > 0 ? ((revenue / totalCategoryRevenue) * 100).toFixed(1) : '100',
+    units: categoryCount.get(category) || 0,
+    fill: COLORS[index % COLORS.length]
+  }))
 
   if (loading) {
     return (
@@ -270,67 +295,63 @@ export default function AdminAnalyticsPage() {
 
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">Total Revenue</CardTitle>
+                <div className="h-10 w-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/20 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold">
                   {formatPrice(summary?.totalRevenue || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.growthRate > 0 ? (
-                    <span className="text-green-600">
-                      <ArrowUpRight className="inline h-3 w-3" />
-                      {stats.growthRate.toFixed(1)}% from last period
-                    </span>
-                  ) : stats.growthRate < 0 ? (
-                    <span className="text-red-600">
-                      <ArrowDownRight className="inline h-3 w-3" />
-                      {Math.abs(stats.growthRate).toFixed(1)}% from last period
-                    </span>
-                  ) : (
-                    <span className="text-gray-500">No change from last period</span>
-                  )}
+                <p className="text-sm text-muted-foreground mt-1">
+                  All time revenue
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">Total Orders</CardTitle>
+                <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{summary?.totalOrders || 0}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold">{summary?.totalOrders || 0}</div>
+                <p className="text-sm text-muted-foreground mt-1">
                   Avg. value: {formatPrice(summary?.averageOrderValue || 0)}
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">Active Users</CardTitle>
+                <div className="h-10 w-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUsers}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold">{stats.totalUsers}</div>
+                <p className="text-sm text-muted-foreground mt-1">
                   {stats.conversionRate.toFixed(1)}% conversion rate
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Vendors</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                <CardTitle className="text-base font-medium text-muted-foreground">Active Vendors</CardTitle>
+                <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                  <Package className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.activeVendors}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-3xl font-bold">{stats.activeVendors}</div>
+                <p className="text-sm text-muted-foreground mt-1">
                   {stats.totalProducts} total products
                 </p>
               </CardContent>
@@ -340,67 +361,129 @@ export default function AdminAnalyticsPage() {
           {/* Charts Row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Sales Trend */}
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader>
-                <CardTitle>Revenue Trend</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">Revenue Trend</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
+                    <span className="text-sm text-muted-foreground">Revenue</span>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <Line
-                    data={salesChartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function(value) {
-                              return '$' + value.toLocaleString()
-                            }
-                          }
-                        }
-                      }
-                    }}
-                  />
+              <CardContent className="p-6">
+                <div className="h-[350px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart 
+                      data={salesChartData}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                      />
+                      <YAxis
+                        stroke="#6b7280"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={{ stroke: '#e5e7eb' }}
+                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                          border: '1px solid rgb(55, 65, 81)',
+                          borderRadius: '8px',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }}
+                        itemStyle={{ color: '#fff' }}
+                        labelStyle={{ color: '#fff', fontWeight: 600 }}
+                        formatter={(value: any) => formatPrice(value)}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="#6366f1"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorRevenue)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </CardContent>
             </Card>
 
             {/* Top Products */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Selling Products</CardTitle>
+            <Card className="overflow-hidden h-full">
+              <CardHeader className="space-y-1 pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">Top Selling Products</CardTitle>
+                  <Badge variant="outline" className="text-xs font-medium">
+                    <TrendingUp className="mr-1 h-3 w-3" />
+                    {topProducts.length} products
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <Bar
-                    data={topProductsChartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false
-                        }
-                      },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            callback: function(value) {
-                              return '$' + value.toLocaleString()
-                            }
-                          }
-                        }
-                      }
-                    }}
-                  />
+              <CardContent className="pb-6">
+                <div className="space-y-4">
+                  {topProducts.slice(0, 5).map((product, index) => {
+                    const productInfo = productDetails.get(product.productId)
+                    const maxRevenue = topProducts[0]?.revenue || 1
+                    const percentage = (product.revenue / maxRevenue) * 100
+                    
+                    return (
+                      <div key={product.productId} className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                              {index + 1}
+                            </span>
+                            <span className="truncate font-medium">
+                              {productInfo?.name || `Product ${product.productId.slice(-6)}`}
+                            </span>
+                          </div>
+                          <span className="font-semibold text-right ml-2">
+                            {formatPrice(product.revenue)}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${percentage}%` }}
+                              transition={{ duration: 0.5, delay: index * 0.1 }}
+                            />
+                          </div>
+                          <div className="flex justify-between mt-1">
+                            <span className="text-xs text-muted-foreground">
+                              {product.unitsSold} units sold
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {topProducts.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <Package className="h-12 w-12 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">No sales data yet</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -409,26 +492,103 @@ export default function AdminAnalyticsPage() {
           {/* Charts Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Category Distribution */}
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader>
-                <CardTitle>Sales by Category</CardTitle>
-                <p className="text-sm text-muted-foreground">Sample data - categories not tracked yet</p>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] flex items-center justify-center">
-                  <Doughnut
-                    data={categoryData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          position: 'bottom'
-                        }
-                      }
-                    }}
-                  />
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">Sales by Category</CardTitle>
+                  <div className="text-sm text-muted-foreground">
+                    {categoryData.length} categories
+                  </div>
                 </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {categoryData.length > 0 ? (
+                  <div className="h-[300px] w-full">
+                    {categoryData.length === 1 ? (
+                      // Show a summary for single category
+                      <div className="h-full flex items-center justify-center">
+                        <div className="w-full max-w-lg space-y-6">
+                          <div className="text-center space-y-4">
+                            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900/20">
+                              <Package className="h-10 w-10 text-indigo-600 dark:text-indigo-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-2xl font-bold">{categoryData[0].name}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">Category Performance</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Total Revenue</p>
+                              <p className="text-2xl font-bold">{formatPrice(categoryData[0].value)}</p>
+                            </div>
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Units Sold</p>
+                              <p className="text-2xl font-bold">{categoryData[0].units}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-center">
+                            <Badge variant="secondary" className="text-sm">
+                              100% of total sales
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      // Show pie chart for multiple categories
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={categoryData}
+                            cx="50%"
+                            cy="45%"
+                            labelLine={false}
+                            label={(entry) => `${entry.name} (${entry.percentage}%)`}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {categoryData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                              border: '1px solid rgb(55, 65, 81)',
+                              borderRadius: '8px',
+                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                            }}
+                            content={({ active, payload }: any) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload
+                                return (
+                                  <div className="p-3">
+                                    <p className="text-white font-semibold mb-2">{data.name}</p>
+                                    <p className="text-gray-300">Revenue: {formatPrice(data.value)}</p>
+                                    <p className="text-gray-300">Units Sold: {data.units}</p>
+                                    <p className="text-gray-300">Percentage: {data.percentage}%</p>
+                                  </div>
+                                )
+                              }
+                              return null
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-[300px] flex items-center justify-center bg-gray-50 dark:bg-gray-900/20 rounded-lg">
+                    <div className="text-center">
+                      <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground text-lg">No category data available yet</p>
+                      <p className="text-sm text-muted-foreground mt-2">Start selling products to see category analytics</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

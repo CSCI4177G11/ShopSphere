@@ -99,8 +99,10 @@ export default function VendorProductsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch vendor products
-        const productData = await productService.getVendorProducts(vendorId)
+        // Fetch only published vendor products
+        const productData = await productService.getVendorProducts(vendorId, {
+          isPublished: true
+        })
         setProducts(productData.products)
         
         // Create a vendor object for display

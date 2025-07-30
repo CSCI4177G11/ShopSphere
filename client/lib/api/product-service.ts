@@ -54,6 +54,7 @@ export interface ProductQuery {
   maxPrice?: number
   vendorId?: string
   tags?: string | string[]
+  isPublished?: boolean
   sort?:
     | 'price'
     | '-price'
