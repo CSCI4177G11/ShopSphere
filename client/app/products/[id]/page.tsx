@@ -24,7 +24,8 @@ import {
   Package,
   Shield,
   Truck,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react"
 import type { Product, Review } from "@/lib/api/product-service"
 import { vendorService } from "@/lib/api/vendor-service"
@@ -54,6 +55,7 @@ export default function ProductDetailPage() {
         ])
         setProduct(productData)
         setReviews(reviewsData)
+        setSelectedImage(0) // Reset selected image when product changes
         
         // Fetch vendor info if vendorName is not available
         if (productData.vendorName) {
@@ -211,6 +213,15 @@ export default function ProductDetailPage() {
   const maxAddable       = Math.max(0, product.quantityInStock - currentCartQty)
   const isSoldOutForUser = maxAddable === 0
 
+  // Image navigation functions
+  const handlePreviousImage = () => {
+    setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+  }
+
+  const handleNextImage = () => {
+    setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -250,14 +261,43 @@ export default function ProductDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Product Images */}
             <div className="space-y-4">
-              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+              <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 group">
                 <ImageWithFallback
-                  src={images[selectedImage]}
+                  src={images[selectedImage] || images[0] || "/placeholder-product.jpg"}
                   alt={product.name}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
+                  priority
                 />
+                
+                {/* Navigation Arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePreviousImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+                  </>
+                )}
+                
+                {/* Image counter */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                    {selectedImage + 1} / {images.length}
+                  </div>
+                )}
+                
                 {isOutOfStock && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                     <Badge variant="secondary" className="text-xl px-6 py-3">
@@ -271,13 +311,17 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-4 gap-2">
                   {images.map((image, index) => (
                     <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
+                      key={`thumb-${index}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedImage(index)
+                      }}
                       className={`relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
                         selectedImage === index 
-                          ? 'border-primary' 
-                          : 'border-transparent hover:border-gray-300'
+                          ? 'border-primary ring-2 ring-primary ring-offset-2' 
+                          : 'border-gray-200 hover:border-gray-400'
                       }`}
+                      aria-label={`View image ${index + 1}`}
                     >
                       <ImageWithFallback
                         src={image}

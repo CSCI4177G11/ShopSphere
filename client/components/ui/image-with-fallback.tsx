@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 interface ImageWithFallbackProps {
@@ -30,6 +30,12 @@ export function ImageWithFallback({
 }: ImageWithFallbackProps) {
   const [imgSrc, setImgSrc] = useState(src || fallbackSrc)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Update imgSrc when src prop changes
+  useEffect(() => {
+    setImgSrc(src || fallbackSrc)
+    setIsLoading(true)
+  }, [src, fallbackSrc])
 
   const handleError = () => {
     setImgSrc(fallbackSrc)
