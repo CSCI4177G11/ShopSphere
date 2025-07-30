@@ -171,9 +171,30 @@ export const getSetting = async (req, res) => {
         const consumerId = requireConsumerId(req, res);
         if (!consumerId) return;
         const { label, line1, city, postalCode, country } = req.body;
-        const postalCodeFormat = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
-        if (!postalCodeFormat.test(postalCode)) {
-            return res.status(400).json({ error: 'Invalid postal code format.' });
+        
+        // Validate postal code based on country
+        let isValidPostalCode = false;
+        switch (country) {
+            case 'CA':
+                // Canadian postal code (e.g., K1A 0B1)
+                isValidPostalCode = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(postalCode);
+                break;
+            case 'US':
+                // US ZIP code (e.g., 12345 or 12345-6789)
+                isValidPostalCode = /^\d{5}(-\d{4})?$/.test(postalCode);
+                break;
+            case 'GB':
+                // UK postcode (e.g., SW1A 1AA)
+                isValidPostalCode = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(postalCode);
+                break;
+            default:
+                // Default to Canadian format if country not specified
+                isValidPostalCode = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(postalCode);
+        }
+        
+        if (!isValidPostalCode) {
+            const countryName = country === 'US' ? 'US' : country === 'GB' ? 'UK' : 'Canadian';
+            return res.status(400).json({ error: `Invalid ${countryName} postal code format.` });
         }
         try {
             const profile = await Consumer.findOne({ consumerId });
@@ -222,9 +243,31 @@ export const getSetting = async (req, res) => {
         const { label, line1, city, postalCode, country } = req.body;
         if (!label || !line1 || !city || !postalCode || !country)
           return res.status(400).json({ error: 'All fields are required.' });
-              const postalCodeFormat = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/;
-        if (!postalCodeFormat.test(postalCode))
-          return res.status(400).json({ error: 'Invalid postal code format.' });
+        
+        // Validate postal code based on country
+        let isValidPostalCode = false;
+        switch (country) {
+            case 'CA':
+                // Canadian postal code (e.g., K1A 0B1)
+                isValidPostalCode = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(postalCode);
+                break;
+            case 'US':
+                // US ZIP code (e.g., 12345 or 12345-6789)
+                isValidPostalCode = /^\d{5}(-\d{4})?$/.test(postalCode);
+                break;
+            case 'GB':
+                // UK postcode (e.g., SW1A 1AA)
+                isValidPostalCode = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(postalCode);
+                break;
+            default:
+                // Default to Canadian format if country not specified
+                isValidPostalCode = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(postalCode);
+        }
+        
+        if (!isValidPostalCode) {
+            const countryName = country === 'US' ? 'US' : country === 'GB' ? 'UK' : 'Canadian';
+            return res.status(400).json({ error: `Invalid ${countryName} postal code format.` });
+        }
         try {
           const consumer = await Consumer.findOne({ consumerId });
           if (!consumer)

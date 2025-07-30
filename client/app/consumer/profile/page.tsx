@@ -292,8 +292,9 @@ export default function ConsumerProfilePage() {
 
   const handleAddAddress = async () => {
     // Validate postal code
-    if (!isValidPostalCode(addressForm.postalCode, 'CA')) {
-      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
+    if (!isValidPostalCode(addressForm.postalCode, addressForm.country)) {
+      const example = getPostalCodePlaceholder(addressForm.country)
+      toast.error(`Please enter a valid ${getPostalCodeLabel(addressForm.country)} (e.g., ${example})`)
       return
     }
 
@@ -301,8 +302,8 @@ export default function ConsumerProfilePage() {
       setIsSaving(true)
       const formattedAddress = {
         ...addressForm,
-        postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'CA' // Default to Canada
+        postalCode: formatPostalCode(addressForm.postalCode, addressForm.country),
+        country: addressForm.country
       }
       const response = await userService.createAddress(formattedAddress)
       // Refetch addresses to get the proper _id from MongoDB
@@ -327,8 +328,9 @@ export default function ConsumerProfilePage() {
 
   const handleUpdateAddress = async (addressId: string) => {
     // Validate postal code
-    if (!isValidPostalCode(addressForm.postalCode, 'CA')) {
-      toast.error('Please enter a valid Canadian postal code (e.g., K1A 0B1)')
+    if (!isValidPostalCode(addressForm.postalCode, addressForm.country)) {
+      const example = getPostalCodePlaceholder(addressForm.country)
+      toast.error(`Please enter a valid ${getPostalCodeLabel(addressForm.country)} (e.g., ${example})`)
       return
     }
 
@@ -336,8 +338,8 @@ export default function ConsumerProfilePage() {
       setIsSaving(true)
       const formattedAddress = {
         ...addressForm,
-        postalCode: formatPostalCode(addressForm.postalCode),
-        country: 'CA' // Default to Canada
+        postalCode: formatPostalCode(addressForm.postalCode, addressForm.country),
+        country: addressForm.country
       }
       const response = await userService.updateAddress(addressId, formattedAddress)
       setAddresses(addresses.map(addr => 

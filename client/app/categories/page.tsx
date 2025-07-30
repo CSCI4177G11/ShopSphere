@@ -27,6 +27,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { productService } from "@/lib/api/product-service"
+import { vendorService } from "@/lib/api/vendor-service"
 import { toast } from "sonner"
 
 interface CategoryWithCount {
@@ -212,6 +213,7 @@ export default function CategoriesPage() {
   const [categoriesWithCounts, setCategoriesWithCounts] = useState<CategoryWithCount[]>(categories)
   const [loading, setLoading] = useState(true)
   const [totalProducts, setTotalProducts] = useState(0)
+  const [totalVendors, setTotalVendors] = useState(0)
 
   useEffect(() => {
     fetchCategoryCounts()
@@ -225,6 +227,14 @@ export default function CategoriesPage() {
       const allProductsResponse = await productService.getProducts({ limit: 1, page: 1 })
       const totalProductCount = allProductsResponse.total || 0
       setTotalProducts(totalProductCount)
+      
+      // Fetch total vendor count (only approved vendors)
+      try {
+        const vendorCountResponse = await vendorService.getVendorCount({ isApproved: true })
+        setTotalVendors(vendorCountResponse.totalVendors || 0)
+      } catch (error) {
+        console.error('Failed to fetch vendor count:', error)
+      }
       
       // Fetch product counts for each category
       const countsPromises = categories.map(async (category) => {
@@ -360,7 +370,9 @@ export default function CategoriesPage() {
               <div className="text-sm text-muted-foreground">Total Products</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary">100+</div>
+              <div className="text-3xl font-bold text-primary">
+                {loading ? '-' : totalVendors > 0 ? totalVendors.toLocaleString() : '0'}
+              </div>
               <div className="text-sm text-muted-foreground">Active Vendors</div>
             </div>
             <div className="text-center">
