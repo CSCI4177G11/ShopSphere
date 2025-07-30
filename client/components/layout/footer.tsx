@@ -327,7 +327,7 @@ export function Footer() {
         >
           <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0">
             <div className="flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-              <span>© 2024 ShopSphere.</span>
+              <span>© 2025 ShopSphere.</span>
             </div>
 
             <div className="flex items-center space-x-4">
