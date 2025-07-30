@@ -197,13 +197,13 @@ export default function AdminOrderDetailsPage() {
                     <span>{formatPrice(order.subtotalAmount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Tax (13%)</span>
-                    <span>{formatPrice(order.subtotalAmount * 0.13)}</span>
+                    <span>Tax (15%)</span>
+                    <span>{formatPrice(order.subtotalAmount * 0.15)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold">
                     <span>Total</span>
-                    <span>{formatPrice(order.subtotalAmount * 1.13)}</span>
+                    <span>{formatPrice(order.subtotalAmount * 1.15)}</span>
                   </div>
                   <div className="pt-4">
                     <p className="text-sm text-muted-foreground">

@@ -349,8 +349,8 @@ export default function VendorOrderDetailPage() {
                 <td>$${order.subtotalAmount.toFixed(2)}</td>
               </tr>
               <tr>
-                <td colspan="3" style="text-align: right;">Tax (13%):</td>
-                <td>$${(order.subtotalAmount * 0.13).toFixed(2)}</td>
+                <td colspan="3" style="text-align: right;">Tax (15%):</td>
+                <td>$${(order.subtotalAmount * 0.15).toFixed(2)}</td>
               </tr>
               <tr>
                 <td colspan="3" style="text-align: right;">Shipping:</td>
@@ -358,7 +358,7 @@ export default function VendorOrderDetailPage() {
               </tr>
               <tr class="total-row">
                 <td colspan="3" style="text-align: right;">TOTAL:</td>
-                <td>$${(order.subtotalAmount * 1.13).toFixed(2)}</td>
+                <td>$${(order.subtotalAmount * 1.15).toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
@@ -521,8 +521,8 @@ export default function VendorOrderDetailPage() {
                       <span>${order.subtotalAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Tax (13%)</span>
-                      <span>${(order.subtotalAmount * 0.13).toFixed(2)}</span>
+                      <span>Tax (15%)</span>
+                      <span>${(order.subtotalAmount * 0.15).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -531,7 +531,7 @@ export default function VendorOrderDetailPage() {
                     <Separator />
                     <div className="flex justify-between font-semibold text-base">
                       <span>Total</span>
-                      <span>${(order.subtotalAmount * 1.13).toFixed(2)}</span>
+                      <span>${(order.subtotalAmount * 1.15).toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>

@@ -294,7 +294,7 @@ export default function VendorDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.13)}</p>
+                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.15)}</p>
                           <p className="text-sm text-muted-foreground capitalize">{order.orderStatus}</p>
                         </div>
                       </div>

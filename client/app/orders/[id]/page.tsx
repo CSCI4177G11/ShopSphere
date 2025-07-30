@@ -235,8 +235,8 @@ export default function OrderDetailPage() {
                       <span>${order.subtotalAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Tax (13%)</span>
-                      <span>${(order.subtotalAmount * 0.13).toFixed(2)}</span>
+                      <span>Tax (15%)</span>
+                      <span>${(order.subtotalAmount * 0.15).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Shipping</span>
@@ -245,7 +245,7 @@ export default function OrderDetailPage() {
                     <Separator />
                     <div className="flex justify-between font-semibold text-base">
                       <span>Total</span>
-                      <span>${(order.subtotalAmount * 1.13).toFixed(2)}</span>
+                      <span>${(order.subtotalAmount * 1.15).toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>

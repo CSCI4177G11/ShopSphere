@@ -242,7 +242,7 @@ export default function VendorOrdersPage() {
                             {order.orderItems.length} items
                           </TableCell>
                           <TableCell className="font-medium">
-                            {formatPrice(order.subtotalAmount * 1.13)}
+                            {formatPrice(order.subtotalAmount * 1.15)}
                           </TableCell>
                           <TableCell>
                             <Badge 

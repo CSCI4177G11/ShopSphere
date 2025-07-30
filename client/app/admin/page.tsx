@@ -346,7 +346,7 @@ export default function AdminDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.13)}</p>
+                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.15)}</p>
                           <Badge variant="outline" className="text-xs capitalize">
                             {order.orderStatus}
                           </Badge>

@@ -332,7 +332,7 @@ export default function AdminOrdersPage() {
                           {order.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0} items
                         </TableCell>
                         <TableCell className="font-medium">
-                          {formatPrice(order.subtotalAmount * 1.13)}
+                          {formatPrice(order.subtotalAmount * 1.15)}
                         </TableCell>
                         <TableCell>{getStatusBadge(order.orderStatus)}</TableCell>
                         <TableCell className="text-right">
