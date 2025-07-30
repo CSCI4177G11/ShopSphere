@@ -77,11 +77,10 @@ export default function VendorAnalyticsPage() {
       const validTopProducts = []
       const productDetailsMap: Record<string, any> = {}
       
-      if (topProductsData.topProducts.length > 0 && user?.vendorId) {
+      if (topProductsData.topProducts.length > 0 && user) {
         try {
           // Get vendor's products in one request
-          const vendorProductsResponse = await productService.getVendorProducts(
-            user.vendorId,
+          const vendorProductsResponse = await productService.getMyVendorProducts(
             { limit: 100, page: 1 }
           )
           
@@ -99,7 +98,6 @@ export default function VendorAnalyticsPage() {
             }
           })
         } catch (error) {
-          console.error('Failed to fetch products for analytics:', error)
         }
 
         setProductDetails(productDetailsMap)
@@ -107,7 +105,6 @@ export default function VendorAnalyticsPage() {
       
       setTopProducts({ ...topProductsData, topProducts: validTopProducts })
     } catch (err) {
-      console.error('Failed to fetch analytics:', err)
       setError('Failed to load analytics data. Please try again.')
       toast.error('Failed to load analytics data')
     } finally {
