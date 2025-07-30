@@ -108,7 +108,7 @@ export function AdminHeader() {
     try {
       await authService.logout()
       signOut()
-      router.push("/auth/login")
+      router.push("/")
       toast.success("Logged out successfully")
     } catch (error) {
       console.error("Logout error:", error)
