@@ -73,6 +73,7 @@ export const updateVendorRating = async (vendorId) => {
 
     profile.rating = newRating;
     await profile.save();
+    console.log('updateVendorRating new rating:', newRating);
 
     return newRating;
   } catch (err) {
