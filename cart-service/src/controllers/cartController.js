@@ -3,6 +3,9 @@ import axios from 'axios';
 import { validationResult } from 'express-validator';
 
 
+const PRODUCT_SERVICE_HOST =
+  process.env.PRODUCT_SERVICE_HOST || 'http://product-service:4300';
+
 function resolveUserId(req) {
   return req?.user?.userId || req?.user?.id || null;
 }
@@ -75,7 +78,7 @@ export const addToCart = async (req, res) => {
 
   try {
     // Fetch product details from product service
-    const productRes = await axios.get(`http://product-service:4300/api/product/${productId}`);
+    const productRes = await axios.get(`${PRODUCT_SERVICE_HOST}/api/product/${productId}`);
     const product = productRes.data;
     if (!product || !product.name || !product.price) {
       return res.status(404).json({ error: 'Product not found or missing required fields.' });

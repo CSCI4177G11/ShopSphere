@@ -4,7 +4,7 @@ import path from 'path';
 import cron from 'node-cron';
 import { OrdersFact } from '../db/db.js';
 
-const ORDERS_API_URL = process.env.ORDERS_API_URL;
+const ORDER_SERVICE_HOST = process.env.ORDER_SERVICE_HOST;
 const ORDER_SERVICE_TOKEN = process.env.ORDER_SERVICE_TOKEN;
 const LAST_SYNC_FILE = path.resolve('last_sync.txt');
 
@@ -23,7 +23,7 @@ async function setLastSync(ts) {
 
 async function fetchOrders(updatedSince, page = 1) {
     try {
-        const res = await axios.get(`${ORDERS_API_URL}/api/orders`, {
+        const res = await axios.get(`${ORDER_SERVICE_HOST}/api/orders`, {
             params: { updatedSince, page },
             headers: { Authorization: `Bearer ${ORDER_SERVICE_TOKEN}` },
         });

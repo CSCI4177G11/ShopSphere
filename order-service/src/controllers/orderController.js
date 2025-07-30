@@ -4,6 +4,16 @@ import axios from 'axios';
 import mongoose from 'mongoose';
 
 
+
+const PRODUCT_SERVICE_HOST =
+  process.env.PRODUCT_SERVICE_HOST || 'http://product-service:4300';
+
+  const CART_SERVICE_HOST =
+  process.env.CART_SERVICE_HOST || 'http://cart-service:4400';
+
+  const PAYMENT_SERVICE_HOST =
+  process.env.PAYMENT_SERVICE_HOST || 'http://payment-service:4500';
+
 function parsePagination({ page = 1, limit = 20 }) {
   return { page: +page, limit: +limit };
 }
@@ -36,7 +46,7 @@ export async function createOrder(req, res) {
   let paymentData;
   try {
     const paymentRes = await axios.get(
-      `http://payment-service:4500/api/payments/${paymentId}`,
+      `${PAYMENT_SERVICE_HOST}/api/payments/${paymentId}`,
       { headers: { Authorization: req.headers.authorization } }
     );
     paymentData = paymentRes.data.payment;
@@ -50,7 +60,7 @@ export async function createOrder(req, res) {
   let cartItems = [];
   try {
     const cartRes = await axios.get(
-      `http://cart-service:4400/api/cart`,
+      `${CART_SERVICE_HOST}/api/cart`,
       { headers: { Authorization: req.headers.authorization } }
     );
     cartItems = cartRes.data.items || [];
@@ -64,7 +74,7 @@ export async function createOrder(req, res) {
   const validatedOrderItems = [];
   for (const item of cartItems) {
     try {
-      const productRes = await axios.get(`http://product-service:4300/api/product/${item.productId}`);
+      const productRes = await axios.get(`${PRODUCT_SERVICE_HOST}/api/product/${item.productId}`);
       const product = productRes.data;
       if (item.price !== product.price) {
         return res.status(400).json({ error: `Price mismatch for product ${item.productId}` });
@@ -101,7 +111,7 @@ export async function createOrder(req, res) {
   }
 
   try {
-    await axios.delete(`http://cart-service:4400/api/cart/clear`, {
+    await axios.delete(`${CART_SERVICE_HOST}/api/cart/clear`, {
       headers: { Authorization: req.headers.authorization }
   });
   } catch (err) {
@@ -268,7 +278,7 @@ export async function updateOrderStatus(req, res) {
 
 async function refundPayment(paymentId) {
   try {
-    const url = `http://payment-service:4500/api/payments/${paymentId}/refund`;
+    const url = `${PAYMENT_SERVICE_HOST}/api/payments/${paymentId}/refund`;
 
     // If your refund endpoint takes no body, you can pass `null` or `{}` here:
     const body = {};

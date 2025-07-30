@@ -3,6 +3,9 @@ import Review from '../models/review.js';
 import Product from '../models/product.js';
 import axios from 'axios';
 
+const ORDER_SERVICE_HOST =
+  process.env.ORDER_SERVICE_HOST || 'http://order-service:4600';
+
 export const createReview = async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -21,7 +24,7 @@ export const createReview = async (req, res) => {
         let hasPurchased = false;
         try {
             const orderRes = await axios.get(
-                `http://order-service:4600/api/orders/user/${userId}`,
+                `${ORDER_SERVICE_HOST}/api/orders/user/${userId}`,
                 { headers: { Authorization: req.headers.authorization } }
             );
             const orders = orderRes.data.orders || [];

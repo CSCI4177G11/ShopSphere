@@ -5,6 +5,12 @@ import CustomerMap from '../models/CustomerMap.js';
 import axios from 'axios';
 import mongoose from 'mongoose';
 
+const PRODUCT_SERVICE_HOST =
+  process.env.PRODUCT_SERVICE_HOST || 'http://product-service:4300';
+
+  const CART_SERVICE_HOST =
+  process.env.CART_SERVICE_HOST || 'http://cart-service:4400';
+
 async function getOrCreateStripeCustomer({ userId, email }) {
     let mapping = await CustomerMap.findOne({ userId });
     if (mapping) return mapping.stripeCustomerId;
@@ -129,7 +135,7 @@ export const createPayment = asyncHandler(async (req, res) => {
 
     let cartData;
     try {
-        const cartRes = await axios.get(`http://cart-service:4400/api/cart`, {
+        const cartRes = await axios.get(`${CART_SERVICE_HOST}/api/cart`, {
             headers: { Authorization: req.headers.authorization }
         });
         cartData = cartRes.data;
@@ -144,7 +150,7 @@ export const createPayment = asyncHandler(async (req, res) => {
     const decrementedProducts = [];
     for (const item of cartData.items) {
         try {
-            const productRes = await axios.get(`http://product-service:4300/api/product/${item.productId}`);
+            const productRes = await axios.get(`${PRODUCT_SERVICE_HOST}/api/product/${item.productId}`);
             const product = productRes.data;
             if (item.price !== product.price) {
                 return res.status(400).json({ error: `Price mismatch for product ${item.productId}` });
@@ -154,7 +160,7 @@ export const createPayment = asyncHandler(async (req, res) => {
             }
             try {
                 await axios.patch(
-                    `http://product-service:4300/api/product/${item.productId}/decrement-stock`,
+                    `${PRODUCT_SERVICE_HOST}/api/product/${item.productId}/decrement-stock`,
                     { quantity: item.quantity },
                     { headers: { Authorization: req.headers.authorization } }
                 );
