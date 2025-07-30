@@ -295,14 +295,12 @@ export async function cancelOrder(req, res) {
   const order = await Order.findById(id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
 
-  if (req.user.role !== 'admin') {
-    if (req.user.role === 'consumer' && order.consumerId !== req.user.userId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-  }
-
   try{
-    if (['shipped', 'out_for_delivery', 'delivered'].includes(order.orderStatus)) {
+    if (['processing',       
+        'shipped',
+        'out_for_delivery',
+        'delivered',
+        'cancelled',].includes(order.orderStatus)) {
       return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
     }
     
