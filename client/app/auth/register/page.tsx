@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -136,8 +137,15 @@ export default function RegisterPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6 shadow-lg">
-            <span className="text-primary-foreground font-bold text-xl">SS</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-6">
+            <Image
+              src="/logo.png"
+              alt="ShopSphere Logo"
+              width={96}
+              height={96}
+              priority
+              className="object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold mb-2">
             {isVendorRegistration ? "Become a Vendor" : "Create account"}

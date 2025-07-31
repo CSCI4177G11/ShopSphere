@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthSession, useAuth } from "@/components/auth-provider";
 import { userService } from "@/lib/api/user-service";
+import Image from "next/image";
 import {
   Menu,
   X,
@@ -127,18 +128,17 @@ export function Header() {
             <div className="flex-shrink-0 min-w-0">
               <Link href="/" className="flex items-center space-x-3 group">
                 <motion.div
-                  className="relative h-9 w-9 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:shadow-primary/25 transition-all duration-300"
-                  whileHover={{ scale: 1.05, rotate: 2 }}
+                  className="relative h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center flex-shrink-0"
+                  whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <span className="text-primary-foreground font-bold text-sm">
-                    SS
-                  </span>
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
+                  <Image
+                    src="/logo.png"
+                    alt="ShopSphere Logo"
+                    width={56}
+                    height={56}
+                    priority
+                    className="object-contain"
                   />
                 </motion.div>
                 <motion.div

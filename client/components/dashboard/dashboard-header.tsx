@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,8 +72,15 @@ export function DashboardHeader({
           {/* Left side - Brand and Title */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SS</span>
+              <div className="relative w-10 h-10">
+                <Image
+                  src="/logo.png"
+                  alt="ShopSphere Logo"
+                  width={40}
+                  height={40}
+                  priority
+                  className="object-contain"
+                />
               </div>
               <span className="text-xl font-bold text-gray-900 dark:text-white">
                 ShopSphere
