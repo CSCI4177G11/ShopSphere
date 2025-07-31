@@ -95,8 +95,11 @@ export default function AdminAnalyticsPage() {
       setSalesTrend(salesTrendData.trend)
 
       // Fetch product details more efficiently by getting all products first
-      const productDetailsMap = new Map()
-      const validTopProducts = []
+          // Fetch product details more efficiently by getting all products first
+          // (Map productId → Product)
+          const productDetailsMap = new Map<string, Product>()  
+          // Only keep those TopProduct entries that actually exist
+           const validTopProducts: TopProduct[] = []
       
       // Get product IDs from top products
       const productIds = topProductsData.topProducts.map(tp => tp.productId)
