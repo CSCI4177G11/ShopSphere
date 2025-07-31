@@ -1,5 +1,21 @@
 import Vendor from '../models/vendorModel.js';
 import axios from 'axios';
+import {
+  getJSON,
+  setJSON,
+  del as redisDel,
+  invalidatePattern,
+  makeListKey,
+} from '../utils/redisClient.js';
+
+const invalidateVendorCaches = async (vendorId) => {
+  try {
+    await redisDel(`vendor:profile:${vendorId}`);
+    await invalidatePattern('vendors:list:*');
+  } catch (e) {
+    console.warn('Failed to invalidate vendor cache:', e);
+  }
+};
 
 // Format phone number for display
 function formatPhoneNumber(phoneNumber) {
@@ -138,6 +154,8 @@ export const addVendorProfile = async (req, res) => {
           createdAt:      newVendor.createdAt,
         },
       });
+
+    await invalidateVendorCaches(vendorId);
     } catch (err) {
       console.error('addVendorProfile error:', err);
       res.status(500).json({ error: 'Server error while creating vendor profile.' });
@@ -149,7 +167,12 @@ export const getVendorProfile = async (req, res) => {
     if (!vendorId) return;
     try {
       const newRating = await updateVendorRating(vendorId);
-
+      const cacheKey = `vendor:profile:${vendorId}`;
+      const cached = await getJSON(cacheKey);
+      if (cached) {
+        return res.status(200).json({ displayProfile: cached });
+      }
+      
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
         return res.status(404).json({ error: 'Vendor profile not found.' });
@@ -164,6 +187,7 @@ export const getVendorProfile = async (req, res) => {
         isApproved:     profile.isApproved,
         socialLinks:    profile.socialLink, // schema field
       };
+      await setJSON(cacheKey, displayProfile, 60);
       res.status(200).json({ displayProfile });
     } catch (err) {
       console.error('getVendorProfile error:', err);
@@ -212,6 +236,8 @@ export const getVendorProfile = async (req, res) => {
       }
   
       await profile.save();
+
+      await invalidateVendorCaches(vendorId);
   
       return res.status(200).json({
         message: 'Vendor profile updated successfully',
@@ -280,6 +306,9 @@ export const getVendorProfile = async (req, res) => {
             return res.status(404).json({ error: 'Vendor not found.' });
           vendor.isApproved = isApproved;
           await vendor.save();
+
+          await invalidateVendorCaches(id);
+
           res.status(200).json({
             message: 'Vendor approval status updated.',
             vendorId: vendor.vendorId,
@@ -315,6 +344,17 @@ export const getAllVendors = async (req, res) => {
       limit = 20,
       isApproved,
     } = req.query;
+
+    const listKey = makeListKey('vendors:list:all', {
+      page,
+      limit,
+      isApproved,
+    });
+    
+    const cached = await getJSON(listKey);
+    if (cached) {
+      return res.json(cached);
+    }
 
     const query = {};
     if (isApproved !== undefined) {
@@ -366,13 +406,18 @@ export const getAllVendors = async (req, res) => {
       })
     );
 
-    res.json({
+    const responsePayload = {
       vendors: vendorsWithDetails,
       page: Number(page),
       limit: Number(limit),
       total,
-      pages: Math.ceil(total / limit)
-    });
+      pages: Math.ceil(total / limit),
+    };
+    
+    // cache for short window
+    await setJSON(listKey, responsePayload, 30);
+    
+    res.json(responsePayload);
   } catch (error) {
     console.error('getAllVendors error:', error);
     res.status(500).json({ error: 'Failed to fetch vendors' });
@@ -389,6 +434,20 @@ export const listPublicVendors = async (req, res) => {
       sort = "createdAt:desc",
       minRating,         // ⭐ NEW – minimum average rating (e.g. 3 → “3 stars & up”)
     } = req.query;
+
+    const listKey = makeListKey('vendors:list:public', {
+      page,
+      limit,
+      search,
+      sort,
+      minRating,
+      isApproved: true,
+    });
+    
+    const cached = await getJSON(listKey);
+    if (cached) {
+      return res.json(cached);
+    }
 
     /* ---------- query ---------- */
     const query = { isApproved: true };              // only show approved vendors
@@ -463,13 +522,18 @@ export const listPublicVendors = async (req, res) => {
       }),
     );
 
-    res.json({
+    const responsePayload = {
       vendors: transformedVendors,
       page:    Number(page),
       limit:   Number(limit),
       total,
       pages:   Math.ceil(total / limit),
-    });
+    };
+    
+    // cache short-term
+    await setJSON(listKey, responsePayload, 30);
+    
+    res.json(responsePayload);
   } catch (error) {
     console.error("listPublicVendors error:", error);
     res.status(500).json({ error: "Failed to fetch vendors" });
@@ -482,7 +546,12 @@ export const getPublicVendorProfile = async (req, res) => {
     const { vendorId } = req.params;
     const newRating = await updateVendorRating(vendorId);
 
-    
+    const cacheKey = `vendor:public_profile:${vendorId}`;
+    const cached = await getJSON(cacheKey);
+    if (cached) {
+      return res.json({ vendor: cached });
+    }
+
     const vendor = await Vendor.findOne({ vendorId })
       .select('-payoutSettings'); // Exclude only payment settings, keep phone and social for display
     
@@ -504,6 +573,8 @@ export const getPublicVendorProfile = async (req, res) => {
       createdAt: vendor.createdAt,
     };
     
+    await setJSON(cacheKey, publicProfile, 120);
+
     res.json({ vendor: publicProfile });
   } catch (error) {
     console.error('getPublicVendorProfile error:', error);
