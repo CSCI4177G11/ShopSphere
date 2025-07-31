@@ -58,7 +58,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"
+              methods: "GET,POST,PUT,DELETE,PATCH"
       - rate-limit:
           - action:
               max: 100
@@ -76,7 +76,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"
+              methods: "GET,POST,PUT,DELETE,PATCH"
       - proxy:
           - action:
               serviceEndpoint: user-service
@@ -88,7 +88,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"
+              methods: "GET,POST,PUT,DELETE,PATCH"
       - proxy:
           - action:
               serviceEndpoint: product-service
@@ -100,7 +100,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"
+              methods: "GET,POST,PUT,DELETE,PATCH"
       - proxy:
           - action:
               serviceEndpoint: cart-service
@@ -112,7 +112,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"  
+              methods: "GET,POST,PUT,DELETE,PATCH"  
       - proxy:
           - action:
               serviceEndpoint: order-service
@@ -124,7 +124,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"  
+              methods: "GET,POST,PUT,DELETE,PATCH"  
       - proxy:
           - action:
               serviceEndpoint: payment-service
@@ -136,7 +136,7 @@ pipelines:
       - cors:
           - action:
               origin: "*"
-              methods: "GET,POST,PUT,DELETE"  
+              methods: "GET,POST,PUT,DELETE,PATCH"  
       - proxy:
           - action:
               serviceEndpoint: analytics-service
