@@ -167,11 +167,6 @@ export const getVendorProfile = async (req, res) => {
     if (!vendorId) return;
     try {
       const newRating = await updateVendorRating(vendorId);
-      const cacheKey = `vendor:profile:${vendorId}`;
-      const cached = await getJSON(cacheKey);
-      if (cached) {
-        return res.status(200).json({ displayProfile: cached });
-      }
       
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
@@ -187,7 +182,6 @@ export const getVendorProfile = async (req, res) => {
         isApproved:     profile.isApproved,
         socialLinks:    profile.socialLink, // schema field
       };
-      await setJSON(cacheKey, displayProfile, 60);
       res.status(200).json({ displayProfile });
     } catch (err) {
       console.error('getVendorProfile error:', err);
@@ -546,11 +540,6 @@ export const getPublicVendorProfile = async (req, res) => {
     const { vendorId } = req.params;
     const newRating = await updateVendorRating(vendorId);
 
-    const cacheKey = `vendor:public_profile:${vendorId}`;
-    const cached = await getJSON(cacheKey);
-    if (cached) {
-      return res.json({ vendor: cached });
-    }
 
     const vendor = await Vendor.findOne({ vendorId })
       .select('-payoutSettings'); // Exclude only payment settings, keep phone and social for display
@@ -573,8 +562,6 @@ export const getPublicVendorProfile = async (req, res) => {
       createdAt: vendor.createdAt,
     };
     
-    await setJSON(cacheKey, publicProfile, 120);
-
     res.json({ vendor: publicProfile });
   } catch (error) {
     console.error('getPublicVendorProfile error:', error);
