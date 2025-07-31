@@ -30,19 +30,19 @@ apiEndpoints:
 
 serviceEndpoints:
   auth-service:
-    url: http://auth-service:4100/ 
+    url: https://auth-service-vk7z.onrender.com/ 
   user-service:
-    url: http://user-service:4200/ 
+    url: https://user-service-o164.onrender.com/ 
   product-service:
-    url: http://product-service:4300/ 
+    url: https://product-service-o0qc.onrender.com/ 
   cart-service:
-    url: http://cart-service:4400/
+    url: https://cart-service-nlid.onrender.com/
   payment-service:
-    url: http://payment-service:4500/
+    url: https://payment-service-jtgg.onrender.com/
   order-service:
-    url: http://order-service:4600/
+    url: https://order-service-i1yb.onrender.com/
   analytics-service:
-    url: http://analytics-service:4700/
+    url: https://analytics-service-7ntq.onrender.com/
 
 
 policies:
