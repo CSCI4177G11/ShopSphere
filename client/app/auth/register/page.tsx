@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2, Eye, EyeOff, ShoppingBag, Store } from "lucide-react"
 
 const registerSchema = z
   .object({
@@ -136,16 +137,47 @@ export default function RegisterPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6 shadow-lg">
-            <span className="text-primary-foreground font-bold text-xl">SS</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <Image
+              src="/logo.png"
+              alt="ShopSphere Logo"
+              width={96}
+              height={96}
+              priority
+              className="object-contain"
+            />
           </div>
+          
+          {/* Role indicator with icon */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            {isVendorRegistration ? (
+              <>
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Store className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  Vendor Registration
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <ShoppingBag className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="text-sm font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
+                  Customer Registration
+                </div>
+              </>
+            )}
+          </div>
+          
           <h1 className="text-3xl font-bold mb-2">
-            {isVendorRegistration ? "Become a Vendor" : "Create account"}
+            {isVendorRegistration ? "Start Selling on ShopSphere" : "Join ShopSphere"}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground max-w-sm mx-auto">
             {isVendorRegistration 
-              ? "Join ShopSphere marketplace and start selling" 
-              : "Join ShopSphere and start shopping"}
+              ? "Create your vendor account to open your online store and reach thousands of customers" 
+              : "Create your account to shop from hundreds of vendors and discover amazing products"}
           </p>
         </div>
 
@@ -281,14 +313,27 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </p>
-          {!isVendorRegistration && (
-            <p className="text-sm text-muted-foreground">
-              Want to sell on ShopSphere?{" "}
-              <Link href="/auth/register?role=vendor" className="text-primary hover:text-primary/80 font-medium transition-colors">
-                Become a seller
-              </Link>
-            </p>
-          )}
+          
+          {/* Wrong registration type helper */}
+          <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+            {isVendorRegistration ? (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Just want to shop?</span>{" "}
+                <Link href="/auth/register" className="text-green-600 hover:text-green-500 font-medium transition-colors inline-flex items-center gap-1">
+                  <ShoppingBag className="h-3 w-3" />
+                  Create a customer account instead
+                </Link>
+              </p>
+            ) : (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Want to sell products?</span>{" "}
+                <Link href="/auth/register?role=vendor" className="text-blue-600 hover:text-blue-500 font-medium transition-colors inline-flex items-center gap-1">
+                  <Store className="h-3 w-3" />
+                  Create a vendor account instead
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>

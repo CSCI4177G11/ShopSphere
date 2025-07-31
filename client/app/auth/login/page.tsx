@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2, Eye, EyeOff, Store } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -110,8 +111,15 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6 shadow-lg">
-            <span className="text-primary-foreground font-bold text-xl">SS</span>
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-6">
+            <Image
+              src="/logo.png"
+              alt="ShopSphere Logo"
+              width={96}
+              height={96}
+              priority
+              className="object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
           <p className="text-muted-foreground">Sign in to your ShopSphere account</p>
@@ -207,15 +215,17 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Create account
+              Create customer account
             </Link>
           </p>
-          <p className="text-sm text-muted-foreground">
-            Want to sell on ShopSphere?{" "}
-            <Link href="/auth/register?role=vendor" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Become a seller
+          
+          {/* Vendor registration CTA */}
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+            <Link href="/auth/register?role=vendor" className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
+              <Store className="h-5 w-5" />
+              <span>Start selling on ShopSphere - Become a Vendor</span>
             </Link>
-          </p>
+          </div>
         </div>
       </motion.div>
     </div>
