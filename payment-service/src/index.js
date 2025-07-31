@@ -16,6 +16,7 @@ const {
   STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET,
   NODE_ENV = 'development',
+  CORS_ORIGIN='*'
 } = process.env;
 
 if (!MONGODB_URI || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
@@ -63,7 +64,7 @@ app.post(
   },
 );
 
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 if (NODE_ENV !== 'test') {
   app.use(morgan('dev'));

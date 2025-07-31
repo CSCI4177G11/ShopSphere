@@ -12,12 +12,13 @@ dotenv.config();
 const {
   MONGODB_URI = 'mongodb://localhost:27017/shopsphere-auth',
   PORT = 5001,
-  NODE_ENV = 'development'
+  NODE_ENV = 'development',
+  CORS_ORIGIN='*',
 } = process.env;
 
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(helmet());
 app.use(express.json());                        
 app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
