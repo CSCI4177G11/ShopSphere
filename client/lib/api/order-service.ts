@@ -47,6 +47,8 @@ export interface Order {
   paymentStatus: PaymentStatus
   orderItems: OrderItem[]
   subtotalAmount: number
+  taxAmount?: number
+  totalAmount?: number
   orderStatus: OrderStatus
   shippingAddress: ShippingAddress
   createdAt: string

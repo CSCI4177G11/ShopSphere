@@ -350,7 +350,10 @@ export function Header() {
                           )}
                           
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => signOut()}>
+                          <DropdownMenuItem onClick={async () => {
+                            await signOut();
+                            router.push('/');
+                          }}>
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign out
                           </DropdownMenuItem>

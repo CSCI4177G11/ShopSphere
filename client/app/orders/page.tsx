@@ -454,7 +454,7 @@ export default function OrdersPage() {
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Tax (15%)</span>
-                                <span>{formatPrice(order.subtotalAmount * 0.15)}</span>
+                                <span>{formatPrice(order.taxAmount || order.subtotalAmount * 0.15)}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Shipping</span>
@@ -463,7 +463,7 @@ export default function OrdersPage() {
                               <Separator className="my-2" />
                               <div className="flex justify-between">
                                 <span className="font-semibold">Total</span>
-                                <span className="font-semibold text-lg">{formatPrice(order.subtotalAmount * 1.15)}</span>
+                                <span className="font-semibold text-lg">{formatPrice(order.totalAmount || order.subtotalAmount * 1.15)}</span>
                               </div>
                             </div>
                           </div>

@@ -92,15 +92,22 @@ export async function createOrder(req, res) {
     itemsByVendor[item.vendorId].push(item);
   }
 
+  const TAX_RATE = parseFloat(process.env.TAX_RATE) || 0.15; // 15% default tax rate
+  
   const createdOrders = [];
   for (const [vendorId, items] of Object.entries(itemsByVendor)) {
     const subtotalAmount = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    const taxAmount = +(subtotalAmount * TAX_RATE).toFixed(2);
+    const totalAmount = +(subtotalAmount + taxAmount).toFixed(2);
+    
     const childOrder = await Order.create({
       consumerId,
       vendorId,
       parentOrderId: orderId,
       paymentId,
       subtotalAmount,
+      taxAmount,
+      totalAmount,
       orderItems: items,
       shippingAddress,
       orderStatus: 'pending',

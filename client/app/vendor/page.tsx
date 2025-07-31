@@ -187,49 +187,52 @@ export default function VendorDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Vendor Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {user?.username}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Vendor Dashboard</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Welcome back, {user?.username}</p>
             </div>
-            <div className="flex gap-2">
-              <Link href="/">
-                <Button variant="outline">
+            <div className="flex flex-wrap gap-2">
+              <Link href="/" className="flex-1 sm:flex-initial">
+                <Button variant="outline" className="w-full sm:w-auto">
                   <Home className="mr-2 h-4 w-4" />
-                  Marketplace
+                  <span className="hidden sm:inline">Marketplace</span>
+                  <span className="sm:hidden">Home</span>
                 </Button>
               </Link>
-              <Link href={`/shop/${user?.userId}`} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline">
+              <Link href={`/shop/${user?.userId}`} target="_blank" rel="noopener noreferrer" className="flex-1 sm:flex-initial">
+                <Button variant="outline" className="w-full sm:w-auto">
                   <Eye className="mr-2 h-4 w-4" />
-                  My Store
+                  <span className="hidden sm:inline">My Store</span>
+                  <span className="sm:hidden">Store</span>
                 </Button>
               </Link>
-              <Link href="/vendor/products/new">
-                <Button>
+              <Link href="/vendor/products/new" className="flex-1 sm:flex-initial">
+                <Button className="w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
-                  Add Product
+                  <span className="hidden sm:inline">Add Product</span>
+                  <span className="sm:hidden">Add</span>
                 </Button>
               </Link>
             </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalOrders}</div>
                 <p className="text-xs text-muted-foreground">
                   <span className={stats.ordersChange > 0 ? "text-green-600" : "text-red-600"}>
                     {stats.ordersChange > 0 ? <ArrowUpRight className="inline h-3 w-3" /> : <ArrowDownRight className="inline h-3 w-3" />}
@@ -246,20 +249,20 @@ export default function VendorDashboard() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
                   Published products
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="sm:col-span-2 md:col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingOrders}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.pendingOrders}</div>
                 <p className="text-xs text-muted-foreground">
                   Orders awaiting processing
                 </p>
@@ -267,12 +270,12 @@ export default function VendorDashboard() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
             {/* Recent Orders */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle>Recent Orders</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">Recent Orders</CardTitle>
                   <Link href="/vendor/orders">
                     <Button variant="ghost" size="sm">
                       View All
@@ -282,20 +285,20 @@ export default function VendorDashboard() {
               </CardHeader>
               <CardContent>
                 {recentOrders.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No orders yet</p>
+                  <p className="text-muted-foreground text-center py-6 sm:py-8">No orders yet</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {recentOrders.map((order) => (
-                      <div key={order._id} className="flex items-center justify-between">
+                      <div key={order._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                         <div>
-                          <p className="font-medium">Order #{order.parentOrderId}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="font-medium text-sm sm:text-base">Order #{order.parentOrderId.slice(-6)}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {new Date(order.createdAt!).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.15)}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{order.orderStatus}</p>
+                        <div className="text-left sm:text-right">
+                          <p className="font-medium text-sm sm:text-base">{formatPrice(order.subtotalAmount * 1.15)}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground capitalize">{order.orderStatus}</p>
                         </div>
                       </div>
                     ))}
@@ -306,18 +309,18 @@ export default function VendorDashboard() {
 
             {/* Navigation */}
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Link href="/vendor/products" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Manage Products</p>
-                            <p className="text-sm text-muted-foreground mt-1">Add, edit, or remove items</p>
+                            <p className="font-medium text-sm sm:text-base">Manage Products</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Add, edit, or remove items</p>
                           </div>
                         </div>
                       </CardContent>
@@ -326,14 +329,14 @@ export default function VendorDashboard() {
                   
                   <Link href="/vendor/orders" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <ShoppingCart className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">View Orders</p>
-                            <p className="text-sm text-muted-foreground mt-1">Process customer orders</p>
+                            <p className="font-medium text-sm sm:text-base">View Orders</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Process customer orders</p>
                           </div>
                         </div>
                       </CardContent>
@@ -342,14 +345,14 @@ export default function VendorDashboard() {
                   
                   <Link href="/vendor/analytics" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <BarChart3 className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">View Analytics</p>
-                            <p className="text-sm text-muted-foreground mt-1">Track performance metrics</p>
+                            <p className="font-medium text-sm sm:text-base">View Analytics</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Track performance metrics</p>
                           </div>
                         </div>
                       </CardContent>
@@ -358,14 +361,14 @@ export default function VendorDashboard() {
                   
                   <Link href="/vendor/profile" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Settings className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Settings className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Store Profile</p>
-                            <p className="text-sm text-muted-foreground mt-1">Manage store settings</p>
+                            <p className="font-medium text-sm sm:text-base">Store Profile</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Manage store settings</p>
                           </div>
                         </div>
                       </CardContent>
