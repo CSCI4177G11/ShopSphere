@@ -1,9 +1,15 @@
 import { validationResult } from 'express-validator';
-import mongoose from 'mongoose';
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import Product from '../models/product.js';
 import { uploadImage, deleteImage } from '../services/cloudinary.js';
-import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';    
+import {
+  getJSON,
+  setJSON,
+  del as redisDel,
+  invalidatePattern,
+  makeListKey,
+} from '../utils/redisClient.js';    
 
 const USER_SERVICE_HOST =
   process.env.USER_SERVICE_HOST || 'http://user-service:4200'; 
@@ -21,6 +27,15 @@ const USER_SERVICE_HOST =
   }catch(err){
     console.error('isVendorApproved‑call failed:', err.message);
     return false;
+  }
+};
+
+const invalidateProductCaches = async (productId) => {
+  try {
+    await redisDel(`product:${productId}`); // individual product cache
+    await invalidatePattern('products:list:*'); // invalidate any list caches
+  } catch (e) {
+    console.warn('Failed to invalidate product cache:', e);
   }
 };
 
@@ -49,6 +64,7 @@ export const createProduct = async (req, res) => {
         if (req.user.role !== 'admin' && req.user.userId !== vendorId) {
             return res.status(403).json({ error: 'You can only create products for your own vendor account' });
         }
+
         let imageUrls = [];
         if (Array.isArray(images) && images.length > 0) {
             const uploadPromises = images.map(async (img) => {
@@ -70,6 +86,9 @@ export const createProduct = async (req, res) => {
             tags: tags || [],
             isPublished,
         });
+
+        await invalidateProductCaches(product._id.toString());
+
         res.status(201).json({
             message: "Product created successfully.",
             productId: product._id
@@ -125,6 +144,7 @@ export const updateProduct = async (req, res) => {
             }
         }
         await product.save();
+        await invalidateProductCaches(id);
         res.json({ message: "Product updated successfully." });
     } catch (error) {
         console.error('Error updating product:', error);
@@ -163,7 +183,9 @@ export const deleteProduct = async (req, res) => {
       }
   
       await product.deleteOne();
-  
+
+      await invalidateProductCaches(id);
+
       return res.json({ message: 'Product deleted successfully.' });
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -214,6 +236,26 @@ export const deleteProduct = async (req, res) => {
       const sortOption = allowed.includes(field)
         ? { [field]: dir === 'asc' ? 1 : -1 }
         : { createdAt: -1 };
+
+      // generate cache key based on query params
+    const listKey = makeListKey('products:list', {
+      page,
+      limit,
+      minPrice,
+      maxPrice,
+      tags,
+      sort,
+      name,
+      search,
+      category,
+      vendorId,
+    });
+
+    // try cache
+    const cached = await getJSON(listKey);
+    if (cached) {
+      return res.json(cached);
+    }
   
       const [products, total] = await Promise.all([
         Product.find(q)
@@ -237,14 +279,19 @@ export const deleteProduct = async (req, res) => {
           vendor : `/api/product/vendor/${p.vendorId}`
         }
       }));
-  
-      res.json({
-        page:   Number(page),
-        limit:  Number(limit),
+
+      const payload = {
+        page: Number(page),
+        limit: Number(limit),
         total,
-        pages:  Math.ceil(total / limit),
-        products: transformed
-      });
+        pages: Math.ceil(total / limit),
+        products: transformed,
+      };
+
+      await setJSON(listKey, payload, 30);
+
+  
+      res.json(payload);
     } catch (err) {
       console.error('Error listing products:', err);
       res.status(500).json({ error: 'Internal server error' });
@@ -400,6 +447,13 @@ export const getProductById = async (req, res) => {
             return res.status(400).json({ error: 'Invalid product ID' });
         }
         const { id } = req.params;
+
+        const cacheKey = `product:${id}`;
+        const cached = await getJSON(cacheKey);
+        if (cached) {
+          return res.json(cached);
+        }
+
         const product = await Product.findById(id);
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
@@ -426,6 +480,9 @@ export const getProductById = async (req, res) => {
                 vendor: `api/product/vendor/${product.vendorId}`
             }
         };
+
+        await setJSON(cacheKey, productResponse, 120);
+
         res.json(productResponse);
     } catch (error) {
         console.error('Error getting product by ID:', error);
@@ -450,6 +507,9 @@ export const decrementStock = async (req, res) => {
         }
         product.quantityInStock -= quantity;
         await product.save();
+
+        await invalidateProductCaches(id);
+
         res.json({ message: 'Stock decremented', productId: id, newQuantity: product.quantityInStock });
     } catch (error) {
         console.error('Error decrementing stock:', error);

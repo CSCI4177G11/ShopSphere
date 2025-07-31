@@ -92,6 +92,7 @@ services:
       - CLOUDINARY_CLOUD_NAME=dnmljbyos
       - CLOUDINARY_API_KEY=379147473616829
       - CLOUDINARY_API_SECRET=K988riYB-3Ev87DTXwaH3YOr89A
+      - REDIS_URL=redis://default:ijbhnDkNAPpVK63bYZl5F1yo2FHJR5rV@redis-15014.c14.us-east-1-3.ec2.redns.redis-cloud.com:15014
 
   cart-service:
     build:
