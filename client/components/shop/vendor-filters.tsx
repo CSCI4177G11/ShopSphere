@@ -53,7 +53,7 @@ export function VendorFilters({ onFilterChange, initialFilters = {} }: VendorFil
     onFilterChange({})
   }
 
-  const hasActiveFilters = selectedRating > 0 || productRange
+  const hasActiveFilters = selectedRating > 0 // || productRange (disabled)
 
   return (
     <div className="space-y-6">
@@ -99,8 +99,9 @@ export function VendorFilters({ onFilterChange, initialFilters = {} }: VendorFil
 
       <Separator />
 
-      {/* Shop Size */}
-      <div>
+      {/* Shop Size - Disabled for performance */}
+      {/* TODO: Implement product count on backend */}
+      {/* <div>
         <h3 className="font-medium mb-3 flex items-center gap-2">
           <Package className="h-4 w-4" />
           Shop Size
@@ -133,7 +134,7 @@ export function VendorFilters({ onFilterChange, initialFilters = {} }: VendorFil
             </div>
           </div>
         </RadioGroup>
-      </div>
+      </div> */}
 
       {/* Clear Filters */}
       {hasActiveFilters && (

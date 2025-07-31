@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Star, MapPin, Package } from "lucide-react"
+import { Star, MapPin } from "lucide-react"
 import type { Vendor } from "@/lib/api/vendor-service"
 
 interface VendorCardProps {
@@ -84,15 +84,11 @@ export function VendorCard({ vendor }: VendorCardProps) {
             {vendor.description || "Welcome to our store!"}
           </p>
 
-          {/* Location & Products */}
-          <div className="flex items-center justify-between text-sm mt-auto">
+          {/* Location */}
+          <div className="flex items-center text-sm mt-auto">
             <div className="flex items-center gap-1 text-muted-foreground">
               <MapPin className="h-3 w-3" />
-              <span className="truncate max-w-[120px]">{vendor.location}</span>
-            </div>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <Package className="h-3 w-3" />
-              <span>{vendor.totalProducts} products</span>
+              <span className="truncate max-w-[180px]">{vendor.location}</span>
             </div>
           </div>
 

@@ -51,7 +51,7 @@ export default function ShopPage() {
     try {
       const query: VendorQuery = {
         page,
-        limit: 12,
+        limit: 24, // Increased from 12 to show more vendors per page
         ...filters,
       }
 
@@ -64,22 +64,9 @@ export default function ShopPage() {
 
       const response = await vendorService.getVendors(query)
       
-      // Fetch product counts for each vendor
-      const vendorsWithCounts = await Promise.all(
-        response.vendors.map(async (vendor) => {
-          try {
-            const productData = await productService.getVendorProducts(vendor.vendorId)
-            
-            return {
-              ...vendor,
-              totalProducts: productData.total || 0
-            }
-          } catch (error) {
-            console.error(`Failed to fetch products for vendor ${vendor.vendorId}:`, error)
-            return vendor
-          }
-        })
-      )
+      // For now, we'll use the vendors as-is without fetching product counts
+      // This was causing performance issues with 100+ vendors
+      const vendorsWithCounts = response.vendors
       
       // Client-side filtering for filters that backend might not support
       let filteredVendors = vendorsWithCounts
@@ -92,20 +79,19 @@ export default function ShopPage() {
         })
       }
       
-      // Product range filter (still client-side)
-      // @ts-ignore
-      if (filters.productRange) {
-        filteredVendors = filteredVendors.filter(vendor => {
-          const count = vendor.totalProducts || 0
-          // @ts-ignore
-          switch(filters.productRange) {
-            case 'small': return count >= 1 && count <= 10
-            case 'medium': return count >= 11 && count <= 50
-            case 'large': return count > 50
-            default: return true
-          }
-        })
-      }
+      // Product range filter disabled for performance
+      // TODO: Implement this on the backend
+      // if (filters.productRange) {
+      //   filteredVendors = filteredVendors.filter(vendor => {
+      //     const count = vendor.totalProducts || 0
+      //     switch(filters.productRange) {
+      //       case 'small': return count >= 1 && count <= 10
+      //       case 'medium': return count >= 11 && count <= 50
+      //       case 'large': return count > 50
+      //       default: return true
+      //     }
+      //   })
+      // }
       
       setVendors(filteredVendors)
       setTotalPages(response.pages)

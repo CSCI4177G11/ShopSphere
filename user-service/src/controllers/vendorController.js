@@ -429,11 +429,11 @@ export const listPublicVendors = async (req, res) => {
     const transformedVendors = await Promise.all(
       vendors.map(async (vendor) => {
         let newRating = vendor.rating;
-        try {
-          newRating = await updateVendorRating(vendor.vendorId);
-        } catch (error) {
-          console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
-        }
+        // try {
+        //   newRating = await updateVendorRating(vendor.vendorId);
+        // } catch (error) {
+        //   console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
+        // }
 
         // Fetch product count from product service
         let totalProducts = 0;

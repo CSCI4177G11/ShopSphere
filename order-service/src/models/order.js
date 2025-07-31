@@ -64,6 +64,8 @@ const orderSchema = new Schema(
     },
 
     subtotalAmount: { type: Number, required: true, min: 0 },
+    taxAmount: { type: Number, required: false, default: 0, min: 0 },
+    totalAmount: { type: Number, required: false, min: 0 },
 
     orderItems: { type: [orderItemSchema], required: true },
     shippingAddress: { type: shippingAddressSchema, required: true },

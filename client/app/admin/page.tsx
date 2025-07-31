@@ -29,9 +29,17 @@ import {
   Settings,
   Shield,
   Store,
-  FileText
+  FileText,
+  Menu
 } from "lucide-react"
 import type { Order } from "@/lib/api/order-service"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 interface AdminStats {
   totalRevenue: number
@@ -60,6 +68,7 @@ export default function AdminDashboard() {
   })
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [isMobileMenu, setIsMobileMenu] = useState(true) // Default to mobile menu to avoid hydration issues
 
   useEffect(() => {
     if (!user) {
@@ -75,6 +84,17 @@ export default function AdminDashboard() {
 
     fetchDashboardData()
   }, [user, router])
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobileMenu(window.innerWidth < 1100)
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
 
   const fetchDashboardData = async () => {
     try {
@@ -198,37 +218,100 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {user?.username || 'Administrator'}</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Welcome back, {user?.username || 'Administrator'}</p>
             </div>
-            <div className="flex gap-2">
-              <Link href="/">
-                <Button variant="outline">
-                  <Store className="mr-2 h-4 w-4" />
-                  Marketplace
-                </Button>
-              </Link>
+            <div className="flex items-center gap-2">
+              {!isMobileMenu && (
+                <div className="flex gap-2">
+                  <Link href="/">
+                    <Button variant="outline">
+                      <Store className="mr-2 h-4 w-4" />
+                      Marketplace
+                    </Button>
+                  </Link>
+                </div>
+              )}
+              {isMobileMenu && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Menu className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Admin Menu</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 space-y-4">
+                      <Link href="/admin" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="/admin/vendors" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          Vendors
+                        </Button>
+                      </Link>
+                      <Link href="/admin/users" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <Users className="mr-2 h-4 w-4" />
+                          Users
+                        </Button>
+                      </Link>
+                      <Link href="/admin/products" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <Package className="mr-2 h-4 w-4" />
+                          Products
+                        </Button>
+                      </Link>
+                      <Link href="/admin/orders" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          Orders
+                        </Button>
+                      </Link>
+                      <Link href="/admin/analytics" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Analytics
+                        </Button>
+                      </Link>
+                      <hr className="my-4" />
+                      <Link href="/" className="block">
+                        <Button variant="ghost" className="w-full justify-start">
+                          <Store className="mr-2 h-4 w-4" />
+                          Marketplace
+                        </Button>
+                      </Link>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              )}
             </div>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
+                <div className="text-xl sm:text-2xl font-bold">{formatPrice(stats.totalRevenue)}</div>
                 <p className="text-xs text-muted-foreground">
                   {stats.revenueChange === 0 ? (
                     <span className="text-gray-500">No change from last month</span>
@@ -251,7 +334,7 @@ export default function AdminDashboard() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalOrders}</div>
                 <p className="text-xs text-muted-foreground">
                   {stats.ordersChange === 0 ? (
                     <span className="text-gray-500">No change from last month</span>
@@ -274,7 +357,7 @@ export default function AdminDashboard() {
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.activeVendors}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.activeVendors}</div>
                 <p className="text-xs text-muted-foreground">
                   {stats.pendingVendors} pending approval
                 </p>
@@ -287,7 +370,7 @@ export default function AdminDashboard() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalProducts}</div>
+                <div className="text-xl sm:text-2xl font-bold">{stats.totalProducts}</div>
                 <p className="text-xs text-muted-foreground">
                   Across {stats.activeVendors} {stats.activeVendors === 1 ? 'vendor' : 'vendors'}
                 </p>
@@ -297,21 +380,21 @@ export default function AdminDashboard() {
 
           {/* Alerts */}
           {stats.pendingVendors > 0 && (
-            <Card className="mb-8 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
-              <CardHeader>
+            <Card className="mb-6 sm:mb-8 border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
+              <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                  <CardTitle className="text-orange-900 dark:text-orange-400">
+                  <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
+                  <CardTitle className="text-base sm:text-lg text-orange-900 dark:text-orange-400">
                     Vendor Approvals Required
                   </CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-orange-800 dark:text-orange-300 mb-4">
+                <p className="text-xs sm:text-sm text-orange-800 dark:text-orange-300 mb-3 sm:mb-4">
                   {stats.pendingVendors} vendor applications are waiting for approval
                 </p>
                 <Link href="/admin/vendors">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
                     Review Applications
                   </Button>
                 </Link>
@@ -319,12 +402,12 @@ export default function AdminDashboard() {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
             {/* Recent Orders */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle>Recent Orders</CardTitle>
+                  <CardTitle className="text-lg sm:text-xl">Recent Orders</CardTitle>
                   <Link href="/admin/orders">
                     <Button variant="ghost" size="sm">
                       View All
@@ -334,19 +417,19 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 {recentOrders.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No orders yet</p>
+                  <p className="text-muted-foreground text-center py-6 sm:py-8">No orders yet</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {recentOrders.slice(0, 5).map((order) => (
-                      <div key={order._id} className="flex items-center justify-between">
+                      <div key={order._id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                         <div>
-                          <p className="font-medium">Order #{order.parentOrderId}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="font-medium text-sm sm:text-base">Order #{order.parentOrderId.slice(-6)}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             {new Date(order.createdAt!).toLocaleDateString()}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatPrice(order.subtotalAmount * 1.15)}</p>
+                        <div className="text-left sm:text-right">
+                          <p className="font-medium text-sm sm:text-base">{formatPrice(order.subtotalAmount * 1.15)}</p>
                           <Badge variant="outline" className="text-xs capitalize">
                             {order.orderStatus}
                           </Badge>
@@ -360,18 +443,18 @@ export default function AdminDashboard() {
 
             {/* Navigation */}
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Link href="/admin/vendors" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <UserCheck className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Manage Vendors</p>
-                            <p className="text-sm text-muted-foreground mt-1">Approve and monitor vendors</p>
+                            <p className="font-medium text-sm sm:text-base">Manage Vendors</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Approve and monitor vendors</p>
                           </div>
                         </div>
                       </CardContent>
@@ -380,14 +463,14 @@ export default function AdminDashboard() {
                   
                   <Link href="/admin/users" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Users className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Manage Users</p>
-                            <p className="text-sm text-muted-foreground mt-1">Monitor user accounts</p>
+                            <p className="font-medium text-sm sm:text-base">Manage Users</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Monitor user accounts</p>
                           </div>
                         </div>
                       </CardContent>
@@ -396,14 +479,14 @@ export default function AdminDashboard() {
                   
                   <Link href="/admin/analytics" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <BarChart3 className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Platform Analytics</p>
-                            <p className="text-sm text-muted-foreground mt-1">View system metrics</p>
+                            <p className="font-medium text-sm sm:text-base">Platform Analytics</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">View system metrics</p>
                           </div>
                         </div>
                       </CardContent>
@@ -412,14 +495,14 @@ export default function AdminDashboard() {
                   
                   <Link href="/admin/products" className="block">
                     <Card className="cursor-pointer hover:border-primary transition-colors h-full">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col items-center text-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Package className="h-6 w-6 text-primary" />
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col items-center text-center gap-2 sm:gap-3">
+                          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                           </div>
                           <div>
-                            <p className="font-medium text-base">Manage Products</p>
-                            <p className="text-sm text-muted-foreground mt-1">Monitor all products</p>
+                            <p className="font-medium text-sm sm:text-base">Manage Products</p>
+                            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Monitor all products</p>
                           </div>
                         </div>
                       </CardContent>
