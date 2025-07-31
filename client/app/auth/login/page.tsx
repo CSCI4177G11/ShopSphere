@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Icons } from "@/components/ui/icons"
 import { toast } from "sonner"
 import { useAuth } from "@/components/auth-provider"
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Loader2, Eye, EyeOff, Store } from "lucide-react"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -215,15 +215,17 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link href="/auth/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Create account
+              Create customer account
             </Link>
           </p>
-          <p className="text-sm text-muted-foreground">
-            Want to sell on ShopSphere?{" "}
-            <Link href="/auth/register?role=vendor" className="text-primary hover:text-primary/80 font-medium transition-colors">
-              Become a seller
+          
+          {/* Vendor registration CTA */}
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+            <Link href="/auth/register?role=vendor" className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors">
+              <Store className="h-5 w-5" />
+              <span>Start selling on ShopSphere - Become a Vendor</span>
             </Link>
-          </p>
+          </div>
         </div>
       </motion.div>
     </div>
