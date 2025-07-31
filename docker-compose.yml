@@ -181,6 +181,13 @@ services:
       - analytics-service
     environment:
       - NODE_ENV=development
+      - AUTH_SERVICE_HOST=http://auth-service:4100
+      - USER_SERVICE_HOST=http://user-service:4200
+      - PRODUCT_SERVICE_HOST=http://product-service:4300
+      - CART_SERVICE_HOST=http://cart-service:4400
+      - PAYMENT_SERVICE_HOST=http://payment-service:4500
+      - ORDER_SERVICE_HOST=http://order-service:4600
+      - ANALYTICS_SERVICE_HOST=http://analytics-service:4700
 
   # client:
   #   build:
