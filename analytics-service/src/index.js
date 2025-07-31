@@ -3,10 +3,14 @@ import helmet from 'helmet';
 import sequelize from './db/db.js';
 import { syncOrders, scheduleSyncJob } from './jobs/syncOrders.js';
 import analyticsRouter from './routes/analyticsRoutes.js';
+import cors from 'cors';
+
 
 const PORT = process.env.PORT || 4700;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const app = express();
 
+app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 app.use(helmet());
 app.use(express.json());
 
