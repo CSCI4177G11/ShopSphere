@@ -165,6 +165,7 @@ services:
       - ORDERS_API_URL=http://order-service:4600
       - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
       - ORDER_SERVICE_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2FkbWluIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTcxODAwMDAwMCwiZXhwIjoxODE4NjA0ODAwfQ.k65qQatHJmIPKLwcTJrZSE78_b6rBJ52yykN_3icikM
+      - DIALECT=mysql
   gateway:
     build:
       context: ./gateway

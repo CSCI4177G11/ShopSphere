@@ -1,17 +1,18 @@
 import { Sequelize, DataTypes } from 'sequelize';
 
 const {
-  MYSQL_HOST     = 'dpg-d25dh87diees73bojvtg-a',  // your Render hostname
-  MYSQL_PORT     = 5432,                          // Postgres default
+  MYSQL_HOST     = 'dpg-d25dh87diees73bojvtg-a',  
+  MYSQL_PORT     = 5432,                          
   MYSQL_USER     = 'analytics_user',
   MYSQL_PASSWORD = 'oQwdoEJvYiqG9Fxjqr0WgH3P2LvHHdg2',
   MYSQL_DB       = 'analytics_xd1b',
+  DIALECT = 'mysql',
 } = process.env;
 
 const sequelize = new Sequelize(MYSQL_DB, MYSQL_USER, MYSQL_PASSWORD, {
   host: MYSQL_HOST,
   port: MYSQL_PORT,
-  dialect: 'postgres',
+  dialect: DIALECT,
   dialectOptions: {
     ssl: {
       require: true,
