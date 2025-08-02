@@ -11,7 +11,7 @@ dotenv.config();
 
 const {
   MONGODB_URI = 'mongodb://localhost:27017/shopsphere-auth',
-  PORT = 5001,
+  PORT = 4100,
   NODE_ENV = 'development',
   CORS_ORIGIN='*',
 } = process.env;
