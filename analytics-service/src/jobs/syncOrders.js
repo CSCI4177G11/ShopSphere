@@ -33,7 +33,7 @@ async function fetchOrders(updatedSince, page = 1) {
         }
         return res.data;
     } catch (err) {
-        console.error(`[syncOrders] Error fetching orders:`, err.response?.data || err.message);
+        console.error(`[syncOrders] Error fetching orders:`, err.message);
         return { orders: [] };
     }
 }
