@@ -156,11 +156,11 @@ services:
       - mysql
     environment:
       - PORT=4700
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_USER=analytics_user
-      - MYSQL_PASSWORD=analytics_pass
-      - MYSQL_DB=analytics
+      - MYSQL_HOST=mysql-abalsalmi-abalsalmi.d.aivencloud.com
+      - MYSQL_PORT=17259
+      - MYSQL_USER=avnadmin
+      - MYSQL_PASSWORD=AVNS_NSGE8wmRa3f-xPBvkER
+      - MYSQL_DB=defaultdb
       - ORDER_SERVICE_HOST=http://order-service:4600
       - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
       - ORDER_SERVICE_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2FkbWluIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTcxODAwMDAwMCwiZXhwIjoxODE4NjA0ODAwfQ.k65qQatHJmIPKLwcTJrZSE78_b6rBJ52yykN_3icikM
