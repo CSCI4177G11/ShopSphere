@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -65,6 +65,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
   // Mobile menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   // Order counts state
   const [orderCounts, setOrderCounts] = useState({
@@ -101,6 +102,28 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMobileMenuOpen && menuButtonRef.current && !menuButtonRef.current.contains(event.target as Node)) {
+        // Check if click is outside the menu itself
+        const menuElement = document.getElementById('vendor-mobile-menu');
+        if (menuElement && !menuElement.contains(event.target as Node)) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside as any);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside as any);
+      };
+    }
+  }, [isMobileMenuOpen])
 
   /* ---------- ⬇️  Profile‑check effect  ⬇️ ---------- */
   useEffect(() => {
@@ -297,10 +320,21 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
                   transition={{ duration: 0.5, delay: 0.8 }}
                 >
                   <Button
+                    ref={menuButtonRef}
                     variant="ghost"
                     size="icon"
-                    className="lg:hidden flex-shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-200"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="lg:hidden flex-shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-200 touch-manipulation"
+                    onClick={() => {
+                      setIsMobileMenuOpen(!isMobileMenuOpen);
+                      // Remove focus after click on mobile
+                      if (menuButtonRef.current) {
+                        menuButtonRef.current.blur();
+                      }
+                    }}
+                    style={{
+                      WebkitTapHighlightColor: 'transparent',
+                      outline: 'none'
+                    }}
                   >
                     <motion.div
                       animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
@@ -325,6 +359,7 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
+            id="vendor-mobile-menu"
             initial={{ opacity: 0, height: 0, y: -10 }}
             animate={{ opacity: 1, height: "auto", y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}

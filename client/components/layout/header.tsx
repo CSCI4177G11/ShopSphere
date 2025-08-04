@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthSession, useAuth } from "@/components/auth-provider";
@@ -48,6 +48,7 @@ export function Header() {
   const [profileChecked, setProfileChecked] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const mounted = useMounted();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -56,6 +57,28 @@ export function Header() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isMenuOpen && menuButtonRef.current && !menuButtonRef.current.contains(event.target as Node)) {
+        // Check if click is outside the menu itself
+        const menuElement = document.getElementById('mobile-menu');
+        if (menuElement && !menuElement.contains(event.target as Node)) {
+          setIsMenuOpen(false);
+        }
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside as any);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('touchstart', handleClickOutside as any);
+      };
+    }
+  }, [isMenuOpen]);
 
   // Profile checking logic
   useEffect(() => {
@@ -138,6 +161,7 @@ export function Header() {
                     width={56}
                     height={56}
                     priority
+                    quality={100}
                     className="object-contain"
                   />
                 </motion.div>
@@ -406,10 +430,21 @@ export function Header() {
                     transition={{ duration: 0.5, delay: 0.8 }}
                   >
                     <Button
+                      ref={menuButtonRef}
                       variant="ghost"
                       size="icon"
-                      className="lg:hidden flex-shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-200"
-                      onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      className="lg:hidden flex-shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-200 touch-manipulation"
+                      onClick={() => {
+                        setIsMenuOpen(!isMenuOpen);
+                        // Remove focus after click on mobile
+                        if (menuButtonRef.current) {
+                          menuButtonRef.current.blur();
+                        }
+                      }}
+                      style={{
+                        WebkitTapHighlightColor: 'transparent',
+                        outline: 'none'
+                      }}
                     >
                       <motion.div
                         animate={{ rotate: isMenuOpen ? 180 : 0 }}
@@ -435,6 +470,7 @@ export function Header() {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, height: 0, y: -10 }}
             animate={{ opacity: 1, height: "auto", y: 0 }}
             exit={{ opacity: 0, height: 0, y: -10 }}

@@ -14,6 +14,9 @@ interface ImageWithFallbackProps {
   fill?: boolean
   sizes?: string
   style?: React.CSSProperties
+  quality?: number
+  placeholder?: 'blur' | 'empty'
+  blurDataURL?: string
 }
 
 export function ImageWithFallback({
@@ -26,7 +29,10 @@ export function ImageWithFallback({
   priority = false,
   fill = false,
   sizes,
-  style
+  style,
+  quality = 85,
+  placeholder,
+  blurDataURL = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
 }: ImageWithFallbackProps) {
   const [imgSrc, setImgSrc] = useState(src || fallbackSrc)
   const [isLoading, setIsLoading] = useState(true)
@@ -61,6 +67,9 @@ export function ImageWithFallback({
           onLoad={handleLoad}
           priority={priority}
           style={style}
+          quality={quality}
+          placeholder={placeholder}
+          blurDataURL={placeholder === 'blur' ? blurDataURL : undefined}
           unoptimized={imgSrc === fallbackSrc}
         />
       </>
@@ -85,6 +94,9 @@ export function ImageWithFallback({
         onLoad={handleLoad}
         priority={priority}
         style={{ display: isLoading ? 'none' : undefined, ...style }}
+        quality={quality}
+        placeholder={placeholder}
+        blurDataURL={placeholder === 'blur' ? blurDataURL : undefined}
         unoptimized={imgSrc === fallbackSrc}
       />
     </>

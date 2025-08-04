@@ -272,15 +272,18 @@ export default function VendorProductsPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Shop Banner */}
-      <div className="relative h-64 md:h-80 bg-gradient-to-br from-primary/20 via-primary/10 to-background">
+      <div className="relative h-64 md:h-96 lg:h-[28rem] bg-gradient-to-br from-primary/20 via-primary/10 to-background">
         {vendor.bannerUrl ? (
           <Image
             src={vendor.bannerUrl}
             alt={`${vendor.storeName} banner`}
             fill
-            sizes="100vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, (max-width: 1280px) 100vw, 100vw"
             className="object-cover"
             priority
+            quality={90}
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
@@ -311,8 +314,11 @@ export default function VendorProductsPage() {
                   src={vendor.logoUrl}
                   alt={vendor.storeName}
                   fill
-                  sizes="(max-width: 768px) 80px, 128px"
+                  sizes="(max-width: 768px) 96px, 128px"
                   className="object-cover"
+                  quality={95}
+                  placeholder="blur"
+                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
                 />
               ) : (
                 <div className="h-full w-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
