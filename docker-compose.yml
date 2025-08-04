@@ -1,23 +1,15 @@
 version: '3.9'
 
 services:
-  # mongo:
-  #   image: mongo:6
-  #   container_name: mongo
-  #   ports:
-  #     - '27017:27017'
-  #   volumes:
-  #     - mongo_data:/data/db
-
   mysql:
     image: mysql:8
     container_name: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: analytics
-      MYSQL_USER: analytics_user
-      MYSQL_PASSWORD: analytics_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
@@ -30,11 +22,11 @@ services:
       - "3500:3500"
     environment:
       - MB_DB_TYPE=mysql
-      - MB_DB_DBNAME=analytics
-      - MB_DB_PORT=3306
-      - MB_DB_USER=analytics_user
-      - MB_DB_PASS=analytics_pass
-      - MB_DB_HOST=mysql
+      - MB_DB_DBNAME=${MYSQL_DATABASE}
+      - MB_DB_PORT=${MYSQL_PORT}
+      - MB_DB_USER=${MYSQL_USER}
+      - MB_DB_PASS=${MYSQL_PASSWORD}
+      - MB_DB_HOST=${MYSQL_HOST}
     depends_on:
       - mysql
 
@@ -52,12 +44,10 @@ services:
     container_name: auth-service
     ports:
       - '4100:4100'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4100
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - NODE_ENV=development
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
 
   user-service:
     build:
@@ -65,51 +55,47 @@ services:
     container_name: user-service
     ports:
       - '4200:4200'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4200
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - NODE_ENV=development
-      - CORS_ORIGIN=*
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - JWT_ALGORITHM=HS256
-      - REDIS_URL=redis://default:ijbhnDkNAPpVK63bYZl5F1yo2FHJR5rV@redis-15014.c14.us-east-1-3.ec2.redns.redis-cloud.com:15014
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - REDIS_URL=${REDIS_URL}
+
   product-service:
     build:
       context: ./product-service
     container_name: product-service
     ports:
       - '4300:4300'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4300
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - CORS_ORIGIN=*
-      - NODE_ENV=development
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - JWT_ALGORITHM=HS256
-      - CLOUDINARY_CLOUD_NAME=dnmljbyos
-      - CLOUDINARY_API_KEY=379147473616829
-      - CLOUDINARY_API_SECRET=K988riYB-3Ev87DTXwaH3YOr89A
-      - REDIS_URL=redis://default:ijbhnDkNAPpVK63bYZl5F1yo2FHJR5rV@redis-15014.c14.us-east-1-3.ec2.redns.redis-cloud.com:15014
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+      - REDIS_URL=${REDIS_URL}
+
   cart-service:
     build:
       context: ./cart-service
     container_name: cart-service
     ports:
       - '4400:4400'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4400
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - CORS_ORIGIN=*
-      - NODE_ENV=development
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - JWT_ALGORITHM=HS256
-      - TAX_RATE=0.15
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - TAX_RATE=${TAX_RATE}
 
   payment-service:
     build:
@@ -117,17 +103,15 @@ services:
     container_name: payment-service
     ports:
       - '4500:4500'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4500
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - STRIPE_SECRET_KEY=sk_test_51RjQIMB1YdP77BFBqXxLpjBghKuCfla4CUNJ8V70TWM5hKK2SOFvJVroYI2RszxPJ6EuqxJwooKvrgs7JWAsZ4ZQ00S8poH2DC
-      - STRIPE_WEBHOOK_SECRET=whsec_2a2f75a339834530819ebcbab82565170e6726176a6eb840ea996f79cd07009f
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - JWT_ALGORITHM=HS256
-      - NODE_ENV=development
-      - TAX_RATE=0.15
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - TAX_RATE=${TAX_RATE}
 
   order-service:
     build:
@@ -135,16 +119,14 @@ services:
     container_name: order-service
     ports:
       - '4600:4600'
-    # depends_on:
-    #   - mongo
     environment:
       - PORT=4600
-      - MONGODB_URI=mongodb+srv://abalsalmi:31122002@db.avsciu8.mongodb.net/shopsphere?retryWrites=true&w=majority&appName=DB
-      - CORS_ORIGIN=*
-      - NODE_ENV=development
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - JWT_ALGORITHM=HS256
-      - PAYMENTS_SERVICE_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2FkbWluIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTcxODAwMDAwMCwiZXhwIjoxODE4NjA0ODAwfQ.k65qQatHJmIPKLwcTJrZSE78_b6rBJ52yykN_3icikM
+      - MONGODB_URI=${MONGODB_URI}
+      - NODE_ENV=${NODE_ENV}
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - PAYMENTS_SERVICE_TOKEN=${PAYMENTS_SERVICE_TOKEN}
 
   analytics-service:
     build:
@@ -156,15 +138,16 @@ services:
       - mysql
     environment:
       - PORT=4700
-      - MYSQL_HOST=mysql-abalsalmi-abalsalmi.d.aivencloud.com
-      - MYSQL_PORT=17259
-      - MYSQL_USER=avnadmin
-      - MYSQL_PASSWORD=AVNS_NSGE8wmRa3f-xPBvkER
-      - MYSQL_DB=defaultdb
-      - ORDER_SERVICE_HOST=http://order-service:4600
-      - JWT_SECRET=super-secret-super-secret-super-secret-super-secret
-      - ORDER_SERVICE_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyX2FkbWluIiwicm9sZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBleGFtcGxlLmNvbSIsImlhdCI6MTcxODAwMDAwMCwiZXhwIjoxODE4NjA0ODAwfQ.k65qQatHJmIPKLwcTJrZSE78_b6rBJ52yykN_3icikM
-      - DIALECT=mysql
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DB=${MYSQL_DB}
+      - ORDER_SERVICE_HOST=${ORDER_SERVICE_HOST}
+      - JWT_SECRET=${JWT_SECRET}
+      - ORDER_SERVICE_TOKEN=${ORDER_SERVICE_TOKEN}
+      - DIALECT=${DIALECT}
+
   gateway:
     build:
       context: ./gateway
@@ -180,28 +163,14 @@ services:
       - order-service
       - analytics-service
     environment:
-      - NODE_ENV=development
-      - AUTH_SERVICE_HOST=http://auth-service:4100
-      - USER_SERVICE_HOST=http://user-service:4200
-      - PRODUCT_SERVICE_HOST=http://product-service:4300
-      - CART_SERVICE_HOST=http://cart-service:4400
-      - PAYMENT_SERVICE_HOST=http://payment-service:4500
-      - ORDER_SERVICE_HOST=http://order-service:4600
-      - ANALYTICS_SERVICE_HOST=http://analytics-service:4700
-
-  # client:
-  #   build:
-  #     context: ./client
-  #   container_name: client
-  #   ports:
-  #     - '3000:3000'
-  #   depends_on:
-  #     - gateway
-  #   environment:
-  #     - NEXT_PUBLIC_API_URL=http://localhost:8080
-  #   volumes:
-  #     - ./client:/app
-  #     - /app/node_modules
+      - NODE_ENV=${NODE_ENV}
+      - AUTH_SERVICE_HOST=${AUTH_SERVICE_HOST}
+      - USER_SERVICE_HOST=${USER_SERVICE_HOST}
+      - PRODUCT_SERVICE_HOST=${PRODUCT_SERVICE_HOST}
+      - CART_SERVICE_HOST=${CART_SERVICE_HOST}
+      - PAYMENT_SERVICE_HOST=${PAYMENT_SERVICE_HOST}
+      - ORDER_SERVICE_HOST=${ORDER_SERVICE_HOST}
+      - ANALYTICS_SERVICE_HOST=${ANALYTICS_SERVICE_HOST}
 
 volumes:
   mongo_data:
