@@ -41,6 +41,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1)
   const [selectedImage, setSelectedImage] = useState(0)
   const [vendorName, setVendorName] = useState<string>("")
+  const [imagesPreloaded, setImagesPreloaded] = useState(false)
   
   const isVendor = user?.role === 'vendor'
   const isConsumer = user?.role === 'consumer'
@@ -56,6 +57,22 @@ export default function ProductDetailPage() {
         setProduct(productData)
         setReviews(reviewsData)
         setSelectedImage(0) // Reset selected image when product changes
+        
+        // Preload all product images
+        if (productData.images && productData.images.length > 0) {
+          const imagePromises = productData.images.map((src) => {
+            return new Promise((resolve, reject) => {
+              const img = new window.Image()
+              img.onload = resolve
+              img.onerror = reject
+              img.src = src
+            })
+          })
+          
+          Promise.all(imagePromises)
+            .then(() => setImagesPreloaded(true))
+            .catch(() => console.error('Failed to preload some images'))
+        }
         
         // Fetch vendor info if vendorName is not available
         if (productData.vendorName) {
@@ -329,6 +346,8 @@ export default function ProductDetailPage() {
                         fill
                         sizes="100px"
                         className="object-cover"
+                        quality={95}
+                        priority={index < 4}
                       />
                     </button>
                   ))}

@@ -2,26 +2,13 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { analyticsService } from "@/lib/api/analytics-service"
 import { ProductCard } from "@/components/product/product-card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
-import type { TopProductsResponse } from "@/lib/api/analytics-service"
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut",
-    },
-  },
-}
 
 export function TrendingProducts() {
   const [products, setProducts] = useState<Product[]>([])
@@ -35,61 +22,101 @@ export function TrendingProducts() {
         startDate.setDate(startDate.getDate() - 10)
         const formattedStartDate = startDate.toISOString().split('T')[0] // YYYY-MM-DD format
 
-        // Fetch top selling products from analytics
-        const topProductsResponse = await analyticsService.getAllTopProducts({
-          limit: 8,
-          startDate: formattedStartDate
-        })
-
-        if (topProductsResponse.topProducts.length > 0) {
-          // Extract product IDs
-          const productIds = topProductsResponse.topProducts.map(item => item.productId)
-          
-          // Fetch all products in one batch request
-          const productMap = await productService.getProductsBatch(productIds)
-          
-          // Map the products with their sales data
-          const validProducts: Product[] = []
-          topProductsResponse.topProducts.forEach(item => {
-            const product = productMap[item.productId]
-            if (product && product.isPublished) {
-              validProducts.push({
-                ...product,
-                recentRevenue: item.revenue,  
-                recentUnitsSold: item.unitsSold
-              })
-            }
-          })
-          
-          setProducts(validProducts)
-        } else {
-          // Fallback to regular products if no trending data
-          const response = await productService.getProducts({
+        try {
+          // Try to fetch top selling products from analytics
+          const topProductsResponse = await analyticsService.getAllTopProducts({
             limit: 8,
-            sort: '-createdAt', // Sort by newest
-            isPublished: true // Only show published products
+            startDate: formattedStartDate
           })
+
+          if (topProductsResponse.topProducts.length > 0) {
+            // Extract product IDs
+            const productIds = topProductsResponse.topProducts.map(item => item.productId)
+            
+            // For Safari compatibility, fetch products individually if batch fails
+            let productMap: Record<string, Product> = {}
+            
+            try {
+              // Try batch request first
+              productMap = await productService.getProductsBatch(productIds)
+            } catch (batchError) {
+              console.warn('Batch request failed, fetching individually:', batchError)
+              // Fallback: fetch products individually
+              for (const productId of productIds) {
+                try {
+                  const product = await productService.getProduct(productId)
+                  productMap[productId] = product
+                } catch (err) {
+                  console.error(`Failed to fetch product ${productId}:`, err)
+                }
+              }
+            }
+            
+            // Map the products with their sales data
+            const validProducts: Product[] = []
+            topProductsResponse.topProducts.forEach(item => {
+              const product = productMap[item.productId]
+              if (product && product.isPublished) {
+                validProducts.push({
+                  ...product,
+                  recentRevenue: item.revenue,  
+                  recentUnitsSold: item.unitsSold
+                })
+              }
+            })
+            
+            if (validProducts.length > 0) {
+              setProducts(validProducts)
+              return
+            }
+          }
+        } catch (analyticsError) {
+          console.warn('Analytics fetch failed, using fallback:', analyticsError)
+        }
+
+        // Fallback to regular products sorted by rating/reviews
+        const response = await productService.getProducts({
+          limit: 8,
+          sort: '-averageRating,-reviewCount', // Sort by rating and reviews
+          isPublished: true // Only show published products
+        })
+        
+        if (response.products && response.products.length > 0) {
           setProducts(response.products)
+        } else {
+          // Final fallback: newest products
+          const fallbackResponse = await productService.getProducts({
+            limit: 8,
+            sort: '-createdAt',
+            isPublished: true
+          })
+          setProducts(fallbackResponse.products)
         }
       } catch (error) {
         console.error('Failed to fetch trending products:', error)
-        // Fallback to regular products on error
+        // Last resort fallback
         try {
           const response = await productService.getProducts({
             limit: 8,
             sort: '-createdAt',
-            isPublished: true // Only show published products
+            isPublished: true
           })
           setProducts(response.products)
         } catch (fallbackError) {
           console.error('Failed to fetch fallback products:', fallbackError)
+          setProducts([])
         }
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTrendingProducts()
+    // Add a small delay for Safari
+    const timeoutId = setTimeout(() => {
+      fetchTrendingProducts()
+    }, 100)
+
+    return () => clearTimeout(timeoutId)
   }, [])
 
   if (loading) {
@@ -113,26 +140,22 @@ export function TrendingProducts() {
 
   return (
     <div className="space-y-8">
-      <AnimatePresence mode="wait">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product, index) => (
-            <motion.div
-              key={product.productId || `product-${index}`}
-              variants={itemVariants}
-              initial="hidden"
-              animate="visible"
-              transition={{ 
-                delay: index * 0.1,
-                duration: 0.6,
-                ease: [0.43, 0.13, 0.23, 0.96]
-              }}
-              style={{ willChange: 'transform, opacity' }}
-            >
-              <ProductCard product={product} />
-            </motion.div>
-          ))}
-        </div>
-      </AnimatePresence>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {products.map((product, index) => (
+          <motion.div
+            key={product.productId}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              duration: 0.5,
+              delay: index * 0.05,
+              ease: "easeOut"
+            }}
+          >
+            <ProductCard product={product} />
+          </motion.div>
+        ))}
+      </div>
       
       <div className="text-center">
         <Link href="/products">

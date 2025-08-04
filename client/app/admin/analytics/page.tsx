@@ -506,10 +506,10 @@ export default function AdminAnalyticsPage() {
               </CardHeader>
               <CardContent className="p-6">
                 {categoryData.length > 0 ? (
-                  <div className="h-[300px] w-full">
+                  <div className="w-full">
                     {categoryData.length === 1 ? (
                       // Show a summary for single category
-                      <div className="h-full flex items-center justify-center">
+                      <div className="h-[300px] flex items-center justify-center">
                         <div className="w-full max-w-lg space-y-6">
                           <div className="text-center space-y-4">
                             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900/20">
@@ -541,15 +541,23 @@ export default function AdminAnalyticsPage() {
                       </div>
                     ) : (
                       // Show pie chart for multiple categories
-                      <ResponsiveContainer width="100%" height="100%">
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={categoryData}
                             cx="50%"
                             cy="45%"
                             labelLine={false}
-                            label={(entry) => `${entry.name} (${entry.percentage}%)`}
-                            outerRadius={120}
+                            label={(entry) => {
+                              // Truncate long category names to prevent overflow
+                              const maxLength = 10;
+                              const name = entry.name.length > maxLength 
+                                ? `${entry.name.substring(0, maxLength)}...` 
+                                : entry.name;
+                              return `${name} (${entry.percentage}%)`;
+                            }}
+                            outerRadius={100}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -580,7 +588,33 @@ export default function AdminAnalyticsPage() {
                             }}
                           />
                         </PieChart>
-                      </ResponsiveContainer>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                    
+                    {/* Legend for pie chart */}
+                    {categoryData.length > 1 && (
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        {categoryData.slice(0, 4).map((entry, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <div 
+                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: entry.fill }}
+                            />
+                            <span className="truncate text-muted-foreground">
+                              {entry.name}
+                            </span>
+                          </div>
+                        ))}
+                        {categoryData.length > 4 && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-3 h-3 rounded-full bg-gray-400" />
+                            <span className="text-muted-foreground">
+                              +{categoryData.length - 4} more
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 ) : (

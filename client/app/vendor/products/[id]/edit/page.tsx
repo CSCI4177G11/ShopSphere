@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, Loader2, Save, Globe, EyeOff } from "lucide-react"
+import { ArrowLeft, Upload, X, Loader2, Save, Globe, EyeOff, Package } from "lucide-react"
 import type { Product } from "@/lib/api/product-service"
 
 const productSchema = z.object({
@@ -379,11 +379,11 @@ export default function EditProductPage() {
                   <CardHeader>
                     <CardTitle>Pricing & Inventory</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="price">Price</Label>
-                        <div className="flex gap-2">
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="price" className="text-base font-medium">Price</Label>
+                        <div className="relative">
                           <Select
                             value={selectedCurrency}
                             onValueChange={(value) => {
@@ -397,25 +397,29 @@ export default function EditProductPage() {
                             }}
                             disabled={isSubmitting}
                           >
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
+                            <SelectTrigger className="absolute left-0 top-0 w-[80px] h-full rounded-r-none border-r-0 bg-muted/50">
+                              <SelectValue>
+                                <span className="font-mono text-lg font-semibold">
+                                  {CURRENCY_SYMBOLS[selectedCurrency]}
+                                </span>
+                              </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="CAD">
-                                <span className="flex items-center gap-1">
-                                  <span className="font-mono">{CURRENCY_SYMBOLS.CAD}</span>
+                                <span className="flex items-center gap-2">
+                                  <span className="font-mono text-lg">{CURRENCY_SYMBOLS.CAD}</span>
                                   <span>CAD</span>
                                 </span>
                               </SelectItem>
                               <SelectItem value="USD">
-                                <span className="flex items-center gap-1">
-                                  <span className="font-mono">{CURRENCY_SYMBOLS.USD}</span>
+                                <span className="flex items-center gap-2">
+                                  <span className="font-mono text-lg">{CURRENCY_SYMBOLS.USD}</span>
                                   <span>USD</span>
                                 </span>
                               </SelectItem>
                               <SelectItem value="GBP">
-                                <span className="flex items-center gap-1">
-                                  <span className="font-mono">{CURRENCY_SYMBOLS.GBP}</span>
+                                <span className="flex items-center gap-2">
+                                  <span className="font-mono text-lg">{CURRENCY_SYMBOLS.GBP}</span>
                                   <span>GBP</span>
                                 </span>
                               </SelectItem>
@@ -428,7 +432,7 @@ export default function EditProductPage() {
                             {...register("price")}
                             placeholder="0.00"
                             disabled={isSubmitting}
-                            className="flex-1"
+                            className="pl-[88px] h-12 text-lg font-semibold"
                           />
                         </div>
                         {errors.price && (
@@ -436,20 +440,44 @@ export default function EditProductPage() {
                         )}
                       </div>
 
-                      <div>
-                        <Label htmlFor="stock">Stock Quantity</Label>
-                        <Input
-                          id="stock"
-                          type="number"
-                          {...register("stock")}
-                          placeholder="0"
-                          disabled={isSubmitting}
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="stock" className="text-base font-medium">Stock Quantity</Label>
+                        <div className="relative">
+                          <div className="absolute left-3 top-0 h-full flex items-center pointer-events-none">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <Input
+                            id="stock"
+                            type="number"
+                            {...register("stock")}
+                            placeholder="0"
+                            disabled={isSubmitting}
+                            className="pl-12 h-12 text-lg font-semibold"
+                          />
+                        </div>
                         {errors.stock && (
                           <p className="text-sm text-destructive mt-1">{errors.stock.message}</p>
                         )}
+                        <p className="text-xs text-muted-foreground">
+                          Enter 0 for out-of-stock items
+                        </p>
                       </div>
                     </div>
+
+                    {/* Price Preview */}
+                    {watch("price") && (
+                      <div className="bg-muted/50 rounded-lg p-4 border">
+                        <p className="text-sm text-muted-foreground mb-1">Price will be stored as:</p>
+                        <p className="text-2xl font-bold">
+                          {CURRENCY_SYMBOLS.CAD} {convertToCAD(parseFloat(watch("price") || "0"), selectedCurrency).toFixed(2)} CAD
+                        </p>
+                        {selectedCurrency !== 'CAD' && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Converted from {CURRENCY_SYMBOLS[selectedCurrency]} {parseFloat(watch("price") || "0").toFixed(2)} {selectedCurrency}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

@@ -90,9 +90,9 @@ export function ProductCard({ product }: ProductCardProps) {
               )}
             </div>
             
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
+            <div className="flex items-center justify-between mt-auto pt-2 gap-2">
+              <div className="space-y-1 min-w-0 flex-1">
+                <p className="text-2xl font-bold truncate">{formatPrice(product.price)}</p>
                 <div className="flex items-center gap-1">
                   <Star className={`h-4 w-4 ${product.averageRating && product.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                   <span className="text-sm text-muted-foreground">

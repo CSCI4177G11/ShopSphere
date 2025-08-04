@@ -104,8 +104,11 @@ const compressImage = (file: File, maxSize: number): Promise<string> => {
         const ctx = canvas.getContext('2d')
         ctx?.drawImage(img, 0, 0, width, height)
 
-        // Convert to data URL with compression
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        // Convert to data URL with higher quality
+        // Use PNG for logos and JPEG for banners with higher quality
+        const format = maxSize === 400 ? 'image/png' : 'image/jpeg'
+        const quality = maxSize === 400 ? 1.0 : 0.9 // Higher quality for banners
+        const dataUrl = canvas.toDataURL(format, quality)
         resolve(dataUrl)
       }
       img.src = e.target?.result as string
@@ -441,7 +444,7 @@ export default function VendorProfilePage() {
 
     try {
       setIsUploadingBanner(true)
-      const compressedImage = await compressImage(file, 1200) // 1200px max for banner
+      const compressedImage = await compressImage(file, 1920) // 1920px max for banner (Full HD width)
       setEditedProfile({ ...editedProfile, storeBannerUrl: compressedImage })
       
       // Auto-save the banner
