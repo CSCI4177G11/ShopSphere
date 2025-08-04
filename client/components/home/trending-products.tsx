@@ -52,7 +52,7 @@ export function TrendingProducts() {
           const validProducts: Product[] = []
           topProductsResponse.topProducts.forEach(item => {
             const product = productMap[item.productId]
-            if (product) {
+            if (product && product.isPublished) {
               validProducts.push({
                 ...product,
                 recentRevenue: item.revenue,  
