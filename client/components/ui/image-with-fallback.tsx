@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { sanitizeImageUrl } from '@/lib/sanitize-url'
 
 interface ImageWithFallbackProps {
   src?: string | null
@@ -34,12 +35,15 @@ export function ImageWithFallback({
   placeholder,
   blurDataURL = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAf/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
 }: ImageWithFallbackProps) {
-  const [imgSrc, setImgSrc] = useState(src || fallbackSrc)
+  // Sanitize the source URL before using it
+  const sanitizedSrc = sanitizeImageUrl(src)
+  const [imgSrc, setImgSrc] = useState(sanitizedSrc || fallbackSrc)
   const [isLoading, setIsLoading] = useState(true)
 
   // Update imgSrc when src prop changes
   useEffect(() => {
-    setImgSrc(src || fallbackSrc)
+    const newSanitizedSrc = sanitizeImageUrl(src)
+    setImgSrc(newSanitizedSrc || fallbackSrc)
     setIsLoading(true)
   }, [src, fallbackSrc])
 
@@ -70,7 +74,6 @@ export function ImageWithFallback({
           quality={quality}
           placeholder={placeholder}
           blurDataURL={placeholder === 'blur' ? blurDataURL : undefined}
-          unoptimized={imgSrc === fallbackSrc}
         />
       </>
     )
@@ -97,7 +100,6 @@ export function ImageWithFallback({
         quality={quality}
         placeholder={placeholder}
         blurDataURL={placeholder === 'blur' ? blurDataURL : undefined}
-        unoptimized={imgSrc === fallbackSrc}
       />
     </>
   )

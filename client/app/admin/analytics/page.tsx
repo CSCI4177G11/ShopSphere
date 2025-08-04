@@ -60,6 +60,7 @@ export default function AdminAnalyticsPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
   const [salesTrend, setSalesTrend] = useState<TrendPoint[]>([])
   const [productDetails, setProductDetails] = useState<Map<string, any>>(new Map())
+  const [topVendors, setTopVendors] = useState<any[]>([])
 
   // Additional stats
   const [stats, setStats] = useState({
@@ -132,13 +133,44 @@ export default function AdminAnalyticsPage() {
       setProductDetails(productDetailsMap)
 
       // Fetch additional stats
-      const [consumerCount, vendorCount, activeVendorCount, productCount, ordersResponse] = await Promise.all([
+      const [consumerCount, vendorCount, activeVendorCount, productCount, ordersResponse, vendorsResponse] = await Promise.all([
         userService.getConsumerCount(),
         vendorService.getVendorCount(),
         vendorService.getVendorCount({ isApproved: true }),
         productService.getProducts({ limit: 1 }),
-        orderService.listOrders({ limit: 1000 }) // Get all orders to calculate unique customers
+        orderService.listOrders({ limit: 1000 }), // Get all orders to calculate unique customers
+        vendorService.getVendors({ limit: 100 }) // Get vendors for rating data
       ])
+
+      // Filter and sort vendors by rating
+      const ratedVendors = vendorsResponse.vendors
+        .filter(vendor => vendor.rating > 0)
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, 5)
+      
+      // Fetch product counts for top vendors
+      const vendorsWithProductCounts = await Promise.all(
+        ratedVendors.map(async (vendor) => {
+          try {
+            const productsResponse = await productService.getProducts({
+              vendorId: vendor.vendorId,
+              limit: 1
+            })
+            return {
+              ...vendor,
+              productCount: productsResponse.total || 0
+            }
+          } catch (error) {
+            console.error(`Failed to fetch products for vendor ${vendor.vendorId}:`, error)
+            return {
+              ...vendor,
+              productCount: 0
+            }
+          }
+        })
+      )
+      
+      setTopVendors(vendorsWithProductCounts)
 
       // Calculate growth rate
       const currentRevenue = summaryData.result.totalRevenue
@@ -427,43 +459,45 @@ export default function AdminAnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Top Products */}
+            {/* Top Shops */}
             <Card className="overflow-hidden h-full">
               <CardHeader className="space-y-1 pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold">Top Selling Products</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Top Shops</CardTitle>
                   <Badge variant="outline" className="text-xs font-medium">
-                    <TrendingUp className="mr-1 h-3 w-3" />
-                    {topProducts.length} products
+                    <Star className="mr-1 h-3 w-3" />
+                    {topVendors.length} shops
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="pb-6">
                 <div className="space-y-4">
-                  {topProducts.slice(0, 5).map((product, index) => {
-                    const productInfo = productDetails.get(product.productId)
-                    const maxRevenue = topProducts[0]?.revenue || 1
-                    const percentage = (product.revenue / maxRevenue) * 100
+                  {topVendors.map((vendor, index) => {
+                    const maxRating = 5
+                    const percentage = (vendor.rating / maxRating) * 100
                     
                     return (
-                      <div key={product.productId} className="space-y-2">
+                      <div key={vendor.vendorId} className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                               {index + 1}
                             </span>
                             <span className="truncate font-medium">
-                              {productInfo?.name || `Product ${product.productId.slice(-6)}`}
+                              {vendor.shopName || vendor.name || `Shop ${vendor.vendorId.slice(-6)}`}
                             </span>
                           </div>
-                          <span className="font-semibold text-right ml-2">
-                            {formatPrice(product.revenue)}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span className="font-semibold">
+                              {vendor.rating.toFixed(1)}
+                            </span>
+                          </div>
                         </div>
                         <div className="relative">
                           <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                             <motion.div
-                              className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
+                              className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${percentage}%` }}
                               transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -471,20 +505,20 @@ export default function AdminAnalyticsPage() {
                           </div>
                           <div className="flex justify-between mt-1">
                             <span className="text-xs text-muted-foreground">
-                              {product.unitsSold} units sold
+                              {vendor.productCount || 0} products
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {percentage.toFixed(0)}%
+                              {percentage.toFixed(0)}% rating
                             </span>
                           </div>
                         </div>
                       </div>
                     )
                   })}
-                  {topProducts.length === 0 && (
+                  {topVendors.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <Package className="h-12 w-12 text-muted-foreground mb-3" />
-                      <p className="text-sm text-muted-foreground">No sales data yet</p>
+                      <Star className="h-12 w-12 text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">No rated shops yet</p>
                     </div>
                   )}
                 </div>
@@ -541,23 +575,15 @@ export default function AdminAnalyticsPage() {
                       </div>
                     ) : (
                       // Show pie chart for multiple categories
-                      <div className="h-[300px]">
+                      <div className="h-[250px]">
                         <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
                             data={categoryData}
                             cx="50%"
-                            cy="45%"
+                            cy="50%"
                             labelLine={false}
-                            label={(entry) => {
-                              // Truncate long category names to prevent overflow
-                              const maxLength = 10;
-                              const name = entry.name.length > maxLength 
-                                ? `${entry.name.substring(0, maxLength)}...` 
-                                : entry.name;
-                              return `${name} (${entry.percentage}%)`;
-                            }}
-                            outerRadius={100}
+                            outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                           >
@@ -566,21 +592,17 @@ export default function AdminAnalyticsPage() {
                             ))}
                           </Pie>
                           <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                              border: '1px solid rgb(55, 65, 81)',
-                              borderRadius: '8px',
-                              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                            }}
                             content={({ active, payload }: any) => {
                               if (active && payload && payload.length) {
                                 const data = payload[0].payload
                                 return (
-                                  <div className="p-3">
-                                    <p className="text-white font-semibold mb-2">{data.name}</p>
-                                    <p className="text-gray-300">Revenue: {formatPrice(data.value)}</p>
-                                    <p className="text-gray-300">Units Sold: {data.units}</p>
-                                    <p className="text-gray-300">Percentage: {data.percentage}%</p>
+                                  <div className="bg-background border rounded-lg shadow-lg p-3">
+                                    <p className="font-semibold mb-2">{data.name}</p>
+                                    <div className="space-y-1 text-sm">
+                                      <p className="text-muted-foreground">Revenue: <span className="font-medium text-foreground">{formatPrice(data.value)}</span></p>
+                                      <p className="text-muted-foreground">Units: <span className="font-medium text-foreground">{data.units}</span></p>
+                                      <p className="text-muted-foreground">Share: <span className="font-medium text-foreground">{data.percentage}%</span></p>
+                                    </div>
                                   </div>
                                 )
                               }
@@ -594,26 +616,24 @@ export default function AdminAnalyticsPage() {
                     
                     {/* Legend for pie chart */}
                     {categoryData.length > 1 && (
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        {categoryData.slice(0, 4).map((entry, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm">
-                            <div 
-                              className="w-3 h-3 rounded-full flex-shrink-0" 
-                              style={{ backgroundColor: entry.fill }}
-                            />
-                            <span className="truncate text-muted-foreground">
-                              {entry.name}
-                            </span>
+                      <div className="mt-6 space-y-2">
+                        {categoryData.map((entry, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-4 h-4 rounded flex-shrink-0" 
+                                style={{ backgroundColor: entry.fill }}
+                              />
+                              <span className="text-sm font-medium">
+                                {entry.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className="text-muted-foreground">{entry.units} units</span>
+                              <span className="font-semibold">{entry.percentage}%</span>
+                            </div>
                           </div>
                         ))}
-                        {categoryData.length > 4 && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <div className="w-3 h-3 rounded-full bg-gray-400" />
-                            <span className="text-muted-foreground">
-                              +{categoryData.length - 4} more
-                            </span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -630,39 +650,119 @@ export default function AdminAnalyticsPage() {
             </Card>
 
             {/* Top Products List */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Top Products Details</CardTitle>
+            <Card className="lg:col-span-2 overflow-hidden">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-semibold">Best Performers</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">Products driving your revenue</p>
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    Top {Math.min(topProducts.length, 10)}
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topProducts.slice(0, 5).map((topProduct, index) => {
+              <CardContent className="p-0">
+                {topProducts.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">No product sales data available</p>
+                    <p className="text-sm text-muted-foreground mt-1">Products will appear here once sales are recorded</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {topProducts.slice(0, 10).map((topProduct, index) => {
                     const product = productDetails.get(topProduct.productId)
                     return (
-                      <div key={topProduct.productId} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-sm font-medium">
-                            {index + 1}
+                      <div key={topProduct.productId} className="group relative p-4 hover:bg-muted/20 transition-all duration-200">
+                        <div className="flex items-center gap-4">
+                          {/* Rank Badge */}
+                          <div className="flex-shrink-0">
+                            <div className={`${
+                              index === 0 ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg shadow-yellow-500/20' :
+                              index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500 text-white shadow-lg shadow-gray-500/20' :
+                              index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-lg shadow-orange-500/20' :
+                              'bg-muted text-muted-foreground'
+                            } w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg`}>
+                              {index + 1}
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">
-                              {product?.name || `Product ${topProduct.productId.slice(-6)}`}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {topProduct.unitsSold} units sold
-                            </p>
+                          
+                          {/* Product Image */}
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                            {product?.images?.[0] || product?.thumbnail ? (
+                              <img
+                                src={product.images?.[0] || product.thumbnail}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatPrice(topProduct.revenue)}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {product?.vendorId && `by ${product.vendorId.slice(-6)}`}
-                          </p>
+                          
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-base line-clamp-1 group-hover:text-primary transition-colors">
+                                  {product?.name || `Product ${topProduct.productId.slice(-6)}`}
+                                </p>
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Package className="h-3 w-3" />
+                                    {topProduct.unitsSold} units
+                                  </span>
+                                  {product?.category && (
+                                    <>
+                                      <span>•</span>
+                                      <Badge variant="outline" className="text-xs capitalize">
+                                        {product.category}
+                                      </Badge>
+                                    </>
+                                  )}
+                                  {product?.vendorId && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-xs">Vendor #{product.vendorId.slice(-4)}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Revenue */}
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-bold text-xl">{formatPrice(topProduct.revenue)}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {((topProduct.revenue / topProducts[0].revenue) * 100).toFixed(0)}% of top
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Progress Bar */}
+                            <div className="mt-3">
+                              <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-1000 ease-out ${
+                                    index === 0 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
+                                    index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                                    index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                                    'bg-gradient-to-r from-indigo-400 to-purple-500'
+                                  }`}
+                                  style={{ width: `${(topProduct.revenue / topProducts[0].revenue) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
-                  })}
-                </div>
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

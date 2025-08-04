@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { SafeImage } from "@/components/ui/safe-image"
 import { 
   Store,
   Search,
@@ -61,6 +62,7 @@ export default function AdminVendorsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalVendors, setTotalVendors] = useState(0)
   const [approveVendor, setApproveVendor] = useState<{ id: string, approve: boolean } | null>(null)
+  const [vendorProductCounts, setVendorProductCounts] = useState<Record<string, number>>({})
 
   // Stats
   const [stats, setStats] = useState({
@@ -94,6 +96,24 @@ export default function AdminVendorsPage() {
       setVendors(response.vendors)
       setTotalPages(response.pages)
       setTotalVendors(response.total)
+      
+      // Fetch product counts for each vendor
+      const productCounts: Record<string, number> = {}
+      await Promise.all(
+        response.vendors.map(async (vendor) => {
+          try {
+            const productsResponse = await productService.getProducts({
+              vendorId: vendor.vendorId,
+              limit: 1
+            })
+            productCounts[vendor.vendorId] = productsResponse.total || 0
+          } catch (error) {
+            console.error(`Failed to fetch products for vendor ${vendor.vendorId}:`, error)
+            productCounts[vendor.vendorId] = 0
+          }
+        })
+      )
+      setVendorProductCounts(productCounts)
     } catch (error) {
       console.error('Failed to fetch vendors:', error)
       toast.error('Failed to load vendors')
@@ -197,53 +217,53 @@ export default function AdminVendorsPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
                 <Store className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalVendors}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold truncate">{stats.totalVendors}</div>
+                <p className="text-xs text-muted-foreground truncate">
                   All registered vendors
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Vendors</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.activeVendors}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold truncate">{stats.activeVendors}</div>
+                <p className="text-xs text-muted-foreground truncate">
                   Approved and selling
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Pending Approval</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingVendors}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold truncate">{stats.pendingVendors}</div>
+                <p className="text-xs text-muted-foreground truncate">
                   Awaiting review
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="overflow-hidden">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
                 <Star className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-2xl font-bold truncate">{stats.averageRating.toFixed(1)}</div>
+                <p className="text-xs text-muted-foreground truncate">
                   Out of 5 stars
                 </p>
               </CardContent>
@@ -337,19 +357,18 @@ export default function AdminVendorsPage() {
                       <TableRow key={vendor.vendorId}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            {vendor.logoUrl ? (
-                              <img
-                                src={vendor.logoUrl}
-                                alt={vendor.storeName}
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Store className="h-5 w-5 text-primary" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium">{vendor.storeName}</p>
+                            <SafeImage
+                              src={vendor.logoUrl}
+                              alt={vendor.storeName}
+                              className="w-10 h-10 rounded-full object-cover"
+                              fallback={
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Store className="h-5 w-5 text-primary" />
+                                </div>
+                              }
+                            />
+                            <div className="min-w-0">
+                              <p className="font-medium truncate max-w-[200px]">{vendor.storeName}</p>
                               <p className="text-sm text-muted-foreground">
                                 ID: {vendor.vendorId}
                               </p>
@@ -373,7 +392,7 @@ export default function AdminVendorsPage() {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Package className="h-3 w-3" />
-                            {vendor.totalProducts || 0}
+                            {vendorProductCounts[vendor.vendorId] || 0}
                           </div>
                         </TableCell>
                         <TableCell>
