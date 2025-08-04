@@ -74,10 +74,10 @@ export function TrendingProducts() {
           console.warn('Analytics fetch failed, using fallback:', analyticsError)
         }
 
-        // Fallback to regular products sorted by rating/reviews
+        // Fallback to regular products sorted by rating
         const response = await productService.getProducts({
           limit: 8,
-          sort: '-averageRating,-reviewCount', // Sort by rating and reviews
+          sort: '-averageRating', // Sort by rating
           isPublished: true // Only show published products
         })
         
