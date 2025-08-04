@@ -9,6 +9,7 @@ import { useAuth } from "@/components/auth-provider"
 import { userService } from "@/lib/api/user-service"           // ← NEW
 import { orderService } from "@/lib/api/order-service"
 import { toast } from "sonner"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   Home,
   Package,
