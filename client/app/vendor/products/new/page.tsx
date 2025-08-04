@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { toast } from "sonner"
-import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2, Globe } from "lucide-react"
+import { ArrowLeft, Upload, X, ImageIcon, Loader2, AlertCircle, Clock, CheckCircle2, Globe, Package } from "lucide-react"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
