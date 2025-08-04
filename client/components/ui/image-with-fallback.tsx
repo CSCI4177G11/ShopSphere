@@ -61,6 +61,7 @@ export function ImageWithFallback({
           onLoad={handleLoad}
           priority={priority}
           style={style}
+          unoptimized={imgSrc === fallbackSrc}
         />
       </>
     )
@@ -84,6 +85,7 @@ export function ImageWithFallback({
         onLoad={handleLoad}
         priority={priority}
         style={{ display: isLoading ? 'none' : undefined, ...style }}
+        unoptimized={imgSrc === fallbackSrc}
       />
     </>
   )

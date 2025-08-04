@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { productService } from "@/lib/api/product-service"
 import { analyticsService } from "@/lib/api/analytics-service"
 import { ProductCard } from "@/components/product/product-card"
@@ -113,19 +113,26 @@ export function TrendingProducts() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product, index) => (
-          <motion.div
-            key={product.productId || index}
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-            transition={{ delay: index * 0.1 }}
-          >
-            <ProductCard product={product} />
-          </motion.div>
-        ))}
-      </div>
+      <AnimatePresence mode="wait">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map((product, index) => (
+            <motion.div
+              key={product.productId || `product-${index}`}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ 
+                delay: index * 0.1,
+                duration: 0.6,
+                ease: [0.43, 0.13, 0.23, 0.96]
+              }}
+              style={{ willChange: 'transform, opacity' }}
+            >
+              <ProductCard product={product} />
+            </motion.div>
+          ))}
+        </div>
+      </AnimatePresence>
       
       <div className="text-center">
         <Link href="/products">

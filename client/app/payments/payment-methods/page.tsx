@@ -125,6 +125,36 @@ function PaymentMethods() {
   const [error, setError] = useState<any>(null);
   const [cardComplete, setCardComplete] = useState(false);
 
+  // Edge browser compatibility fix
+  useEffect(() => {
+    // Check if running in Edge
+    const isEdge = /Edge/.test(navigator.userAgent) || /Edg/.test(navigator.userAgent);
+    
+    if (isEdge) {
+      // Add Edge-specific styles
+      const style = document.createElement('style');
+      style.textContent = `
+        .StripeElement {
+          width: 100%;
+        }
+        .StripeElement--focus {
+          outline: none;
+        }
+        .StripeElement--invalid {
+          border-color: var(--destructive);
+        }
+        .StripeElement iframe {
+          color-scheme: light dark;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
+
   useEffect(() => {
     if (user) fetchMethods();
   }, [user]);
@@ -307,6 +337,12 @@ function PaymentMethods() {
                           focused ? "border-primary ring-2 ring-primary/20" : 
                           "border-input"}
                       `}
+                      style={{
+                        "--card-foreground": "hsl(var(--foreground))",
+                        "--muted-foreground": "hsl(var(--muted-foreground))",
+                        "--destructive": "hsl(var(--destructive))",
+                        "--primary": "hsl(var(--primary))"
+                      } as React.CSSProperties}
                       onFocus={() => setFocused(true)}
                       onBlur={() => setFocused(false)}
                     >
@@ -317,12 +353,32 @@ function PaymentMethods() {
                           style: {
                             base: {
                               fontSize: "16px",
-                              color: "#424770",
+                              color: getComputedStyle(document.documentElement).getPropertyValue('--foreground') ? 
+                                "hsl(var(--foreground))" : "#424770",
                               fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                              "::placeholder": { color: "#aab7c4" },
+                              "::placeholder": { 
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground') ? 
+                                  "hsl(var(--muted-foreground))" : "#aab7c4"
+                              },
+                              ":-webkit-autofill": {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--foreground') ? 
+                                  "hsl(var(--foreground))" : "#424770"
+                              }
                             },
-                            invalid: { color: "#fa755a" },
+                            invalid: { 
+                              color: getComputedStyle(document.documentElement).getPropertyValue('--destructive') ? 
+                                "hsl(var(--destructive))" : "#fa755a",
+                              iconColor: getComputedStyle(document.documentElement).getPropertyValue('--destructive') ? 
+                                "hsl(var(--destructive))" : "#fa755a"
+                            },
+                            complete: {
+                              color: getComputedStyle(document.documentElement).getPropertyValue('--foreground') ? 
+                                "hsl(var(--foreground))" : "#424770",
+                              iconColor: getComputedStyle(document.documentElement).getPropertyValue('--primary') ? 
+                                "hsl(var(--primary))" : "#22c55e"
+                            }
                           },
+                          disableLink: true
                         }}
                         onChange={(event) => {
                           setError(event.error || null);
@@ -462,10 +518,16 @@ function PaymentCard({
   }) {
     const [isHovered, setIsHovered] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isTouchDevice, setIsTouchDevice] = useState(false);
+    
+    useEffect(() => {
+      // Check if it's a touch device
+      setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    }, []);
   
     return (
       <motion.div
-        whileHover={{ y: -4, scale: 1.02 }}
+        whileHover={!isTouchDevice ? { y: -4, scale: 1.02 } : {}}
         whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.2 }}
         onHoverStart={() => setIsHovered(true)}
@@ -554,8 +616,8 @@ function PaymentCard({
               <div className="flex gap-1">
                 {!method.isDefault && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: isHovered || deleteDialogOpen ? 1 : 0 }}
+                    initial={{ opacity: isTouchDevice ? 1 : 0 }}
+                    animate={{ opacity: isTouchDevice || isHovered || deleteDialogOpen ? 1 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
                     <Button
@@ -563,7 +625,7 @@ function PaymentCard({
                       size="icon"
                       onClick={onSetDefault}
                       title="Set as Default"
-                      className="h-8 w-8 hover:bg-green-500/30 text-white/80 hover:text-green-100 transition-all duration-200"
+                      className="h-8 w-8 hover:bg-green-500/30 text-white/80 hover:text-green-100 transition-all duration-200 touch:bg-green-500/20"
                     >
                       <motion.div
                         whileHover={{ scale: 1.2, rotate: 180 }}
@@ -578,8 +640,8 @@ function PaymentCard({
                 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: isHovered || deleteDialogOpen ? 1 : 0 }}
+                      initial={{ opacity: isTouchDevice ? 1 : 0 }}
+                      animate={{ opacity: isTouchDevice || isHovered || deleteDialogOpen ? 1 : 0 }}
                       transition={{ duration: 0.2, delay: 0.05 }}
                     >
                       <Button
@@ -590,7 +652,7 @@ function PaymentCard({
                           e.stopPropagation();
                           setDeleteDialogOpen(true);
                         }}
-                        className="h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200 transition-all duration-200"
+                        className="h-8 w-8 hover:bg-red-500/20 text-white/80 hover:text-red-200 transition-all duration-200 touch:bg-red-500/20"
                       >
                         <motion.div
                           whileHover={{ scale: 1.2 }}
@@ -670,6 +732,30 @@ function PaymentCard({
                     </div>
                   </motion.div>
                 )}
+              </div>
+              
+              {/* Mobile-friendly action buttons */}
+              <div className="flex gap-2 sm:hidden pt-2">
+                {!method.isDefault && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={onSetDefault}
+                    className="flex-1 bg-white/20 hover:bg-white/30 text-white border-0"
+                  >
+                    <Star className="h-3 w-3 mr-1" />
+                    Set Default
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className={`${!method.isDefault ? 'flex-1' : 'w-full'} bg-white/20 hover:bg-white/30 text-white border-0`}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Remove
+                </Button>
               </div>
             </div>
           </CardContent>

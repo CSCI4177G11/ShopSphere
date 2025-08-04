@@ -19,7 +19,9 @@ import {
   LayoutDashboard,
   Settings,
   LogOut,
-  User
+  User,
+  Menu,
+  X
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -58,6 +60,10 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
   const [hasProfile,     setHasProfile]     = useState(false)
   const mounted = useMounted()
   /* ---------------------------------------------------- */
+  
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   // Order counts state
   const [orderCounts, setOrderCounts] = useState({
@@ -85,6 +91,15 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
       console.error('Failed to fetch order counts:', error)
     }
   }
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   /* ---------- ⬇️  Profile‑check effect  ⬇️ ---------- */
   useEffect(() => {
@@ -144,15 +159,33 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
   }
 
   return (
-    <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="relative flex h-16 items-center justify-between">
-          <Link href="/vendor" className="flex items-center gap-2">
-            <Store className="h-6 w-6" />
-            <span className="font-semibold">Vendor Portal</span>
-          </Link>
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full transition-all duration-300",
+        isScrolled
+          ? "border-b border-gray-300 dark:border-border/50 bg-white/95 dark:bg-background/95 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-background/80 shadow-md"
+          : "bg-gradient-to-r from-gray-50/30 via-gray-50/60 to-gray-50/30 dark:from-background/0 dark:via-background/50 dark:to-background/0"
+      )}
+    >
+      <div className="w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative flex h-16 items-center justify-between gap-4">
+            {/* Logo Section */}
+            <div className="flex-shrink-0 min-w-0">
+              <Link href="/vendor" className="flex items-center space-x-3 group">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2"
+                >
+                  <Store className="h-6 w-6 text-primary" />
+                  <span className="font-semibold hidden sm:block">Vendor Portal</span>
+                </motion.div>
+              </Link>
+            </div>
 
-          <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            {/* Navigation Links - Centered */}
+            <nav className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 items-center gap-1">
             {vendorNavItems.map((item) => {
               const href = item.href
               const isActive = pathname === item.href
@@ -181,21 +214,57 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
             })}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <CurrencySelector />
-            <ThemeToggle />
+            {/* Right Actions */}
+            <div className="flex-shrink-0 min-w-0">
+              <div className="flex items-center gap-2">
+                {/* Currency Selector */}
+                <motion.div
+                  className="hidden sm:flex flex-shrink-0"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                  <div className="rounded-xl hover:bg-primary/5 transition-colors duration-200">
+                    <CurrencySelector />
+                  </div>
+                </motion.div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="" />
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
+                {/* Theme Toggle */}
+                <motion.div
+                  className="flex-shrink-0"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.6 }}
+                >
+                  <div className="rounded-xl hover:bg-primary/5 transition-colors duration-200">
+                    <ThemeToggle />
+                  </div>
+                </motion.div>
+
+                {/* User Menu */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.7 }}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="relative h-10 w-10 rounded-xl flex-shrink-0 hover:bg-primary/10 transition-all duration-200 group"
+                      >
+                        <div className="relative">
+                          <Avatar className="h-8 w-8 ring-2 ring-transparent group-hover:ring-primary/20 transition-all duration-200">
+                            <AvatarImage src="" />
+                            <AvatarFallback className="bg-gradient-to-br from-primary/10 to-primary/5 text-primary font-semibold">
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          {/* Online indicator */}
+                          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-background rounded-full shadow-sm" />
+                        </div>
+                      </Button>
+                    </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
@@ -216,11 +285,94 @@ export function VendorHeader({ vendorId }: VendorHeaderProps) {
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  </DropdownMenuContent>
+                  </DropdownMenu>
+                </motion.div>
+
+                {/* Mobile Menu Toggle */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.8 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden flex-shrink-0 h-10 w-10 rounded-xl hover:bg-primary/10 transition-all duration-200"
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  >
+                    <motion.div
+                      animate={{ rotate: isMobileMenuOpen ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {isMobileMenuOpen ? (
+                        <X className="h-5 w-5" />
+                      ) : (
+                        <Menu className="h-5 w-5" />
+                      )}
+                    </motion.div>
+                    <span className="sr-only">Toggle menu</span>
+                  </Button>
+                </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="lg:hidden border-t border-gray-300 dark:border-border/50 bg-gray-50/95 dark:bg-background/95 backdrop-blur-xl shadow-lg overflow-hidden"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+              {/* Mobile Navigation Links */}
+              <nav className="flex flex-col gap-2">
+              {vendorNavItems.map((item) => {
+                const href = item.href
+                const isActive = pathname === item.href
+                const Icon = item.icon
+
+                  return (
+                    <Link
+                      key={item.title}
+                      href={href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 text-base font-medium rounded-lg transition-colors",
+                        "hover:bg-accent hover:text-accent-foreground",
+                        isActive && "bg-accent text-accent-foreground"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.title}
+                      {/* Order count indicator for mobile */}
+                      {item.href === '/vendor/orders' && (orderCounts.pending > 0 || orderCounts.processing > 0 || orderCounts.shipped > 0) && (
+                        <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-xs font-bold text-white">
+                          {orderCounts.pending + orderCounts.processing + orderCounts.shipped}
+                        </span>
+                      )}
+                    </Link>
+                  )
+                })}
+              </nav>
+
+              {/* Mobile-only Currency Selector */}
+              <div className="sm:hidden pt-4 border-t border-gray-300 dark:border-border/50">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Currency</span>
+                  <CurrencySelector />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </header>
   )
 }

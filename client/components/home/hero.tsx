@@ -89,9 +89,9 @@ export function Hero() {
   }, [])
 
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-background via-primary/5 to-accent/10">
-      {/* Animated Background Grid */}
-      <div className="absolute inset-0 opacity-20">
+    <div className="relative w-full min-h-[80vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-background via-primary/5 to-accent/10">
+      {/* Animated Background Grid - Hidden on mobile for performance */}
+      <div className="absolute inset-0 opacity-20 hidden sm:block">
         <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_24%,rgba(255,255,255,.05)_25%,rgba(255,255,255,.05)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.05)_75%,rgba(255,255,255,.05)_76%,transparent_77%,transparent),linear-gradient(0deg,transparent_24%,rgba(255,255,255,.05)_25%,rgba(255,255,255,.05)_26%,transparent_27%,transparent_74%,rgba(255,255,255,.05)_75%,rgba(255,255,255,.05)_76%,transparent_77%,transparent)] bg-[length:75px_75px]" />
       </div>
 
@@ -99,15 +99,15 @@ export function Hero() {
 
       {/* Main Content */}
       <div className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center space-y-12">
+        <div className="text-center space-y-8 sm:space-y-12">
           {/* Main Heading */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-6 pt-16"
+            className="space-y-4 sm:space-y-6 pt-8 sm:pt-16"
           >
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight px-4">
               <span className="bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent">
                 Discover Amazing
               </span>
@@ -129,7 +129,7 @@ export function Hero() {
             </h1>
 
             <motion.p 
-              className="text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground leading-relaxed"
+              className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto text-muted-foreground leading-relaxed px-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -159,7 +159,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-md sm:max-w-none mx-auto"
+            className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 max-w-md sm:max-w-none mx-auto px-4"
           >
             {loading ? (
               // Show loading state while checking auth
@@ -174,7 +174,7 @@ export function Hero() {
                   <Button 
                     asChild 
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/vendor">
                       <Store className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -198,7 +198,7 @@ export function Hero() {
                     asChild 
                     variant="outline"
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/products">
                       <ShoppingBag className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -217,7 +217,7 @@ export function Hero() {
                   <Button 
                     asChild 
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/products">
                       <ShoppingBag className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -243,7 +243,7 @@ export function Hero() {
                   <Button 
                     asChild 
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/admin">
                       <Shield className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -267,7 +267,7 @@ export function Hero() {
                     asChild 
                     variant="outline"
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/products">
                       <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -286,7 +286,7 @@ export function Hero() {
                   <Button 
                     asChild 
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary shadow-2xl hover:shadow-primary/25 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/auth/register">
                       <Search className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -310,7 +310,7 @@ export function Hero() {
                     asChild 
                     variant="outline"
                     size="lg" 
-                    className="h-14 px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-lg font-semibold"
+                    className="h-12 sm:h-14 px-6 sm:px-8 rounded-2xl border-2 border-border/50 hover:border-primary/50 bg-background/80 backdrop-blur-sm hover:bg-primary/5 transition-all duration-300 group text-base sm:text-lg font-semibold w-full sm:w-auto"
                   >
                     <Link href="/auth/login">
                       <Users className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
@@ -353,14 +353,14 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="pt-8"
           >
-            <div className="relative max-w-2xl mx-auto">
-              {/* Background glow */}
-              <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative max-w-2xl mx-auto px-4">
+              {/* Background glow - Hidden on mobile */}
+              <div className="absolute inset-0 flex items-center justify-center hidden sm:block">
                 <div className="w-96 h-24 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 blur-3xl opacity-50" />
               </div>
               
               {/* Stats Container */}
-              <div className="relative flex justify-center items-center gap-2 sm:gap-4">
+              <div className="relative flex justify-center items-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
                 {heroStats.map((stat, index) => {
                   const Icon = stat.icon
                   const isLast = index === heroStats.length - 1
@@ -380,7 +380,7 @@ export function Hero() {
                           {/* Card Background */}
                           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                           
-                          <div className="relative bg-background/60 backdrop-blur-md border border-border/50 rounded-2xl p-4 sm:p-6 group-hover:border-primary/30 group-hover:bg-background/80 transition-all duration-300 w-32 sm:w-40">
+                          <div className="relative bg-background/60 backdrop-blur-md border border-border/50 rounded-xl sm:rounded-2xl p-3 sm:p-6 group-hover:border-primary/30 group-hover:bg-background/80 transition-all duration-300 w-28 sm:w-40">
                             {/* Top accent line */}
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
@@ -392,8 +392,8 @@ export function Hero() {
                                 className="relative"
                               >
                                 <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                <div className="relative p-2.5 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 transition-colors duration-300">
-                                  <Icon className="h-5 w-5 text-primary" />
+                                <div className="relative p-2 sm:p-2.5 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 group-hover:from-primary/20 group-hover:to-accent/20 transition-colors duration-300">
+                                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                                 </div>
                               </motion.div>
                               
@@ -407,17 +407,17 @@ export function Hero() {
                                     stiffness: 200,
                                     delay: 0.9 + index * 0.1 
                                   }}
-                                  className="text-3xl sm:text-4xl font-bold"
+                                  className="text-2xl sm:text-4xl font-bold"
                                 >
                                   {stat.value === "..." ? (
-                                    <div className="h-9 w-16 bg-muted/50 animate-pulse rounded mx-auto" />
+                                    <div className="h-7 sm:h-9 w-14 sm:w-16 bg-muted/50 animate-pulse rounded mx-auto" />
                                   ) : (
                                     <span className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
                                       {stat.value}
                                     </span>
                                   )}
                                 </motion.div>
-                                <p className="text-xs sm:text-sm font-medium text-muted-foreground mt-1 whitespace-nowrap">
+                                <p className="text-[10px] sm:text-sm font-medium text-muted-foreground mt-1 whitespace-nowrap">
                                   {stat.label}
                                 </p>
                               </div>
@@ -462,7 +462,7 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.2 }}
-            className="pt-12 flex justify-center"
+            className="pt-8 sm:pt-12 flex justify-center"
           >
             <motion.button
               onClick={() => {
