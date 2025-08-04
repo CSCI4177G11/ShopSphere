@@ -1,42 +1,36 @@
 version: '3.9'
 
 services:
-  mysql:
-    image: mysql:8
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
 
-  metabase:
-    image: metabase/metabase
-    container_name: metabase
-    ports:
-      - "3500:3500"
-    environment:
-      - MB_DB_TYPE=mysql
-      - MB_DB_DBNAME=${MYSQL_DATABASE}
-      - MB_DB_PORT=${MYSQL_PORT}
-      - MB_DB_USER=${MYSQL_USER}
-      - MB_DB_PASS=${MYSQL_PASSWORD}
-      - MB_DB_HOST=${MYSQL_HOST}
-    depends_on:
-      - mysql
+  # mongo:
+  #   image: mongo:6
+  #   container_name: mongo
+  #   ports:
+  #     - '27017:27017'
+  #   volumes:
+  #     - mongo_data:/data/db
 
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+  # mysql:
+  #   image: mysql:8
+  #   container_name: mysql
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  #     MYSQL_DATABASE: ${MYSQL_DATABASE}
+  #     MYSQL_USER: ${MYSQL_USER}
+  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - mysql_data:/var/lib/mysql
+
+  # redis:
+  #   image: redis:7
+  #   container_name: redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
 
   auth-service:
     build:
