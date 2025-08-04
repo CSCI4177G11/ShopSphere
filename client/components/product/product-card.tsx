@@ -93,7 +93,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <div className="space-y-1">
                 <p className="text-2xl font-bold">{formatPrice(product.price)}</p>
                 <div className="flex items-center gap-1">
-                  <Star className={`h-4 w-4 ${product.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                  <Star className={`h-4 w-4 ${product.averageRating && product.averageRating > 0 ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                   <span className="text-sm text-muted-foreground">
                     {product.averageRating ? product.averageRating.toFixed(1) : '0.0'} ({product.reviewCount || 0})
                   </span>
@@ -105,7 +105,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </Badge>
             </div>
             
-            {product.stock > 0 && product.stock <= 5 && (
+            {product.stock && product.stock > 0 && product.stock <= 5 && (
               <p className="text-sm text-orange-600 font-medium pt-2">
                 Only {product.stock} left in stock!
               </p>

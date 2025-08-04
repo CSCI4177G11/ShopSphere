@@ -207,7 +207,7 @@ export default function CheckoutPage() {
       setSavedAddresses(addressData.addresses)
       
       // Select the newly added address
-      const newAddressId = newAddress._id || newAddress.addressId
+      const newAddressId = newAddress.address._id || newAddress.address.addressId
       if (newAddressId) {
         setValue("savedAddressId", newAddressId)
       }

@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
-  const { signIn, user, isLoading: authLoading } = useAuth()
+  const { signIn, user, loading: authLoading } = useAuth()
 
   const {
     register,

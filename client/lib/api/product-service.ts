@@ -30,6 +30,8 @@ export interface Product {
   createdAt?: string
   updatedAt?: string
   stock?: number
+  recentRevenue?: number
+  recentUnitsSold?: number
 }
 
 export interface Review {

@@ -122,7 +122,7 @@ function PaymentMethods() {
   const [adding, setAdding] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<any>(null);
   const [cardComplete, setCardComplete] = useState(false);
 
   useEffect(() => {
@@ -325,7 +325,7 @@ function PaymentMethods() {
                           },
                         }}
                         onChange={(event) => {
-                          setError(event.error);
+                          setError(event.error || null);
                           setCardComplete(event.complete);
                         }}
                       />
@@ -334,7 +334,7 @@ function PaymentMethods() {
                     {error && (
                       <div className="text-sm text-destructive flex items-center gap-2">
                         <AlertCircle className="h-4 w-4" />
-                        <span>{error.message}</span>
+                        <span>{error.message || 'Card setup failed'}</span>
                       </div>
                     )}
                   </div>

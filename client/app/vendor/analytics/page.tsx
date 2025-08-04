@@ -74,7 +74,7 @@ export default function VendorAnalyticsPage() {
       setSalesTrend(trendData)
 
       // Fetch product details more efficiently
-      const validTopProducts = []
+      const validTopProducts: TopProductsResponse['topProducts'] = []
       const productDetailsMap: Record<string, any> = {}
       
       if (topProductsData.topProducts.length > 0 && user) {
@@ -296,7 +296,7 @@ export default function VendorAnalyticsPage() {
                             content={
                               <ChartTooltipContent 
                                 formatter={(value) => formatPrice(Number(value))}
-                                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                                labelStyle={{ color: 'hsl(var(--foreground))' }}  
                                 contentStyle={{ 
                                   backgroundColor: 'hsl(var(--background))',
                                   border: '1px solid hsl(var(--border))',

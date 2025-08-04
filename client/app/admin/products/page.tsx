@@ -87,7 +87,7 @@ export default function AdminProductsPage() {
       const response = await productService.getProducts({
         page: currentPage,
         limit: 20,
-        sort: sortBy,
+        sort: sortBy as any,
         vendorId: filterVendor === "all" ? undefined : filterVendor,
         search: searchTerm || undefined
       })
@@ -382,7 +382,7 @@ export default function AdminProductsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Link href={`/products/${product.productId || product._id}`} target="_blank">
+                            <Link href={`/products/${product.productId || product.productId}`} target="_blank">
                               <Button variant="ghost" size="sm">
                                 <Eye className="h-4 w-4" />
                               </Button>

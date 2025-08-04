@@ -22,6 +22,7 @@ export interface CartItem {
   vendorName?: string
   addedAt?: string
   productImage?: string  // Added for client-side enrichment
+  availableStock?: number
   _links?: {
     product: string
     update: string

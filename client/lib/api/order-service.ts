@@ -9,7 +9,6 @@ export type OrderStatus =
   | 'pending'
   | 'processing'
   | 'shipped'
-  | 'out_for_delivery'
   | 'delivered'
   | 'cancelled'
 

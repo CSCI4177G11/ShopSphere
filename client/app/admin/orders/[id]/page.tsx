@@ -35,7 +35,7 @@ const statusColors: Record<OrderStatus, string> = {
   processing: "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
   shipped: "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
   delivered: "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
-  canceled: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+  cancelled: "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
 }
 
 const statusIcons: Record<OrderStatus, any> = {
@@ -43,7 +43,7 @@ const statusIcons: Record<OrderStatus, any> = {
   processing: Package,
   shipped: Truck,
   delivered: CheckCircle,
-  canceled: XCircle
+  cancelled: XCircle
 }
 
 export default function AdminOrderDetailsPage() {
@@ -207,7 +207,7 @@ export default function AdminOrderDetailsPage() {
                   </div>
                   <div className="pt-4">
                     <p className="text-sm text-muted-foreground">
-                      Payment Method: {order.paymentMethod || 'Credit Card'}
+                      Payment Id: {order.paymentId || '#'}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Payment Status: {order.paymentStatus || 'Paid'}
@@ -232,7 +232,7 @@ export default function AdminOrderDetailsPage() {
                     <p className="text-sm text-muted-foreground">Customer ID</p>
                     <p className="font-medium">{order.consumerId}</p>
                   </div>
-                  {order.consumerEmail && (
+                  {/* {order.consumerEmail && (
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
                       <p className="font-medium flex items-center gap-1">
@@ -240,7 +240,7 @@ export default function AdminOrderDetailsPage() {
                         {order.consumerEmail}
                       </p>
                     </div>
-                  )}
+                  )} */}
                 </CardContent>
               </Card>
 

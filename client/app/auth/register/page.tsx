@@ -44,7 +44,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { signUp, user, isLoading: authLoading } = useAuth()
+  const { signUp, user, loading: authLoading } = useAuth()
   
   const isVendorRegistration = searchParams.get('role') === 'vendor'
 

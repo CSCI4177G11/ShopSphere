@@ -182,7 +182,7 @@ export default function VendorProductsPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
             {products.map((product) => (
-              <motion.div key={product._id} variants={itemVariants}>
+              <motion.div key={product.productId} variants={itemVariants}>
                 <ProductCard product={product} />
               </motion.div>
             ))}

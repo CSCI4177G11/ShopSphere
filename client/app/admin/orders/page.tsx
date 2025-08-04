@@ -101,7 +101,7 @@ export default function AdminOrdersPage() {
       })
 
       setOrders(response.orders)
-      setTotalPages(response.pages)
+      setTotalPages(Math.ceil(response.total / 20))
       setTotalOrders(response.total)
 
       // Calculate stats
@@ -112,7 +112,7 @@ export default function AdminOrdersPage() {
       const pendingOrders = allOrders.filter(o => o.orderStatus === 'pending').length
       const shippedOrders = allOrders.filter(o => o.orderStatus === 'shipped').length
       const deliveredOrders = allOrders.filter(o => o.orderStatus === 'delivered').length
-      const canceledOrders = allOrders.filter(o => o.orderStatus === 'canceled').length
+      const canceledOrders = allOrders.filter(o => o.orderStatus === 'cancelled').length
       const averageOrderValue = totalRevenue / (allOrders.length || 1)
 
       setStats({

@@ -72,10 +72,10 @@ export default function CartPage() {
           }
         })
         
-        setEnrichedItems(enriched)
+        setEnrichedItems(enriched as CartItem[])
       } catch (error) {
         // Use original cart items without images
-        setEnrichedItems(cart.items)
+        setEnrichedItems(cart.items as CartItem[])
       } finally {
         setLoadingImages(false)
       }

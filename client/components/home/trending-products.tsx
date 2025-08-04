@@ -55,7 +55,7 @@ export function TrendingProducts() {
             if (product) {
               validProducts.push({
                 ...product,
-                recentRevenue: item.revenue,
+                recentRevenue: item.revenue,  
                 recentUnitsSold: item.unitsSold
               })
             }
