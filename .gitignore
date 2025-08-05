@@ -142,3 +142,4 @@ package-lock.json
 .next/
 out/
 dist/
+/.scannerwork
