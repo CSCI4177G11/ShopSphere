@@ -1,3 +1,5 @@
+import { authStorage } from '../auth-storage'
+
 export interface ApiConfig {
   baseUrl: string
   headers?: Record<string, string>
@@ -21,8 +23,8 @@ export class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
     
-    // Get auth token
-    const token = localStorage.getItem('token')
+    // Get auth token using secure storage
+    const token = authStorage.getToken()
     
     const headers: Record<string, string> = {
       ...this.defaultHeaders,

@@ -1,4 +1,5 @@
 import { productApi } from './api-client'
+import { authStorage } from '../auth-storage'
 
 /* ---------- Types ---------- */
 
@@ -183,7 +184,7 @@ class ProductService {
   }
 
   async createProductWithImages(formData: FormData): Promise<any> {
-    const token = localStorage.getItem('token')
+    const token = authStorage.getToken()
     if (!token) {
       throw new Error('No authentication token found')
     }

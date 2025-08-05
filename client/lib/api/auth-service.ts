@@ -1,4 +1,5 @@
 import { authApi } from './api-client'
+import { authStorage } from '../auth-storage'
 
 // Types matching your API responses
 export interface User {
@@ -54,10 +55,10 @@ class AuthService {
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
       const response = await authApi.post<AuthResponse>('/login', data)
-      // Store token in localStorage
+      // Store token using secure storage
       if (response.token) {
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        await authStorage.setToken(response.token)
+        authStorage.setUser(response.user)
       }
       return response
     } catch (err: any) {
@@ -69,9 +70,8 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       await authApi.post<void>('/logout')
-      // Clear token from localStorage
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      // Clear token using secure storage
+      await authStorage.clearAll()
     } catch (err: any) {
       if (err?.error) throw err
       throw { error: 'Logout failed.' }
@@ -110,7 +110,7 @@ class AuthService {
       
       // Update token if provided
       if (response.token) {
-        localStorage.setItem('token', response.token)
+        await authStorage.setToken(response.token)
       }
       
       return response
@@ -123,24 +123,20 @@ class AuthService {
   // Utility methods
   getToken(): string | null {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem('token')
+    return authStorage.getToken()
   }
 
   isAuthenticated(): boolean {
-    return !!this.getToken()
+    return authStorage.isAuthenticated()
   }
 
-  clearToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-    }
+  async clearToken(): Promise<void> {
+    await authStorage.clearAll()
   }
 
   getCurrentUser(): { userId: string; username: string; email: string; role: string } | null {
     if (typeof window === 'undefined') return null
-    const userStr = localStorage.getItem('user')
-    return userStr ? JSON.parse(userStr) : null
+    return authStorage.getUser()
   }
 }
 
