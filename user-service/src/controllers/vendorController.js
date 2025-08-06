@@ -91,11 +91,11 @@ export const updateVendorRating = async (vendorId) => {
 
     profile.rating = newRating;
     await profile.save();
-    console.log('updateVendorRating new rating:', newRating);
+    console.log('update vendor rating new rating:', newRating);
 
     return newRating;
   } catch (err) {
-    console.error('updateVendorRating failed:', err.message);
+    console.error('update vendor rating failed:', err.message);
     throw err; 
   }
 };
@@ -166,7 +166,6 @@ export const getVendorProfile = async (req, res) => {
     const vendorId = requireVendorId(req, res);
     if (!vendorId) return;
     try {
-      const newRating = await updateVendorRating(vendorId);
       
       const profile = await Vendor.findOne({ vendorId });
       if (!profile)
@@ -369,7 +368,6 @@ export const getAllVendors = async (req, res) => {
         let newRating;
         try {
           // Try to update rating
-          newRating = await updateVendorRating(vendor.vendorId);
         } catch (error) {
           console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
         }
@@ -482,11 +480,6 @@ export const listPublicVendors = async (req, res) => {
     const transformedVendors = await Promise.all(
       vendors.map(async (vendor) => {
         let newRating = vendor.rating;
-        // try {
-        //   newRating = await updateVendorRating(vendor.vendorId);
-        // } catch (error) {
-        //   console.error(`Failed to update rating for vendor ${vendor.vendorId}:`, error.message);
-        // }
 
         // Fetch product count from product service
         let totalProducts = 0;
@@ -538,7 +531,6 @@ export const listPublicVendors = async (req, res) => {
 export const getPublicVendorProfile = async (req, res) => {
   try {
     const { vendorId } = req.params;
-    const newRating = await updateVendorRating(vendorId);
 
 
     const vendor = await Vendor.findOne({ vendorId })
