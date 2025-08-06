@@ -52,13 +52,15 @@ policies:
 
 pipelines:
   auth-pipeline:
-    apiEndpoints:
-      - auth
+    apiEndpoints: [ auth ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - rate-limit:
           - action:
               max: 100
@@ -69,76 +71,95 @@ pipelines:
           - action:
               serviceEndpoint: auth-service
               changeOrigin: true
+
   user-pipeline:
-    apiEndpoints:
-      - user
+    apiEndpoints: [ user ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: user-service
               changeOrigin: true
+
   product-pipeline:
-    apiEndpoints:
-      - product
+    apiEndpoints: [ product ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: product-service
               changeOrigin: true
+
   cart-pipeline:
-    apiEndpoints:
-      - cart
+    apiEndpoints: [ cart ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: cart-service
               changeOrigin: true
+
   order-pipeline:
-    apiEndpoints:
-      - order
+    apiEndpoints: [ order ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"  
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: order-service
               changeOrigin: true
+
   payment-pipeline:
-    apiEndpoints:
-      - payment
+    apiEndpoints: [ payment ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"  
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: payment-service
               changeOrigin: true
+
   analytics-pipeline:
-    apiEndpoints:
-      - analytics
+    apiEndpoints: [ analytics ]
     policies:
       - cors:
           - action:
-              origin: "*"
-              methods: "GET,POST,PUT,DELETE,PATCH"  
+              origin: ${CORS_ORIGIN}
+              methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+              headers: "Content-Type,Authorization"
+              credentials: true
+              maxAge: 86400
       - proxy:
           - action:
               serviceEndpoint: analytics-service
               changeOrigin: true
+
   
