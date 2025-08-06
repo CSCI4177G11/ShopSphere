@@ -177,7 +177,7 @@ export const getVendorProfile = async (req, res) => {
         phoneNumber:    formatPhoneNumber(profile.phoneNumber),
         logoUrl:        profile.logoUrl,
         storeBannerUrl: profile.storeBannerUrl,
-        rating:         newRating,
+        rating:         profile.rating,
         isApproved:     profile.isApproved,
         socialLinks:    profile.socialLink, // schema field
       };
@@ -392,7 +392,7 @@ export const getAllVendors = async (req, res) => {
           phoneNumber: formatPhoneNumber(vendor.phoneNumber),
           logoUrl: vendor.logoUrl,
           bannerUrl: vendor.storeBannerUrl,
-          rating: newRating,
+          rating: vendor.rating,
           totalProducts: totalProducts,
         };
       })
@@ -549,7 +549,7 @@ export const getPublicVendorProfile = async (req, res) => {
       logoUrl: vendor.logoUrl,
       bannerUrl: vendor.storeBannerUrl,
       socialLinks: vendor.socialLink || [],
-      rating: newRating,
+      rating: vendor.rating,
       isApproved: vendor.isApproved,
       createdAt: vendor.createdAt,
     };
