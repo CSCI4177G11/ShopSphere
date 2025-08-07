@@ -157,8 +157,8 @@ docker-compose up -d
 ```
 
 4. Access the application:
-- Frontend: http://localhost:3000
-- API Gateway: http://localhost:8080
+- Frontend: https://shopsphereg11.netlify.app/
+- API Gateway: https://gateway-shopshere.up.railway.app
 - Individual services on their respective ports
 
 ### Manual Installation
