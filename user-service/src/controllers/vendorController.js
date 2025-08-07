@@ -52,21 +52,27 @@ const PRODUCT_SERVICE_HOST =
   process.env.PRODUCT_SERVICE_HOST || 'http://product-service:4300';
 
 /**
- * Recalculate a vendor’s average rating based on *rated* products only.
+ * Recalculate a vendor's average rating based on *rated* products only.
  *
  * • Fetches all products via product‑service endpoint  
- *   GET `${HOST}/api/product/vendor/${vendorId}`  
- * • Includes a product in the mean **only when reviewCount > 0** so
- *   unrated items don’t skew the score.  
- * • If *no* products are rated, the vendor’s current rating is left intact
- *   and the function returns `null`.  
+ *   GET `${HOST}/api/product/vendor/${vendorId}`  
+ * • Includes a product in the mean **only when reviewCount > 0** so
+ *   unrated items don't skew the score.  
+ * • If *no* products are rated, sets rating to -1  
  * • A legitimate rating of 0 **is** counted in the average.  
  *
  * @param {string} vendorId  Mongo ObjectId string
- * @returns {number|null}    new rating (two decimals) or null if unchanged
+ * @returns {number|null}    new rating (two decimals) or null if vendor not found
  */
 export const updateVendorRating = async (vendorId) => {
   try {
+    // First check if vendor exists
+    const profile = await Vendor.findOne({ vendorId });
+    if (!profile) {
+      console.warn(`Vendor ${vendorId} not found, skipping rating update`);
+      return null;
+    }
+
     const { data } = await axios.get(
       `${PRODUCT_SERVICE_HOST}/api/product/vendor/${vendorId}`,
     );
@@ -74,13 +80,13 @@ export const updateVendorRating = async (vendorId) => {
     const ratedProducts = products.filter(
       (p) => typeof p.reviewCount === 'number' && p.reviewCount > 0,
     );
-    const profile = await Vendor.findOne({ vendorId });
 
     if (ratedProducts.length === 0) {
       profile.rating = -1;
       await profile.save();
       return -1;
     }
+    
     const avg =
       ratedProducts.reduce(
         (sum, p) => sum + (typeof p.averageRating === 'number' ? p.averageRating : 0),
@@ -91,11 +97,10 @@ export const updateVendorRating = async (vendorId) => {
 
     profile.rating = newRating;
     await profile.save();
-    console.log('update vendor rating new rating:', newRating);
-
+    
     return newRating;
   } catch (err) {
-    console.error('update vendor rating failed:', err.message);
+    console.error(`updateVendorRating failed for vendor ${vendorId}:`, err.message);
     throw err; 
   }
 };
