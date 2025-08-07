@@ -1,0 +1,341 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import Link from "next/link"
+import Image from "next/image"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Icons } from "@/components/ui/icons"
+import { toast } from "sonner"
+import { useAuth } from "@/components/auth-provider"
+import { ArrowLeft, Loader2, Eye, EyeOff, ShoppingBag, Store } from "lucide-react"
+
+const registerSchema = z
+  .object({
+    username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username must be at most 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username may contain letters, numbers, and underscores only"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  })
+
+type RegisterForm = z.infer<typeof registerSchema>
+
+export default function RegisterPage() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
+  const [justSignedUp, setJustSignedUp] = useState(false) // Add this flag
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { signUp, user, loading: authLoading } = useAuth()
+  
+  const isVendorRegistration = searchParams.get('role') === 'vendor'
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  })
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    if (!authLoading) {
+      if (user && !justSignedUp) { // Only redirect existing users, not just signed up users
+        // Redirect based on user role
+        if (user.role === 'admin') {
+          router.push('/admin')
+        } else if (user.role === 'vendor') {
+          router.push('/vendor')
+        } else {
+          router.push('/')
+        }
+      } else {
+        setCheckingAuth(false)
+      }
+    }
+  }, [user, authLoading, router, justSignedUp]) // Add justSignedUp to dependencies
+
+  const onSubmit = async (data: RegisterForm) => {
+    setIsLoading(true)
+
+    try {
+      // Set the flag before signup to prevent redirect
+      setJustSignedUp(true)
+      
+      // Use the name as username for now (your API requires username)
+      const role = isVendorRegistration ? 'vendor' : 'consumer'
+      await signUp(data.username, data.email, data.password, role)
+      toast.success("Account created successfully!")
+      
+      // Redirect based on role - this will always happen now
+      if (isVendorRegistration) {
+        router.push("/vendor/create-account")
+      } else {
+        router.push("/consumer/create-account")
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error)
+      setJustSignedUp(false) // Reset flag on error
+      toast.error(error.message || "Registration failed. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleOAuthSignIn = async (provider: "google" | "github") => {
+    // For now, show a message that OAuth is not implemented
+    // You can implement OAuth later if needed
+    toast.info(`${provider} sign-up will be available soon`)
+  }
+
+  // Show loading state while checking authentication
+  if (checkingAuth || authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4 py-16 relative">
+      <Link href="/" className="absolute top-4 left-4">
+        <Button variant="ghost" size="sm">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Home
+        </Button>
+      </Link>
+      <motion.div
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <Image
+              src="/logo.png"
+              alt="ShopSphere Logo"
+              width={96}
+              height={96}
+              priority
+              className="object-contain"
+            />
+          </div>
+          
+          {/* Role indicator with icon */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            {isVendorRegistration ? (
+              <>
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <Store className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  Vendor Registration
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <ShoppingBag className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="text-sm font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">
+                  Customer Registration
+                </div>
+              </>
+            )}
+          </div>
+          
+          <h1 className="text-3xl font-bold mb-2">
+            {isVendorRegistration ? "Start Selling on ShopSphere" : "Join ShopSphere"}
+          </h1>
+          <p className="text-muted-foreground max-w-sm mx-auto">
+            {isVendorRegistration 
+              ? "Create your vendor account to open your online store and reach thousands of customers" 
+              : "Create your account to shop from hundreds of vendors and discover amazing products"}
+          </p>
+        </div>
+
+        <Card className="border-0 shadow-xl bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+          <CardContent className="p-8 space-y-6">
+            {!isVendorRegistration && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleOAuthSignIn("google")} 
+                    disabled={isLoading}
+                    className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+                  >
+                    <Icons.google className="mr-2 h-4 w-4" />
+                    Google
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleOAuthSignIn("github")} 
+                    disabled={isLoading}
+                    className="h-11 border-border/50 hover:border-primary/50 transition-all duration-200"
+                  >
+                    <Icons.gitHub className="mr-2 h-4 w-4" />
+                    GitHub
+                  </Button>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-3 text-muted-foreground font-medium">Or create with email</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter your username"
+                  {...register("username")}
+                  disabled={isLoading}
+                  data-testid="name-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  {...register("email")}
+                  disabled={isLoading}
+                  data-testid="email-input"
+                  className="h-11 border-border/50 focus:border-primary/50 transition-all duration-200"
+                />
+                {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    {...register("password")}
+                    disabled={isLoading}
+                    data-testid="password-input"
+                    className="h-11 pr-10 border-border/50 focus:border-primary/50 transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    {...register("confirmPassword")}
+                    disabled={isLoading}
+                    data-testid="confirm-password-input"
+                    className="h-11 pr-10 border-border/50 focus:border-primary/50 transition-all duration-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 font-medium transition-all duration-200 shadow-lg hover:shadow-xl" 
+                disabled={isLoading} 
+                data-testid="signup-button"
+              >
+                {isLoading && <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <div className="mt-8 space-y-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
+              Sign in
+            </Link>
+          </p>
+          
+          {/* Wrong registration type helper */}
+          <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+            {isVendorRegistration ? (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Just want to shop?</span>{" "}
+                <Link href="/auth/register" className="text-green-600 hover:text-green-500 font-medium transition-colors inline-flex items-center gap-1">
+                  <ShoppingBag className="h-3 w-3" />
+                  Create a customer account instead
+                </Link>
+              </p>
+            ) : (
+              <p className="text-sm">
+                <span className="text-muted-foreground">Want to sell products?</span>{" "}
+                <Link href="/auth/register?role=vendor" className="text-blue-600 hover:text-blue-500 font-medium transition-colors inline-flex items-center gap-1">
+                  <Store className="h-3 w-3" />
+                  Create a vendor account instead
+                </Link>
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
