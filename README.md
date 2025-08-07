@@ -498,8 +498,8 @@ This is a course project for Advanced Web Development. While it's not open for p
 
 ### Project Team
 - Course: Advanced Web Development
-- Institution: [Your University]
-- Term: [Current Term]
+- Institution: Dalhousie University
+- Term: Summer 2025
 
 ## License
 
